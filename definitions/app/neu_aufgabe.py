@@ -143,7 +143,7 @@ def _verweis(wert: object, feldname: str) -> str | None:
 
 def _freier_pfad(slug: str) -> str:
     """Erster freier Dateiname im Aufgaben-Ordner; reservierte Dateien bleiben frei."""
-    for nummer in range(1, MAX_KANDIDATEN):
+    for nummer in range(1, MAX_KANDIDATEN + 1):
         name = f"{slug}.md" if nummer == 1 else f"{slug}-{nummer}.md"
         if okf_bundle.ist_reserviert(name):
             continue

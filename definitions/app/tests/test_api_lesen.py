@@ -383,3 +383,67 @@ def test_t13_fehlende_datei_meldung_ohne_pfad(client):
     assert antwort.status_code == 404
     assert "aufgaben" not in antwort.get_data(as_text=True)
 
+
+# --- N1: errno-Zweig in ``server._sichere_meldung`` ------------------------
+
+
+def test_n1_os_fehler_mit_errno_ohne_pfad_und_details(client, monkeypatch):
+    """OS-Fehler mit ``errno`` werden neutral beantwortet (kein Pfad, kein OS-Text)."""
+
+    def os_fehler(*args, **kwargs):
+        raise FileNotFoundError(2, "No such file or directory", "/tmp/geheim")
+
+    monkeypatch.setattr(overview, "liste", os_fehler)
+
+    antwort = client.get("/api/overview")
+    text = antwort.get_data(as_text=True)
+
+    assert antwort.status_code == 404
+    assert antwort.get_json()["error"] == server.DEUTSCHE_MELDUNGEN[404]
+    assert "/tmp/geheim" not in text
+    assert "No such file" not in text
+    assert "Errno" not in text
+
+
+def test_n1_sichere_meldung_ersetzt_os_details():
+    fehler = FileNotFoundError(2, "No such file or directory", "/tmp/geheim")
+
+    assert server._sichere_meldung(fehler, 404) == server.DEUTSCHE_MELDUNGEN[404]
+
+
+def test_n1_verschwundene_datei_mit_errno_bricht_liste_nicht(client, monkeypatch):
+    """Der tolerante Pfad fängt ``FileNotFoundError`` mit ``errno`` weiterhin ab."""
+
+    def os_fehler(pfad):
+        raise FileNotFoundError(2, "No such file or directory", "/tmp/geheim")
+
+    monkeypatch.setattr(overview, "_zeitstempel", os_fehler)
+
+    antwort = client.get("/api/overview")
+    text = antwort.get_data(as_text=True)
+
+    assert antwort.status_code == 200
+    assert "/tmp/geheim" not in text
+    assert "No such file" not in text
+    assert "Errno" not in text
+
+
+# --- N3: Ungültiges YAML-Frontmatter bleibt lesbar ------------------------
+
+
+def test_n3_ungueltiges_yaml_ergibt_leeres_frontmatter(client, bundle):
+    _schreibe(
+        bundle,
+        "aufgaben/kaputtes-yaml.md",
+        '---\ntype: Task\ntitle: "kaputt\n---\n\n# Ziel\n\nText.\n',
+    )
+
+    antwort = client.get("/api/file", query_string={"path": "aufgaben/kaputtes-yaml.md"})
+
+    assert antwort.status_code == 200
+    daten = antwort.get_json()
+    assert daten["frontmatter"] == {}
+    assert "# Ziel" in daten["markdown"]
+    assert "Text." in daten["markdown"]
+    assert "type: Task" not in daten["markdown"]
+

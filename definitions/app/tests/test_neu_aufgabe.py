@@ -204,6 +204,29 @@ def test_t7_reservierte_index_wird_nicht_ueberschrieben(bundle):
     assert index.read_bytes() == vorher
 
 
+def test_t7_kandidatenlimit_erschoepft(bundle, monkeypatch):
+    monkeypatch.setattr(neu_aufgabe, "MAX_KANDIDATEN", 2)
+    for name in ("a4-neue-aufgabe.md", "a4-neue-aufgabe-2.md"):
+        (bundle / "aufgaben" / name).write_text("---\ntype: Task\n---\n", encoding="utf-8")
+    vorher = _dateien(bundle)
+
+    with pytest.raises(EingabeFehler):
+        neu_aufgabe.anlegen(dict(GUELTIG))
+
+    assert _dateien(bundle) == vorher
+
+
+def test_t7_letzter_kandidat_wird_noch_genutzt(bundle, monkeypatch):
+    """``MAX_KANDIDATEN`` zählt Kandidaten inklusive des letzten Versuchs."""
+    monkeypatch.setattr(neu_aufgabe, "MAX_KANDIDATEN", 3)
+    for name in ("a4-neue-aufgabe.md", "a4-neue-aufgabe-2.md"):
+        (bundle / "aufgaben" / name).write_text("---\ntype: Task\n---\n", encoding="utf-8")
+
+    pfad = neu_aufgabe.anlegen(dict(GUELTIG))
+
+    assert pfad == "aufgaben/a4-neue-aufgabe-3.md"
+
+
 # --- T8 Ungültige Eingaben ------------------------------------------------
 
 

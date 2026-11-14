@@ -138,9 +138,20 @@ def test_t4_belegter_port_meldet_laeuft_bereits(popen, ohne_colab, monkeypatch, 
 
 
 def test_t5_fehlende_pakete_loesen_pip_install_aus(popen, port_frei, ohne_colab, monkeypatch):
-    monkeypatch.setattr(start_colab.importlib.util, "find_spec", lambda name: None)
+    fehlend = {"flask", "yaml"}
+    monkeypatch.setattr(
+        start_colab.importlib.util,
+        "find_spec",
+        lambda name: None if name in fehlend else object(),
+    )
     installiert = []
-    monkeypatch.setattr(subprocess, "run", lambda befehl, **optionen: installiert.append(befehl))
+
+    def pip_install(befehl, **optionen):
+        installiert.append(befehl)
+        fehlend.clear()
+        return types.SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(subprocess, "run", pip_install)
 
     assert start_colab.main() == 0
 
@@ -160,6 +171,65 @@ def test_t5_vorhandene_pakete_loesen_kein_pip_aus(popen, port_frei, ohne_colab, 
 
     assert start_colab.main() == 0
     assert installiert == []
+
+
+# --- T7 Installation schlägt fehl (A16-2) ---------------------------------
+
+
+def test_t7_pip_fehler_beendet_ohne_serverstart(popen, port_frei, ohne_colab, monkeypatch, capsys):
+    monkeypatch.setattr(start_colab.importlib.util, "find_spec", lambda name: None)
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda befehl, **optionen: types.SimpleNamespace(returncode=1),
+    )
+
+    assert start_colab.main() != 0
+    assert popen.aufrufe == []
+    ausgabe = capsys.readouterr()
+    assert "fehlgeschlagen" in ausgabe.err
+    assert "Server gestartet" not in ausgabe.out
+
+
+def test_t7_fehlendes_paket_nach_install_beendet_ohne_serverstart(popen, port_frei, ohne_colab, monkeypatch, capsys):
+    monkeypatch.setattr(start_colab.importlib.util, "find_spec", lambda name: None)
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda befehl, **optionen: types.SimpleNamespace(returncode=0),
+    )
+
+    assert start_colab.main() != 0
+    assert popen.aufrufe == []
+    ausgabe = capsys.readouterr()
+    assert "flask" in ausgabe.err
+    assert "Server gestartet" not in ausgabe.out
+
+
+# --- T8 Portprüfung nutzt alle Schnittstellen (A16-3) ---------------------
+
+
+def test_t8_portpruefung_bindet_an_alle_schnittstellen(monkeypatch):
+    gebunden = []
+
+    class FakeSocket:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def setsockopt(self, *args):
+            pass
+
+        def bind(self, adresse):
+            gebunden.append(adresse)
+
+    monkeypatch.setattr(start_colab.socket, "socket", lambda *args, **kwargs: FakeSocket())
+
+    assert start_colab._port_belegt(5000) is False
+    assert start_colab.HOST == "0.0.0.0"
+    assert gebunden == [("0.0.0.0", 5000)]
 
 
 # --- T6 Kein Bundle-Schreibzugriff ---------------------------------------

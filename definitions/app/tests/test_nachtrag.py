@@ -72,6 +72,27 @@ def test_t3_abschnitt_vorhanden(bundle):
     ]
 
 
+def test_a3_2_abschnitt_in_dateimitte(bundle):
+    """Steht ``# Nachträge`` vor weiteren Überschriften, bleibt alles darunter erhalten."""
+    pfad = bundle / "aufgaben/notiz.md"
+    kopf = (
+        "---\ntype: Note\ntitle: Notiz\n---\n\n# Ziel\n\nText.\n\n"
+        "# Nachträge\n\n> **Nachtrag (Mensch, 2026-11-01):** Alt.\n\n"
+    )
+    rest = "# Kontext\n\nBleibt stehen.\n"
+    pfad.write_text(kopf + rest, encoding="utf-8")
+
+    anfuegen("aufgaben/notiz.md", "Neu.", "2026-11-14")
+
+    nachher = _lies(pfad)
+    assert nachher.startswith(kopf)
+    assert nachher.endswith(rest)
+    assert _marker_zeilen(nachher) == [
+        "> **Nachtrag (Mensch, 2026-11-01):** Alt.",
+        "> **Nachtrag (Mensch, 2026-11-14):** Neu.",
+    ]
+
+
 def test_t4_inhaltsschutz(bundle):
     pfad = bundle / "aufgaben/a1.md"
     vorher = _lies(pfad)

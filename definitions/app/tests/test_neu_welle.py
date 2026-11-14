@@ -155,7 +155,7 @@ def test_t7_kollision(bundle):
     assert (bundle / erst).read_text(encoding="utf-8") == roh_erst
 
 
-# --- T7 Reservierte Dateinamen ---------------------------------------------
+# --- T7b Reservierte Dateinamen --------------------------------------------
 
 
 @pytest.mark.parametrize("titel", ["Log", "Features", "Index"])
@@ -189,7 +189,7 @@ def test_t7_reserviert_naechster_freier_suffix(bundle):
 
 
 def test_t7_kandidatenlimit_erschoepft(bundle, monkeypatch):
-    monkeypatch.setattr(neu_welle, "MAX_KANDIDATEN", 3)
+    monkeypatch.setattr(neu_welle, "MAX_KANDIDATEN", 2)
     (bundle / "wellen/log-2.md").write_text("---\n---\n", encoding="utf-8")
     vorher = _wellen_dateien(bundle)
 
@@ -197,6 +197,16 @@ def test_t7_kandidatenlimit_erschoepft(bundle, monkeypatch):
         neu_welle.anlegen({**GUELTIG, "titel": "Log"})
 
     assert _wellen_dateien(bundle) == vorher
+
+
+def test_t7_letzter_kandidat_wird_noch_genutzt(bundle, monkeypatch):
+    """``MAX_KANDIDATEN`` zählt Kandidaten inklusive des letzten Versuchs."""
+    monkeypatch.setattr(neu_welle, "MAX_KANDIDATEN", 3)
+    (bundle / "wellen/log-2.md").write_text("---\n---\n", encoding="utf-8")
+
+    pfad = neu_welle.anlegen({**GUELTIG, "titel": "Log"})
+
+    assert pfad == "wellen/log-3.md"
 
 
 # --- T8 Body --------------------------------------------------------------

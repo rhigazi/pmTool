@@ -435,7 +435,7 @@ def test_w1_nicht_md_ziel_wird_nicht_beschrieben(client, bundle, endpunkt, nutzl
 
     antwort = client.post(endpunkt, json={"path": NICHT_MD, **nutzlast})
 
-    assert 400 <= antwort.status_code < 500
+    assert antwort.status_code == 400
     assert antwort.get_json()["error"]
     assert (bundle / NICHT_MD).read_bytes() == vorher
 
@@ -448,13 +448,13 @@ def test_w1_nicht_md_ziel_wird_nicht_beschrieben(client, bundle, endpunkt, nutzl
         ("/api/meta", {"owner": "ai"}),
     ],
 )
-def test_w1_verzeichnis_als_ziel_ist_4xx(client, bundle, endpunkt, nutzlast, ziel):
+def test_w1_verzeichnis_als_ziel_ist_400(client, bundle, endpunkt, nutzlast, ziel):
     (bundle / "verz.md").mkdir()
     bestand_vorher = _bestand(bundle)
 
     antwort = client.post(endpunkt, json={"path": ziel, **nutzlast})
 
-    assert 400 <= antwort.status_code < 500
+    assert antwort.status_code == 400
     assert antwort.get_json()["error"]
     assert _bestand(bundle) == bestand_vorher
 
@@ -486,3 +486,16 @@ def test_k2_meta_mit_setzbarem_feld_trotz_null(client, bundle):
 
     assert antwort.status_code == 200
     assert antwort.get_json()["frontmatter"]["task_status"] == "in Klärung"
+
+
+# --- N2: Fail-Closed-Reihenfolge (Whitelist vor Pfad-Check) ----------------
+
+
+def test_n2_verbotener_status_vor_fehlender_datei_ist_403(client, bundle):
+    assert not (bundle / "gibtsnicht.md").exists()
+
+    antwort = client.post("/api/meta", json={"path": "gibtsnicht.md", "status": "Testing"})
+
+    assert antwort.status_code == 403
+    assert antwort.get_json()["error"]
+    assert not (bundle / "gibtsnicht.md").exists()

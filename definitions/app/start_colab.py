@@ -21,7 +21,8 @@ SERVER = APP_DIR / "server.py"
 
 BUNDLE_ROOT = "/content/pmTool/wissen"
 PORT_STANDARD = 5000
-HOST = "127.0.0.1"
+# Wie ``server.HOST``: geprüft wird die Adresse, an die der Server bindet.
+HOST = "0.0.0.0"
 
 # (pip-Paket, Importname) — geprüft wird der Importname.
 PAKETE = (("flask", "flask"), ("pyyaml", "yaml"))
@@ -30,8 +31,17 @@ PAKETE = (("flask", "flask"), ("pyyaml", "yaml"))
 def main() -> int:
     """Startet den Server, falls nötig, und gibt den Port frei; Rückgabe: Exit-Code."""
     fehlende = _fehlende_pakete()
-    if fehlende:
-        _installiere(fehlende)
+    if fehlende and not _installiere(fehlende):
+        return 1
+
+    weiter_fehlen = _fehlende_pakete()
+    if weiter_fehlen:
+        print(
+            "Start abgebrochen: Benötigte Pakete fehlen weiterhin: "
+            f"{', '.join(weiter_fehlen)}. Bitte manuell installieren.",
+            file=sys.stderr,
+        )
+        return 1
 
     port = _port_aus_umgebung()
     url = f"http://localhost:{port}"
@@ -55,12 +65,21 @@ def _fehlende_pakete() -> list[str]:
     return [paket for paket, modul in PAKETE if importlib.util.find_spec(modul) is None]
 
 
-def _installiere(pakete: list[str]) -> None:
+def _installiere(pakete: list[str]) -> bool:
+    """Installiert die Pakete per pip; ``False``, wenn pip scheitert."""
     print(f"Installiere fehlende Pakete: {', '.join(pakete)}", flush=True)
-    subprocess.run(
+    ergebnis = subprocess.run(
         [sys.executable, "-m", "pip", "install", "--quiet", *pakete],
         check=False,
     )
+    if ergebnis.returncode != 0:
+        print(
+            f"Paketinstallation fehlgeschlagen (pip-Exit {ergebnis.returncode}): "
+            f"{', '.join(pakete)}",
+            file=sys.stderr,
+        )
+        return False
+    return True
 
 
 def _port_aus_umgebung() -> int:

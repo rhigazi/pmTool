@@ -84,7 +84,7 @@ def _freier_pfad(titel: str) -> str:
     ``MAX_KANDIDATEN`` Versuchen (analog ``neu_aufgabe``).
     """
     basis = kuerzel(titel)
-    for nummer in range(1, MAX_KANDIDATEN):
+    for nummer in range(1, MAX_KANDIDATEN + 1):
         name = f"{basis}.md" if nummer == 1 else f"{basis}-{nummer}.md"
         if okf_bundle.ist_reserviert(name):
             continue
