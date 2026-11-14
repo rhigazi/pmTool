@@ -13,6 +13,7 @@ Einstiegspunkt für den Projektmanager. Zu Session-Beginn diese Datei und die ve
 * [User Stories](projekt/user-stories/index.md) - Vom Projektmanager aus den Anforderungen abgeleitete User Stories
 * [Phasen & Zuständigkeiten](projekt/phasen.md) - Pipeline, Rollen, TDD-Regeln und Formate
 * [Planung](projekt/planung.md) - TDD-Aufgabenplan des planners mit Reihenfolge und Parallelisierung
+* [Übergabeprotokoll](../docs/uebergabeprotokoll.md) - Gesamtstand zum Sitzungswechsel, offene Punkte, Umgebungs-Wiederherstellung
 
 # Struktur
 

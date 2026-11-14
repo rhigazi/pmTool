@@ -2,6 +2,22 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-14: API-Auslegungen Schreib-Endpunkte bestätigt (A9)
+
+**Entscheidung:** (a) `/api/task` und `/api/welle` lehnen ein mitgesendetes `path`-Feld mit 400 ab (fail-closed gegen Pfadausbruch) — bestätigt. (b) `/api/meta` ohne `owner`/`status` ist ein No-op (200, nichts geschrieben); `{"owner": null}` gilt wie „nicht gesetzt" (das Frontend übermittelt nur gesetzte Felder); Leerstrings/Whitespace → 403 (strikte Whitelist) — bestätigt, kein zusätzlicher Guard. (c) Beim **Anlegen** einer Welle sind alle 6 UI-Status gültig (Initialwert); die Einschränkung auf `Klarung`/`Geschlossen` gilt nur für **Änderungen** über `/api/meta` — bestätigt, entsprechender Test angepasst.
+
+**Begründung:** Klärung von Auslegungsfragen aus der Umsetzung von A9; fail-closed bleibt durchgängige Regel.
+
+**Auswirkung:** Verhalten der Schreib-API ist damit verbindlich; Review/Testphase orientieren sich daran.
+
+## 2026-11-14: UI-Tests ohne Moli (Node-DOM-Harness + HTTP) in dieser Umgebung
+
+**Entscheidung:** Der Moli-Browser ist in der Arbeitsumgebung nicht installiert. Bis zur Klärung werden UI-Szenarien (A10, A11, A12, A13, A17) per HTTP-Requests gegen den laufenden Server plus einem DOM-Harness auf Basis des vorhandenen Node getestet — ohne neue Abhängigkeit. Die Abweichung wird in den Testberichten dokumentiert. Bei Klärung durch die Projektleitung (Moli installieren) können die Szenarien zusätzlich per Moli/Screenshot laufen.
+
+**Begründung:** Projektregel „keine neuen Abhängigkeiten ohne Bescheid"; der Ersatzweg liefert belastbare Belege (Router-, Fehler- und DOM-Verhalten echt ausgeführt) ohne Installationsbedarf.
+
+**Auswirkung:** Phasenmodell-TDD-Regel „Moli-Szenarien" wird für diese Umgebung durch den Harness ersetzt; Testberichte führen die Abweichung explizit auf.
+
 ## 2026-11-14: Regelmäßige Sicherungs-Commits (Anweisung Projektleitung)
 
 **Entscheidung:** Der Code-/Projektstand wird in regelmäßigen Abständen in das Repository gepusht — nicht erst nach vollständig abgeschlossenen Meilensteinen. Ein Zwischen-Commit (auch bei laufenden Arbeiten) ist jedem Datenverlust vorzuziehen, da die Arbeitsumgebung (Colab-Container) ausfallen kann.

@@ -1,4 +1,5 @@
 import { loescheFehler, loescheMeldung, zeigeFehler } from "./api.js";
+import { ladeDetail } from "./detail.js";
 import { ladeAufgaben, ladeUebersicht, ladeWellen } from "./liste.js";
 
 const STANDARD_ANSICHT = "uebersicht";
@@ -108,7 +109,18 @@ registriereAnsicht("uebersicht", ladeUebersicht);
 registriereAnsicht("wellen", ladeWellen);
 registriereAnsicht("aufgaben", ladeAufgaben);
 
+// Detailansicht (A12): Klick auf eine Listenzeile öffnet den Punkt.
+registriereAnsicht("detail", ladeDetail);
+
+function oeffneDetail(event) {
+  const zeile = event.target.closest?.("tr[data-path]");
+  if (!zeile) return;
+
+  window.location.hash = `#/detail/${encodeURIComponent(zeile.dataset.path)}`;
+}
+
 function starte() {
+  document.addEventListener("click", oeffneDetail);
   window.addEventListener("hashchange", navigiere);
   navigiere();
 }

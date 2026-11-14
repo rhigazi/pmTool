@@ -9,11 +9,14 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import okf_bundle
+import overview
 import server
 
 AUFGABE = "aufgaben/a1.md"
 ZWEITE_AUFGABE = "aufgaben/a2.md"
 WELLE = "wellen/w1.md"
+KAPUTTE_DATEI = "aufgaben/kaputt.md"
 
 ZEIT_FRUEH = 1_700_000_000
 ZEIT_SPAET = 1_700_100_000
@@ -114,6 +117,19 @@ def test_t3_owner_aus_status_default(client):
     assert eintraege[WELLE]["owner"] == "ai"
 
 
+def test_t3_owner_null_bei_geschlossen_ohne_owner(client, bundle):
+    _schreibe(
+        bundle,
+        "wellen/w2.md",
+        "---\ntype: Welle\ntitle: W2\nstatus: Geschlossen\n---\n\n# Ziel\n",
+    )
+
+    eintraege = {eintrag["path"]: eintrag for eintrag in client.get("/api/overview").get_json()}
+
+    assert eintraege["wellen/w2.md"]["status"] == "Geschlossen"
+    assert eintraege["wellen/w2.md"]["owner"] is None
+
+
 def test_t3_pausiert_hat_hinweis(client, bundle):
     _aufgabe(bundle, ZWEITE_AUFGABE, "A2: Pausiert", task_status="pausiert")
 
@@ -162,6 +178,16 @@ def test_t6_reservierte_datei_ist_lesbar(client):
     assert antwort.get_json()["frontmatter"]["type"] == "Log"
 
 
+def test_t6_nur_md_dateien_sind_lesbar(client, bundle):
+    _schreibe(bundle, "notizen.txt", "kein Projektwissen\n")
+
+    antwort = client.get("/api/file", query_string={"path": "notizen.txt"})
+
+    assert antwort.status_code == 400
+    assert antwort.get_json()["error"]
+    assert str(bundle) not in antwort.get_data(as_text=True)
+
+
 @pytest.mark.parametrize(
     "pfad",
     [
@@ -206,6 +232,13 @@ def test_t9_nur_aufgaben(client, bundle):
     pfade = _pfade(antwort)
     assert set(pfade) == {AUFGABE, ZWEITE_AUFGABE}
     assert all(pfad.startswith("aufgaben/") for pfad in pfade)
+
+
+@pytest.mark.parametrize("praefix", ["aufgaben", "aufgaben/", "/aufgaben/"])
+def test_t9_praefix_toleriert_schraegstriche(bundle, praefix):
+    pfade = [eintrag["path"] for eintrag in overview.liste(praefix)]
+
+    assert pfade == [AUFGABE]
 
 
 def test_t10_nur_wellen(client):
@@ -258,3 +291,77 @@ def test_t12_nachtrag_parsing(client, bundle):
         {"autor": "Mensch", "datum": "2026-11-14", "text": "Bitte prüfen."},
         {"autor": "Mensch", "datum": "2026-11-15", "text": "Zweiter Eintrag\nmit Folgezeile."},
     ]
+
+
+def test_t12_nachtrag_mehrzeilig_mit_absatz(client, bundle):
+    _schreibe(
+        bundle,
+        "aufgaben/mit-absatz.md",
+        "---\ntype: Task\ntitle: Mit Absatz\ntask_status: offen\n---\n\n# Nachträge\n\n"
+        "> **Nachtrag (Mensch, 2026-11-16):** Erster Absatz\n"
+        ">\n"
+        "> Zweiter Absatz\n",
+    )
+
+    antwort = client.get("/api/file", query_string={"path": "aufgaben/mit-absatz.md"})
+
+    assert antwort.status_code == 200
+    assert antwort.get_json()["nachtraege"] == [
+        {"autor": "Mensch", "datum": "2026-11-16", "text": "Erster Absatz\n\nZweiter Absatz"},
+    ]
+
+
+# --- Unlesbare Dateien ----------------------------------------------------
+
+
+def test_t13_unlesbare_datei_bricht_uebersicht_nicht(client, bundle):
+    (bundle / KAPUTTE_DATEI).write_bytes(b"\xff\xfe\x00kaputt")
+
+    antwort = client.get("/api/overview")
+
+    assert antwort.status_code == 200
+    eintrag = {eintrag["path"]: eintrag for eintrag in antwort.get_json()}[KAPUTTE_DATEI]
+    assert eintrag["typ"] == "unbekannt"
+    assert eintrag["status"] == "Offen"
+    assert eintrag["owner"] is None
+    assert eintrag["hinweis"] == "nicht lesbar"
+    assert datetime.fromisoformat(eintrag["zuletzt_geaendert"]).tzinfo is not None
+
+
+def test_t13_verschwundene_datei_bricht_uebersicht_nicht(client, monkeypatch):
+    scan = okf_bundle.scan
+    monkeypatch.setattr(okf_bundle, "scan", lambda: [*scan(), "aufgaben/weg.md"])
+
+    antwort = client.get("/api/overview")
+
+    assert antwort.status_code == 200
+    assert "aufgaben/weg.md" not in _pfade(antwort)
+
+
+def test_t13_lesefehler_meldung_ohne_pfad(client, bundle):
+    (bundle / KAPUTTE_DATEI).write_bytes(b"\xff\xfe\x00kaputt")
+
+    antwort = client.get("/api/file", query_string={"path": KAPUTTE_DATEI})
+
+    assert antwort.mimetype == "application/json"
+    assert antwort.get_json()["error"]
+    assert str(bundle) not in antwort.get_data(as_text=True)
+    assert KAPUTTE_DATEI not in antwort.get_data(as_text=True)
+
+
+def test_t13_lesefehler_ist_neutral(bundle):
+    (bundle / KAPUTTE_DATEI).write_bytes(b"\xff\xfe\x00kaputt")
+
+    with pytest.raises(PermissionError) as fehler:
+        overview.details(KAPUTTE_DATEI)
+
+    assert str(fehler.value) == "Datei nicht lesbar."
+    assert str(bundle) not in str(fehler.value)
+
+
+def test_t13_fehlende_datei_meldung_ohne_pfad(client):
+    antwort = client.get("/api/file", query_string={"path": "aufgaben/gibt-es-nicht.md"})
+
+    assert antwort.status_code == 404
+    assert "aufgaben" not in antwort.get_data(as_text=True)
+

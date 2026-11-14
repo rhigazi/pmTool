@@ -1,0 +1,202 @@
+#!/usr/bin/env bash
+# Stellt die Arbeitsumgebung wieder her: Pakete prüfen, Projektstruktur prüfen,
+# Setup verifizieren und den App-Server starten.
+#
+# Aufruf:
+#   bash start.sh            lokal: Server auf http://localhost:5000 (BUNDLE_ROOT=./wissen)
+#   bash start.sh --colab    Colab: startet definitions/app/start_colab.py (Port-Freigabe im Browser)
+#
+# Optionen:
+#   --skip-verify   überspringt die Setup-Prüfung (verify.sh)
+#   --dry-run       zeigt nur, was getan würde — installiert und startet nichts
+#   -h, --help      zeigt diese Hilfe
+set -euo pipefail
+
+PROJEKT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BUNDLE_ROOT="${BUNDLE_ROOT:-$PROJEKT/wissen}"
+PORT="${PORT:-5000}"
+MODUS="lokal"
+DRY_RUN=0
+MIT_VERIFY=1
+
+# (pip-Paket, Importname) — geprüft wird der Importname.
+PAKETE=("flask:flask" "pyyaml:yaml" "pytest:pytest")
+
+info() { printf '%s\n' "$*"; }
+ok()   { printf '  ✓ %s\n' "$*"; }
+warn() { printf '  ! %s\n' "$*"; }
+
+hilfe() {
+  sed -n '2,13p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+}
+
+for arg in "$@"; do
+  case "$arg" in
+    --colab)       MODUS="colab" ;;
+    --dry-run)     DRY_RUN=1 ;;
+    --skip-verify) MIT_VERIFY=0 ;;
+    -h|--help)     hilfe; exit 0 ;;
+    *) echo "Unbekannte Option: $arg (bash start.sh --help)" >&2; exit 1 ;;
+  esac
+done
+
+pruefe_python() {
+  if command -v python3 >/dev/null 2>&1; then
+    ok "python3 $(python3 --version 2>&1 | cut -d' ' -f2)"
+  else
+    warn "python3 fehlt — bitte Python 3 installieren (in Colab vorhanden)."
+    exit 1
+  fi
+}
+
+pruefe_struktur() {
+  local fehlt=0
+  for verzeichnis in wissen definitions; do
+    if [ -d "$PROJEKT/$verzeichnis" ]; then
+      ok "$verzeichnis/"
+    else
+      warn "$verzeichnis/ fehlt — falsches Verzeichnis oder unvollständiger Clone?"
+      fehlt=1
+    fi
+  done
+  [ "$fehlt" -eq 0 ] || {
+    info "Abbruch: bitte im Projektwurzelverzeichnis arbeiten (git clone https://github.com/rhigazi/pmTool → cd pmTool)."
+    exit 1
+  }
+}
+
+installiere_pakete() {
+  local fehlend=() eintrag paket modul
+  for eintrag in "${PAKETE[@]}"; do
+    paket="${eintrag%%:*}"
+    modul="${eintrag##*:}"
+    if python3 -c 'import importlib.util, sys; sys.exit(0 if importlib.util.find_spec(sys.argv[1]) else 1)' "$modul"; then
+      ok "$paket vorhanden"
+    else
+      fehlend+=("$paket")
+    fi
+  done
+
+  if [ "${#fehlend[@]}" -eq 0 ]; then
+    return 0
+  fi
+  if [ "$DRY_RUN" -eq 1 ]; then
+    warn "würde installieren: ${fehlend[*]}"
+    return 0
+  fi
+  info "→ Installiere fehlende Pakete: ${fehlend[*]}"
+  python3 -m pip install --quiet "${fehlend[@]}"
+}
+
+pruefe_telegram() {
+  if [ -f "$PROJEKT/config.json" ]; then
+    ok "config.json vorhanden (Telegram)"
+  else
+    warn "config.json fehlt (gitignored) — Telegram-Benachrichtigungen sind deaktiviert."
+    info "   Anlegen über die Colab-Secrets-Zelle, siehe docs/colab-start.md (nicht committen)."
+  fi
+}
+
+fuehre_verify_aus() {
+  local verify="$PROJEKT/definitions/verify.sh"
+  if [ "$MIT_VERIFY" -eq 0 ] || [ "$DRY_RUN" -eq 1 ]; then
+    return 0
+  fi
+  if [ ! -f "$verify" ]; then
+    warn "definitions/verify.sh nicht gefunden — Prüfung übersprungen."
+    return 0
+  fi
+  info "→ Setup-Prüfung (definitions/verify.sh):"
+  bash "$verify" "$PROJEKT" || warn "verify.sh meldet Befunde — Start wird trotzdem fortgesetzt."
+}
+
+port_belegt() {
+  python3 - "$PORT" <<'PY'
+import socket
+import sys
+
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+    probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        probe.bind(("127.0.0.1", int(sys.argv[1])))
+    except OSError:
+        sys.exit(0)
+sys.exit(1)
+PY
+}
+
+starte_server() {
+  local server="$PROJEKT/app/server.py"
+  [ -f "$server" ] || server="$PROJEKT/definitions/app/server.py"
+  if [ ! -f "$server" ]; then
+    warn "server.py nicht gefunden (app/ oder definitions/app/) — bitte zuerst setup.sh ausführen."
+    exit 1
+  fi
+
+  local url="http://localhost:$PORT"
+  if [ "$DRY_RUN" -eq 1 ]; then
+    info "→ würde starten: BUNDLE_ROOT=$BUNDLE_ROOT PORT=$PORT python3 $server"
+    info "→ URL: $url"
+    return 0
+  fi
+
+  if port_belegt; then
+    info "Port $PORT ist bereits belegt — der Server läuft vermutlich schon: $url"
+    info "Kein zweiter Start."
+    return 0
+  fi
+
+  info "→ Server startet: $url  (Beenden mit Strg+C)"
+  BUNDLE_ROOT="$BUNDLE_ROOT" PORT="$PORT" python3 "$server" &
+  local pid=$!
+  trap 'kill "$pid" 2>/dev/null || true' INT TERM
+
+  local status=0
+  wait "$pid" || status=$?
+  trap - INT TERM
+
+  if [ "$status" -ne 0 ] && [ "$status" -ne 130 ]; then
+    warn "Server wurde mit Status $status beendet."
+    return "$status"
+  fi
+  info "→ Server beendet."
+}
+
+starte_colab() {
+  local start="$PROJEKT/definitions/app/start_colab.py"
+  if [ ! -f "$start" ]; then
+    warn "definitions/app/start_colab.py nicht gefunden — bitte im Projektwurzelverzeichnis arbeiten."
+    exit 1
+  fi
+  if [ "$DRY_RUN" -eq 1 ]; then
+    info "→ würde aufrufen: python3 $start"
+    return 0
+  fi
+  info "→ Colab-Start: python3 definitions/app/start_colab.py (gibt Port $PORT im Browser frei)"
+  PORT="$PORT" python3 "$start"
+}
+
+info "→ Umgebung wiederherstellen (Modus: $MODUS, Projekt: $PROJEKT)"
+
+echo "1) Python"
+pruefe_python
+
+echo "2) Projektstruktur"
+pruefe_struktur
+
+echo "3) Abhängigkeiten"
+installiere_pakete
+
+echo "4) Telegram-Konfiguration"
+pruefe_telegram
+
+echo "5) Setup-Prüfung"
+fuehre_verify_aus
+
+if [ "$MODUS" = "colab" ]; then
+  echo "6) App starten"
+  starte_colab
+else
+  echo "6) App starten"
+  starte_server
+fi

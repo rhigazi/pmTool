@@ -16,6 +16,9 @@ from flask import Flask, abort, jsonify, request, send_from_directory
 from werkzeug.exceptions import HTTPException, default_exceptions
 
 import meta
+import nachtrag
+import neu_aufgabe
+import neu_welle
 import okf_bundle
 import overview
 
@@ -88,7 +91,56 @@ def create_app(bundle_root: str | os.PathLike[str]) -> Flask:
     def api_wellen():
         return jsonify(overview.liste("wellen"))
 
+    @app.post("/api/nachtrag")
+    def api_nachtrag():
+        daten = _json_nutzdaten()
+        pfad = _pflicht_pfad(daten)
+        nachtrag.anfuegen(pfad, daten.get("text"))
+        return jsonify({"path": pfad, **overview.details(pfad)})
+
+    @app.post("/api/task")
+    def api_task():
+        daten = _json_nutzdaten()
+        _ohne_pfadfeld(daten)
+        return jsonify(path=neu_aufgabe.anlegen(daten))
+
+    @app.post("/api/welle")
+    def api_welle():
+        daten = _json_nutzdaten()
+        _ohne_pfadfeld(daten)
+        return jsonify(path=neu_welle.anlegen(daten))
+
+    @app.post("/api/meta")
+    def api_meta():
+        daten = _json_nutzdaten()
+        pfad = _pflicht_pfad(daten)
+        # Nur gesetzte Felder weitergeben: ``meta`` prüft die Whitelist strikt.
+        ziele = {feld: daten[feld] for feld in ("owner", "status") if feld in daten}
+        return jsonify(path=pfad, frontmatter=meta.setzen(pfad, **ziele))
+
     return app
+
+
+def _json_nutzdaten() -> dict:
+    """JSON-Body als Objekt; fehlender oder ungültiger Body ist ein Eingabefehler."""
+    daten = request.get_json(silent=True)
+    if not isinstance(daten, dict):
+        raise okf_bundle.EingabeFehler("JSON-Body fehlt oder ist kein Objekt")
+    return daten
+
+
+def _pflicht_pfad(daten: dict) -> str:
+    """Bundle-relativer ``path`` aus dem Body; fehlt er, ist die Eingabe ungültig."""
+    pfad = daten.get("path")
+    if not isinstance(pfad, str) or not pfad.strip():
+        raise okf_bundle.EingabeFehler("Feld path fehlt")
+    return pfad.strip()
+
+
+def _ohne_pfadfeld(daten: dict) -> None:
+    """Anlegen-Endpunkte bestimmen ihren Pfad selbst; ein ``path`` im Body ist unzulässig."""
+    if "path" in daten:
+        raise okf_bundle.EingabeFehler("Feld path ist bei diesem Endpunkt nicht erlaubt")
 
 
 def main() -> int:

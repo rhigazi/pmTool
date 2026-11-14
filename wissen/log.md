@@ -4,6 +4,7 @@
 
 ## 2026-11-14
 
+* **Creation** [Übergabeprotokoll](/../docs/uebergabeprotokoll.md) für den Sitzungswechsel: Aufgabenstatus A1–A18, offene Punkte, Weiterführung, Umgebungs-Wiederherstellung (`start.sh`, `docs/colab-start.md`). Projekt angehalten (Anweisung Projektleitung), laufende Sessions auf sicheren Zwischenstand gesetzt.
 * **Update** Aufgabe A2 (`status.py`) dokumentiert: Review ohne kritische Befunde, Test bestanden (`pytest definitions/app/tests/test_status.py -q` 44 passed, Gesamtsuite 99 passed) — Ergebnisprotokoll in [Aufgaben-Datei](/aufgaben/a2-status-mapping.md) ergänzt (coder ×2, reviewer, tester).
 * **Creation** Feature-Struktur angelegt: [OKF Projekt-Manager (SPA)](features/okf-projekt-manager-spa.md) mit Umfang, Grundlagen und Verweisen auf A1–A17; „Offene Features" in [features.md](features.md) ergänzt.
 * **Update** Projekt ins GitHub-Repository `/content/pmTool` umgezogen (`definitions/`, `wissen/`, `docs/prd.md`, Projekt-Wurzel via `setup.sh`); Pfade `/content/wissen` → `/content/pmTool/wissen` in Spec, User Stories, Planung, Aufgaben und PRD angepasst; `.gitignore` angelegt; Entscheidungslog-Eintrag ergänzt.
