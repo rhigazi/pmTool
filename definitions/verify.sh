@@ -94,7 +94,7 @@ if [ -z "$TESTS" ]; then
 elif python3 -m pytest "$TESTS/" -q >/dev/null 2>&1; then
   ok "App-Test-Suite bestanden"
 else
-  warn "App-Test-Suite fehlgeschlagen"
+  bad "App-Test-Suite fehlgeschlagen oder nicht vorhanden"
 fi
 
 echo ""

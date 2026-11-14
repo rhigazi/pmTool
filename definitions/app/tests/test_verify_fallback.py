@@ -1,10 +1,11 @@
 """Tests für den App-Fallback in ``verify.sh`` Abschnitt „7) App" (Aufgabe A19).
 
 Die Prüfung findet die App unter ``app/`` (verteiltes Ziel) **oder** unter
-``definitions/app/`` (Dev-Repo, Fallback analog zu ``start.sh``); ``bad`` darf
-nur noch ausgelöst werden, wenn beide Varianten fehlen. Die App-Test-Suite wird
-konsequenterweise im gefundenen Verzeichnis gesucht (``app/tests`` bzw.
-``definitions/app/tests``).
+``definitions/app/`` (Dev-Repo, Fallback analog zu ``start.sh``). ``bad`` darf
+bei den Datei-Prüfungen nur noch ausgelöst werden, wenn beide Varianten
+fehlen; eine rote App-Test-Suite bleibt dagegen ein Befund (``bad``, Exit 1).
+Die App-Test-Suite wird konsequenterweise im gefundenen Verzeichnis gesucht
+(``app/tests`` bzw. ``definitions/app/tests``).
 
 Die Tests legen minimale Ziele unter ``/tmp/opencode/`` an und führen
 ``definitions/verify.sh`` dagegen aus — nie gegen das echte Projekt
@@ -189,16 +190,15 @@ def test_t4_keine_app(projekt):
     assert "✗ App-Test-Suite fehlgeschlagen oder nicht vorhanden" in block
 
 
-# --- T5: Test-Suite rot ist ein Warnhinweis, kein bad -----------------------
+# --- T5: Test-Suite rot ist ein Befund (bad) --------------------------------
 
 
-def test_t5_test_suite_rot_ist_warnhinweis(projekt):
+def test_t5_test_suite_rot_ist_bad(projekt):
     ziel = _projekt(projekt, "definitions")
     _schreibe(ziel / "definitions" / "app" / "tests" / "test_trivial.py", ROT_SUITE)
 
     ergebnis = _verify(ziel)
 
     block = _abschnitt7(ergebnis.stdout)
-    assert ergebnis.returncode == 0, ergebnis.stdout + ergebnis.stderr
-    assert "! App-Test-Suite fehlgeschlagen" in block
-    assert "✗" not in block
+    assert ergebnis.returncode == 1
+    assert "✗ App-Test-Suite fehlgeschlagen" in block
