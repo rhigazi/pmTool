@@ -17,6 +17,7 @@ from okf_bundle import EingabeFehler
 
 WELLEN_ORDNER = "wellen"
 MAX_KUERZEL_LAENGE = 60
+MAX_KANDIDATEN = 1000
 FALLBACK_KUERZEL = "welle"
 OWNER_WERTE = ("mensch", "ai")
 
@@ -77,14 +78,20 @@ def kuerzel(titel: str) -> str:
 
 
 def _freier_pfad(titel: str) -> str:
-    """Erster freier Pfad in ``wellen/``; Kollisionen erhalten ``-2``, ``-3``, …"""
+    """Erster freier Pfad in ``wellen/``; reservierte Dateinamen werden übersprungen.
+
+    Kollisionen erhalten ``-2``, ``-3``, …; die Kandidatensuche endet nach
+    ``MAX_KANDIDATEN`` Versuchen (analog ``neu_aufgabe``).
+    """
     basis = kuerzel(titel)
-    pfad = f"{WELLEN_ORDNER}/{basis}.md"
-    nummer = 2
-    while okf_bundle.resolve_path(pfad).exists():
-        pfad = f"{WELLEN_ORDNER}/{basis}-{nummer}.md"
-        nummer += 1
-    return pfad
+    for nummer in range(1, MAX_KANDIDATEN):
+        name = f"{basis}.md" if nummer == 1 else f"{basis}-{nummer}.md"
+        if okf_bundle.ist_reserviert(name):
+            continue
+        pfad = f"{WELLEN_ORDNER}/{name}"
+        if not okf_bundle.resolve_path(pfad).exists():
+            return pfad
+    raise EingabeFehler(f"Kein freier Dateiname für {basis!r} gefunden")
 
 
 def _inhalt(titel: str, ziel: str, status_wert: str, owner: str) -> str:

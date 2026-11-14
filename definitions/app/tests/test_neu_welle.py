@@ -155,6 +155,50 @@ def test_t7_kollision(bundle):
     assert (bundle / erst).read_text(encoding="utf-8") == roh_erst
 
 
+# --- T7 Reservierte Dateinamen ---------------------------------------------
+
+
+@pytest.mark.parametrize("titel", ["Log", "Features", "Index"])
+def test_t7_reservierte_kuerzel_bekommen_suffix(bundle, titel):
+    vorher = _wellen_dateien(bundle)
+
+    pfad = neu_welle.anlegen({**GUELTIG, "titel": titel})
+
+    assert pfad == f"wellen/{titel.lower()}-2.md"
+    assert (bundle / pfad).is_file()
+    assert _wellen_dateien(bundle) == sorted(vorher + [Path(pfad).name])
+
+
+def test_t7_reservierte_existierende_datei_bleibt_unveraendert(bundle):
+    reserviert = bundle / "wellen/features.md"
+    reserviert.write_text("---\ntype: Meta\n---\n\n# Features\n", encoding="utf-8")
+    vorher = reserviert.read_bytes()
+
+    pfad = neu_welle.anlegen({**GUELTIG, "titel": "Features"})
+
+    assert pfad == "wellen/features-2.md"
+    assert reserviert.read_bytes() == vorher
+
+
+def test_t7_reserviert_naechster_freier_suffix(bundle):
+    (bundle / "wellen/log-2.md").write_text("---\n---\n", encoding="utf-8")
+
+    pfad = neu_welle.anlegen({**GUELTIG, "titel": "Log"})
+
+    assert pfad == "wellen/log-3.md"
+
+
+def test_t7_kandidatenlimit_erschoepft(bundle, monkeypatch):
+    monkeypatch.setattr(neu_welle, "MAX_KANDIDATEN", 3)
+    (bundle / "wellen/log-2.md").write_text("---\n---\n", encoding="utf-8")
+    vorher = _wellen_dateien(bundle)
+
+    with pytest.raises(neu_welle.EingabeFehler):
+        neu_welle.anlegen({**GUELTIG, "titel": "Log"})
+
+    assert _wellen_dateien(bundle) == vorher
+
+
 # --- T8 Body --------------------------------------------------------------
 
 
