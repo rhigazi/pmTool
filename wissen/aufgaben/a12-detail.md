@@ -77,3 +77,16 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** `detail.js` minimal additiv (Submit/Status-Buttons während laufender Requests `disabled`, try/finally). T10-Test `test_t10_verbotener_status_403_zeigt_fehler_ohne_zustandswechsel` belegt E2E gegen echten Flask-Server: erzwungener 403, fail-loud-Meldung, kein Zustandswechsel, Bundle bytegenau unverändert. A12-2: doppeltes Absenden → genau ein Eintrag; Doppelklick „Klarung" → genau ein Schreibvorgang. TDD-Rot-Nachweis für T10 in Wegwerf-Kopie unter `/tmp` (keine Repo-Mutation).
 - **Belege:** `test_detail.py` 52 grün (49 + 3 neue); Commit `5eaf457`.
 - **Offene Punkte:** Owner-Umschalter ohne eigenen Doppel-Wechsel-Schutz (bewusst nicht beauftragt); Moli-Browser-Szenarien T1–T10 beim `tester` offen; Doku/Abschluss.
+
+## 2026-11-14 — tester (Testphase 2, BESTANDEN)
+
+- **Ergebnis:** **Testphase 2 BESTANDEN** — A12 T1–T10 komplett belegt (52 Tests, 3× stabil); T10 (erzwungener 403) fail-loud und mit byteidentischem Bundle. **Moli-Smoke erfolgreich** (headless `moli fetch` + Screenshot; Kernszenario Übersicht → Detail bestanden).
+- **Befunde:** Moli-Harness-Nuancen für A17 (siehe [Projekt-Log](/log.md)): (a) `--wait done` kann vor dem asynchronen Listen-Render dumpen → `--wait-script` auf `tr[data-path]` nutzen; (b) Hash-Routen lassen stale DOM stehen → auf ein echtes Neu-Lade-Signal warten.
+- **Offene Punkte:** Doku/Abschluss; optionales Hardening: DOM-Test für den Fehlertext „Bitte einen Nachtrag eingeben." (Kleinbefunde-Batch B).
+
+## 2026-11-14 — documenter (PM-Entscheidung Review-Befund 1: Schreib-UI auf reservierten Dateien)
+
+- **Befund:** Die Detailansicht zeigt auf reservierten Dateien (`log.md`, `index.md`, …) die Schreib-UI (owner/Status/Nachtrag); jeder Schreibversuch endet fail-loud in 403 „Reservierte Datei ist schreibgeschützt", die Datei bleibt unverändert.
+- **PM-Entscheidung:** **Dokumentieren statt clientseitiger Ausblendung** — eine UI-Ausblendung gehört an ein künftiges `schreibgeschuetzt`-Signal der API (post-MVP), nicht an eine clientseitige Duplikation der reservierten Namensliste (analog zum A12-1-Drift-Problem).
+- **Bewertung:** Bekannte **A12-Grenze**, kein Fehler (fail-loud + Datei unverändert); Verhalten bleibt bis Post-MVP so.
+- **Offene Punkte:** `schreibgeschuetzt`-Signal der API + UI-Ausblendung als Post-MVP-Vormerkung (siehe [features.md](/features.md)).

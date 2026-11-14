@@ -78,3 +78,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** [A15-1] behoben: T7 prüft jetzt ganz `app/tests` (mit `-p no:cacheprovider`), T5b-Skip gestrichen (AK „verify grün" wird erzwungen). [A15-2] behoben: `copy_tree` filtert `.pytest_cache` (Dateien + Verzeichnisse) mit Fixture-Ergänzung. [A15-3] Nummerierung behoben. [A15-4] Doku-Mismatch behoben (Verweise in diesem Blatt korrigiert: Testdatei `definitions/app/tests/test_setup_verteilung.py`, Sektion „10) App (app/)").
 - **Belege:** `test_setup_verteilung.py` 13/13 serialisiert grün.
 - **Offene Punkte:** Nebenbefund `tools/`-Abschnitt kopiert `__pycache__` bleibt offen (R12); Doku/Abschluss.
+
+## 2026-11-14 — reviewer (Bestätigungs-Review, Runde 2)
+
+- **Ergebnis:** **Review-frei** — [A15-1], [A15-2] und [A15-3] sind behoben und durch echte, nicht abgeschwächte Tests belegt; die Testphase liegt als Beleg vor (13/13 serialisiert grün).
+- **Befunde:** keine kritischen/wesentlichen Befunde offen.
+- **Offene Punkte:** `tools/`-Abschnitt `__pycache__` (Batch C); Doku/Abschluss.

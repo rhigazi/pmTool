@@ -2,8 +2,8 @@
 type: Task
 title: "A19: verify.sh akzeptiert definitions/app als Fallback"
 description: Verify-Abschnitt 7 prüft die App unter app/ oder definitions/app/ (Fallback analog zu start.sh) inklusive passender Tests.
-task_status: im Review
-phase: 5 Review
+task_status: in Doku
+phase: 7 Dokumentation
 priority: mittel
 assigned_to: coder
 user_story: /projekt/user-stories/us-6.md
@@ -53,3 +53,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Belege:** Neue Testdatei `definitions/app/tests/test_verify_fallback.py` (5 Tests, rot 3 → grün 5); serialisierte Gesamtsuite 644 grün; Commit `4d1f335`.
 - **Befunde:** PM-Entscheidung zum offenen Punkt: Eine rote App-Suite bleibt `bad`/Exit-1-Grund (Korrektur läuft als letzter Kleinschritt). `test_setup_verteilung.py` wurde bewusst nicht angefasst und ist nicht betroffen.
 - **Offene Punkte:** Review (Bestätigung im Nachbesserungs-Batch); Flaky-Vermerk zu parallelen verify-Läufen siehe [Projekt-Log](/log.md).
+
+## 2026-11-14 — reviewer (Bestätigungs-Review, Runde 2)
+
+- **Ergebnis:** **Review-frei** — der Fallback `app/` bzw. `definitions/app/` (inkl. „rote Suite = bad") ist durch echte, nicht abgeschwächte Tests belegt; der Testphase-Beleg liegt vor (5 Tests, `verify.sh` Exit 0 im Dev-Repo).
+- **Befunde:** keine kritischen/wesentlichen Befunde offen.
+- **Offene Punkte:** Doku/Abschluss.

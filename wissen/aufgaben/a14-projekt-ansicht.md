@@ -2,8 +2,8 @@
 type: Task
 title: "A14: Entscheidungen- und Projekt-Ansicht"
 description: Entscheidungsliste aus entscheidungen/log.md und Projekt-Ansicht mit den fünf Unterpunkten, beide über GET /api/file ohne neuen Server-Endpunkt.
-task_status: im Review
-phase: 5 Review
+task_status: in Doku
+phase: 7 Dokumentation
 priority: mittel
 assigned_to: coder
 user_story: /projekt/user-stories/us-1.md
@@ -54,3 +54,16 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Belege:** Gesamtsuite serialisiert **731 grün**.
 - **Befunde:** (a) Klick-Ziele interpretiert — T2 über `#/detail/entscheidungen/log.md`, T4 inline `#/projekt/<x>` gemäß A10-Nav-Routen (Review bestätigt). (b) Moli-E2E T1–T5 beim `tester` offen. (c) Parser-Toleranz der Datums-Trennzeichen als bewusste Designgrenze.
 - **Offene Punkte:** Review + Testphase laufen.
+
+## 2026-11-14 — tester (Testphase, BESTANDEN)
+
+- **Ergebnis:** **Testphase BESTANDEN** — 55/55 Tests (2× serialisiert); Szenarien T1–T5 doppelt belegt (Node-DOM-Harness + HTTP gegen Test-Bundle + Moli: Entscheidungsliste, Klick → Detail der Log-Datei, fünf Projekt-Unterpunkte, gerendertes Spec-Detail, fehlende Datei → Fehlermeldung).
+- **Befunde:** Kein neuer Endpunkt (`test_projekt_js_nutz_nur_den_file_endpunkt`), R6-Renderer-Wiederverwendung, XSS-frei.
+- **Offene Punkte:** Review läuft noch; danach reif für Doku/Abschluss (wie A12/A13).
+
+## 2026-11-14 — reviewer (Review)
+
+- **Ergebnis:** **Freigegeben** — keine kritischen/wesentlichen Befunde; Sicherheit sauber, kein neuer Endpunkt, `index.html` bytegenau unverändert, AK 1–5 durch 55 Tests belegt.
+- **Befunde:** Die Interpretationsfrage ist ausdrücklich **bestätigt**: T2 über `#/detail/entscheidungen/log.md`, T4 inline über `#/projekt/<x>` passt zur A10-Routen-Intention (Routen-Vertrag, Navigationsmodell, fachliche Zuordnung — im Review begründet). Befunde 2/3/4/8 → Batch D (Kleintests + Leer-Hinweis); 5/6/7/9 → Aufräum/Post-MVP (siehe [features.md](/features.md)).
+- **Hinweis:** Der Reviewer hat „731 grün" nicht nachvollzogen (kein Testlauf im Review); die Zahlen sind durch den `tester` separat bestätigt (55/55 A14, 52/81 A12/A13).
+- **Offene Punkte:** Doku/Abschluss; offene Befunde 2–9 in der Kleinbefunde-Liste.

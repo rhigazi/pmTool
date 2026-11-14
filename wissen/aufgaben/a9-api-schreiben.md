@@ -2,8 +2,8 @@
 type: Task
 title: "A9: Schreib-API nachtrag / task / welle / meta"
 description: POST-Endpunkte mit vollständiger Validierung vor dem Schreiben, korrekten 4xx-Codes und Pfadschutz.
-task_status: im Review
-phase: 5 Review
+task_status: in Doku
+phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-2.md
@@ -83,3 +83,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** [K1]/[A7-1] Pfad-Leak geschlossen (neutrale Meldungskonstanten in `okf_bundle`, zentraler `_sichere_meldung`-Schutz in `server._domaenen_handler`). [W1] Schreibziel-Validierung vor dem Schreiben (`okf_bundle.pruefe_zieldatei()`/`_pruefe_schreibziel`: `.md` + Datei-Existenz), angewandt in `nachtrag.anfuegen` und `meta.setzen` (Fail-Closed-Reihenfolge: Whitelist vor Pfad-Check). [K2] `POST /api/meta` ohne setzbare Felder → 400 „Keine setzbaren Felder" (PM-Entscheidung). [A8-1] `_zeitstempel` im Guard-try von `overview._eintrag`.
 - **Belege:** 29 neue Tests (alle rot→grün belegt), Gesamtsuite 676 grün; Commit des Sicherheits-Blocks.
 - **Offene Punkte:** Bestätigungs-Review läuft parallel.
+
+## 2026-11-14 — reviewer (Bestätigungs-Review, Runde 2)
+
+- **Ergebnis:** **Review-frei** — [K1] Pfad-Leak dreifach abgesichert, [W1] Schreibziel-Validierung vor dem Schreiben, [K2] 400 bei leerer Payload und [A8-1] `_zeitstempel`-Guard sind behoben und durch echte, nicht abgeschwächte Tests belegt.
+- **Befunde:** keine kritischen/wesentlichen Befunde offen.
+- **Offene Punkte:** [K3]-Doku/[K4] dokumentiert; Doku/Abschluss.

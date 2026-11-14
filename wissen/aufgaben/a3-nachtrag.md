@@ -67,3 +67,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** **Freigegeben** — keine kritischen Befunde. 2 Kleinbefunde als offene Punkte.
 - **Befunde:** [A3-1] klein: Reserviert-Guard läuft erst beim Schreiben — bei nicht existierender reservierter Datei entsteht `FileNotFoundError` statt `ReservierteDateiFehler` (API 500 statt 403). [A3-2] klein: Testlücke — Zweig „`# Nachträge` vor weiteren Überschriften" ist ungetestet.
 - **Offene Punkte:** A3-1/A3-2 (Aufräum-Takt, siehe [features.md](/features.md)); Doku.
+
+## 2026-11-14 — coder (Nebenbei-Fix [A3-1])
+
+- **Ergebnis:** [A3-1] behoben: Bei einer reservierten, aber nicht existierenden Datei greift der Guard jetzt vor dem Dateizugriff → **403** statt vorher 500 (`FileNotFoundError`).
+- **Belege:** Teil des Sicherheits-Blocks (29 neue Tests, Gesamtsuite 676 grün).
+- **Offene Punkte:** [A3-2] Testlücke (Aufräum-Takt); Doku/Abschluss.

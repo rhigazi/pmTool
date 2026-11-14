@@ -61,3 +61,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Belege:** Gesamtsuite zum Zeitpunkt 644 grün; Commit `cbca9a2`.
 - **Befunde:** (a) T8 „beide Ansichten" interpretiert — Zuordnung sichtbar in Listen-Daten/Detail-Kontext/Erfolgsanzeige; eine Wellen-Spalte erforderte Änderungen in `liste.js`/`detail.js` (nicht beauftragt) — Klärungspunkt. (b) 200-Antwort mit `null`-Body über `api.js`-`postJson` nicht von Fehler unterscheidbar (fail-loud-Grenze) — offener Punkt. (c) Design: Wellen-Feld = Auswahlliste aus `GET /api/wellen`, User Story als Freitext; nach Erfolg bleiben Auswahlen, Textfelder werden geleert.
 - **Offene Punkte:** Review + Testphase laufen parallel; Moli-Browser-Szenarien T1–T8 beim `tester` offen.
+
+## 2026-11-14 — tester (Testphase 2, BESTANDEN)
+
+- **Ergebnis:** **Testphase 2 BESTANDEN** — A13 T1–T8 komplett belegt (81 Tests). **Moli-Smoke erfolgreich** (headless `moli fetch` + Screenshot).
+- **Befunde:** Moli-Harness-Nuancen für A17 (siehe [Projekt-Log](/log.md)); der A14-Testbeleg wird vom `tester` nachgereicht.
+- **Offene Punkte:** Review läuft noch; Doku nach Review.

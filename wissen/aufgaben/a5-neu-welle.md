@@ -2,8 +2,8 @@
 type: Task
 title: "A5: Welle anlegen neu_welle.py"
 description: Neue Wellen-Datei in wellen/ mit type Welle, validiertem Status/owner, Ziel-Abschnitt und leerer Aufgaben-Linkliste anlegen.
-task_status: im Review
-phase: 5 Review
+task_status: in Doku
+phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-4.md
@@ -67,3 +67,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** **Freigegeben** — keine kritischen Befunde; Sicherheit sauber. Die Nachbesserung [B1] wurde umgesetzt (Commit `d651ec6`: reservierte Wellen-Kürzel erhalten Suffix statt 403, 6 Regressionstests, 55 grün); Bestätigungs-Review ausstehend.
 - **Befunde:** [B1] wesentlich (behoben, Commit `d651ec6`): `_freier_pfad` ohne Reserviert-Skip → 403 statt `-2`-Suffix. Klein offen: [B2] `FALLBACK_KUERZEL` vs. `EingabeFehler` inkonsistent zu A4; [B3] `description`-Feld fehlt bei Wellen; [B4] Slug-Logik dupliziert zu `neu_aufgabe`.
 - **Offene Punkte:** B2/B3/B4 (Aufräum-Takt, siehe [features.md](/features.md)); Review-Bestätigung; Doku.
+
+## 2026-11-14 — reviewer (Bestätigungs-Review, Runde 2)
+
+- **Ergebnis:** **Review-frei** — [B1] (reservierte Kürzel erhalten Suffix statt 403, Commit `d651ec6`) ist behoben und durch echte, nicht abgeschwächte Regressionstests belegt.
+- **Befunde:** **PM-Entscheidung A5-2:** Das `FALLBACK_KUERZEL`-Verhalten bleibt bewusst bestehen — es ist ein robuster Fallback für die Kürzelbildung; die Abweichung zu A4 (`EingabeFehler`) ist damit begründet und kein Fehler. (Wie beauftragt im Ergebnisprotokoll dokumentiert.)
+- **Offene Punkte:** [B3] `description`-Feld bei Wellen, [B4] Slug-Logik-Duplikat (Aufräum-Takt); Doku/Abschluss.

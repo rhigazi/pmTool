@@ -2,8 +2,8 @@
 type: Task
 title: "A1: Fundament okf_bundle.py (Pfadschutz, Frontmatter-I/O, Scan)"
 description: Zentrale, framework-freie Zugriffsschicht für Pfadschutz, Frontmatter-/Datei-I/O mit atomarem Schreiben und Bundle-Scan.
-task_status: im Review
-phase: 5 Review
+task_status: in Doku
+phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-7.md
@@ -81,3 +81,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** [B1] behoben: `set_meta`-Wertblock-Grenzen korrekt (`_zum_wertblock`). [B2] behoben: `lesen_tolerant` liefert bei ungültigem YAML `({}, body)` (bewusste Verhaltenskorrektur statt reiner Doku-Anpassung).
 - **Belege:** 29 neue Tests im Sicherheits-Block (alle rot→grün belegt), Gesamtsuite 676 grün.
 - **Offene Punkte:** Bestätigungs-Review läuft parallel.
+
+## 2026-11-14 — reviewer (Bestätigungs-Review, Runde 2)
+
+- **Ergebnis:** **Review-frei** — [B1] (Wertblock `_zum_wertblock`) und [B2] (`lesen_tolerant` bei ungültigem YAML) sind behoben und durch echte, nicht abgeschwächte Tests belegt.
+- **Befunde:** keine kritischen/wesentlichen Befunde offen.
+- **Offene Punkte:** Doku/Abschluss.
