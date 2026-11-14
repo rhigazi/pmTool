@@ -2,8 +2,8 @@
 type: Task
 title: "A14: Entscheidungen- und Projekt-Ansicht"
 description: Entscheidungsliste aus entscheidungen/log.md und Projekt-Ansicht mit den fünf Unterpunkten, beide über GET /api/file ohne neuen Server-Endpunkt.
-task_status: offen
-phase: 2 Planung
+task_status: im Review
+phase: 5 Review
 priority: mittel
 assigned_to: coder
 user_story: /projekt/user-stories/us-1.md
@@ -46,4 +46,11 @@ Alle Szenarien sind UI-Szenarien für den `tester` (Moli-Browser).
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-14 — coder (Umsetzung, abgeschlossen)
+
+- **Ergebnis:** `projekt.js` (neu, Ansichten „Entscheidungen" + „Projekt"), `app.js` (additiv verdrahtet), `test_projekt.py` (neu, 55 Tests; rot 55 → grün 55). Nur `GET /api/file` (test-abgesichert: `test_projekt_js_nutz_nur_den_file_endpunkt`), `index.html` unverändert (A10-Vertrag), XSS-sicher (`textContent`/`createElement`, `rendereMarkdown` aus `detail.js`). T1–T5 im DOM-Stab + HTTP gegen Test-Bundle abgedeckt.
+- **Belege:** Gesamtsuite serialisiert **731 grün**.
+- **Befunde:** (a) Klick-Ziele interpretiert — T2 über `#/detail/entscheidungen/log.md`, T4 inline `#/projekt/<x>` gemäß A10-Nav-Routen (Review bestätigt). (b) Moli-E2E T1–T5 beim `tester` offen. (c) Parser-Toleranz der Datums-Trennzeichen als bewusste Designgrenze.
+- **Offene Punkte:** Review + Testphase laufen.

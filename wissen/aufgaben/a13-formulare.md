@@ -2,8 +2,8 @@
 type: Task
 title: "A13: Formulare Aufgabe und Welle anlegen"
 description: Formulare zum Anlegen von Aufgaben und Wellen mit Inline-Validierung, Erfolgsanzeige inklusive kopierbarem Kurzkontext und Doppelklickschutz.
-task_status: offen
-phase: 2 Planung
+task_status: im Review
+phase: 5 Review
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-3.md
@@ -53,4 +53,11 @@ Alle Szenarien sind UI-Szenarien für den `tester` (Moli-Browser).
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-14 — coder (Umsetzung, abgeschlossen)
+
+- **Ergebnis:** `formulare.js` (neu), `app.js` (additiv), `style.css` (additiv), `test_formulare.py` (neu, 81 Tests; rot 80 → grün 81). `index.html` unverändert (A10-Vertrag gehalten). Alle 8 AK über automatisierte Tests abgedeckt (T1–T8).
+- **Belege:** Gesamtsuite zum Zeitpunkt 644 grün; Commit `cbca9a2`.
+- **Befunde:** (a) T8 „beide Ansichten" interpretiert — Zuordnung sichtbar in Listen-Daten/Detail-Kontext/Erfolgsanzeige; eine Wellen-Spalte erforderte Änderungen in `liste.js`/`detail.js` (nicht beauftragt) — Klärungspunkt. (b) 200-Antwort mit `null`-Body über `api.js`-`postJson` nicht von Fehler unterscheidbar (fail-loud-Grenze) — offener Punkt. (c) Design: Wellen-Feld = Auswahlliste aus `GET /api/wellen`, User Story als Freitext; nach Erfolg bleiben Auswahlen, Textfelder werden geleert.
+- **Offene Punkte:** Review + Testphase laufen parallel; Moli-Browser-Szenarien T1–T8 beim `tester` offen.

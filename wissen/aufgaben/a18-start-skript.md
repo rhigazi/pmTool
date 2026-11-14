@@ -2,8 +2,8 @@
 type: Task
 title: "A18: Startskript start.sh und docs/colab-start.md"
 description: Startskript zur Umgebungs-Wiederherstellung (lokal + Colab) mit Anleitung für neue Colab-Sitzungen und Telegram-Secrets-Zelle.
-task_status: im Review
-phase: 5 Review
+task_status: in Doku
+phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-6.md
@@ -56,3 +56,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** **Testphase BESTANDEN** (DoD-Beleg): 7/7 Tests in `test_start_skript.py` grün, Gesamtsuite 549 passed (Soll erreicht), Dry-Runs `bash start.sh --dry-run` und `bash start.sh --colab --dry-run` jeweils Exit 0, Startpfad zeigt korrekt auf `app/server.py` mit Fallback `definitions/app/server.py`, Ctrl+C-Handling im Code vorhanden, `docs/colab-start.md` inhaltlich konsistent zu `start.sh` und Übergabeprotokoll.
 - **Befunde:** Drei unkritische Doku-Kosmetikpunkte, für die Doku-Runde vorgemerkt (siehe [Projekt-Log](/log.md)): (1) `--dry-run`-Doku erwähnt nicht, dass `verify.sh` dort still übersprungen wird; (2) `BUNDLE_ROOT`-Wortlaut uneinheitlich (Protokoll `./wissen`, `start.sh` setzt absolut `$PROJEKT/wissen`); (3) Reihenfolge Telegram-Secrets-Zelle uneinheitlich (Protokoll „nach `start.sh --colab`", colab-start-Kurzfassung „davor").
 - **Offene Punkte:** Review (Phase 5) und Doku (Phase 7) — Testphase ist vorzeitig/nebenläufig bereits bestanden.
+
+## 2026-11-14 — reviewer (Review-Runde 1)
+
+- **Ergebnis:** **Freigegeben** — keine kritischen Befunde. 3 Kleinbefunde. Das Review-Ergebnis liegt damit vor; der Status wechselt von „im Review" in die Doku-Phase.
+- **Befunde:** [A18-1] klein: `hilfe()` `sed` off-by-one. [A18-2] klein: 2 Zusatztests. [A18-3] klein: Colab-Trap.
+- **Offene Punkte:** A18-1 bis A18-3 (Aufräum-Takt, siehe [features.md](/features.md)); Doku/Abschluss.

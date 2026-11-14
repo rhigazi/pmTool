@@ -2,8 +2,8 @@
 type: Task
 title: "A16: Colab-Startzelle start_colab.py"
 description: Ausführbare Startzelle, die Abhängigkeiten prüft, server.py als Subprozess startet und den Port über die eingebaute Colab-Funktion freigibt.
-task_status: im Review
-phase: 5 Review
+task_status: in Doku
+phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-6.md
@@ -56,3 +56,14 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** Umsetzung abgeschlossen: `start_colab.py` prüft Pakete, startet `server.py` als Subprozess, gibt den Port über die Colab-Funktion frei und liefert eine Fallback-URL; Tests gemockt. (Quelle: Übergabeprotokoll, Abschnitt „Aufgabenstatus".)
 - **Belege:** 8 Tests.
 - **Offene Punkte:** Review, Testphase, Doku.
+
+## 2026-11-14 — tester (Gebündelte Testphase)
+
+- **Ergebnis:** **Testphase BESTANDEN** (DoD-Beleg): 8 Tests grün, keine offenen Testbefunde. Gesamtlauf: 549 passed (Start = Ende, kein Zuwachs), 0 rot, 0 geskippt.
+- **Offene Punkte:** Review.
+
+## 2026-11-14 — reviewer (Review-Runde 1)
+
+- **Ergebnis:** **Freigegeben** — keine kritischen Befunde. 4 Kleinbefunde.
+- **Befunde:** [A16-1] klein: R11-Zitat im Code veraltet. [A16-2] klein: `pip`-Rückgabe wird ignoriert. [A16-3] klein: `_port_belegt` prüft 127.0.0.1 statt 0.0.0.0. [A16-4] klein: Env-Weitergabe an den Subprozess.
+- **Offene Punkte:** A16-1 bis A16-4 (Aufräum-Takt, siehe [features.md](/features.md)); Doku/Abschluss.

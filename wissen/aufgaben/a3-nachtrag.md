@@ -2,8 +2,8 @@
 type: Task
 title: "A3: Nachtrag anfügen nachtrag.py"
 description: Nachträge als Blockquote-Marker am Dateiende anfügen, ohne bestehende Inhalte oder Frontmatter zu verändern.
-task_status: im Review
-phase: 5 Review
+task_status: in Doku
+phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-2.md
@@ -56,3 +56,14 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** Umsetzung abgeschlossen (19 Tests). Sammel-Nachbesserung „zentrale Exceptions": T9-Test parametrisiert über alle reservierten Dateien (`index.md`/`log.md`/`features.md` → jeweils abgewiesen), `EingabeFehler` zentral aus `okf_bundle` (lokale Definition entfernt). (Quelle: Übergabeprotokoll, Abschnitte „Aufgabenstatus" und „Session-Rückmeldungen zum Halt".)
 - **Belege:** 102 Tests im Sammel-Lauf; Gesamtsuite 549 grün (Endstand zum Halt).
 - **Offene Punkte:** Review, Testphase, Doku.
+
+## 2026-11-14 — tester (Gebündelte Testphase)
+
+- **Ergebnis:** **Testphase BESTANDEN** (DoD-Beleg): 21 Tests grün, keine offenen Testbefunde. Gesamtlauf: 549 passed (Start = Ende, kein Zuwachs), 0 rot, 0 geskippt.
+- **Offene Punkte:** Review ausstehend.
+
+## 2026-11-14 — reviewer (Review-Runde 2)
+
+- **Ergebnis:** **Freigegeben** — keine kritischen Befunde. 2 Kleinbefunde als offene Punkte.
+- **Befunde:** [A3-1] klein: Reserviert-Guard läuft erst beim Schreiben — bei nicht existierender reservierter Datei entsteht `FileNotFoundError` statt `ReservierteDateiFehler` (API 500 statt 403). [A3-2] klein: Testlücke — Zweig „`# Nachträge` vor weiteren Überschriften" ist ungetestet.
+- **Offene Punkte:** A3-1/A3-2 (Aufräum-Takt, siehe [features.md](/features.md)); Doku.

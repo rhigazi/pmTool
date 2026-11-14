@@ -2,8 +2,8 @@
 type: Task
 title: "A11: Listenansicht mit Filtern und Klarung-Hervorhebung"
 description: Tabellenrendering aus der Overview-API mit Status- und owner-Filter, Hervorhebung offener Klärungen sowie Leer- und Fehlerzustand.
-task_status: im Test
-phase: 6 Test
+task_status: in Doku
+phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-1.md
@@ -61,3 +61,14 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** Nachbesserung sauber abgeschlossen: Fehlerzustand bleibt sichtbar (auch bei Filterwechsel), fail-loud bei Nicht-Array, `classList` statt `className` (A13-tauglich), toter Code entfernt, XSS-Verbot erweitert. (Quelle: Session-Rückmeldung „A11-Nachbesserung" im Übergabeprotokoll.)
 - **Belege:** 54 Tests.
 - **Offene Punkte:** Testphase und Doku (Review laut Übergabeprotokoll abgeschlossen).
+
+## 2026-11-14 — tester (Gebündelte Testphase)
+
+- **Ergebnis:** **Testphase BESTANDEN** (DoD-Beleg): 54 Tests grün; UI-Szenarien T1–T9 via Node-DOM-Harness bestanden (Moli-Abweichung dokumentiert). Gesamtlauf: 549 passed (Start = Ende, kein Zuwachs), 0 rot, 0 geskippt.
+- **Offene Punkte:** Review-Bestätigung.
+
+## 2026-11-14 — reviewer (Review-Runde 1)
+
+- **Ergebnis:** **Freigegeben** — keine kritischen Befunde. 1 Kleinbefund.
+- **Befunde:** [A11-1] klein: `className`-Initialisierungen (Rest nach Umstellung auf `classList`).
+- **Offene Punkte:** A11-1 (Aufräum-Takt, siehe [features.md](/features.md)); Doku/Abschluss.

@@ -34,7 +34,8 @@ Das Skript erledigt der Reihe nach:
 2. prüft die Projektstruktur (`wissen/`, `definitions/`),
 3. installiert **nur bei Bedarf** `flask`, `pyyaml`, `pytest`,
 4. prüft die Telegram-Konfiguration (`config.json`),
-5. führt `definitions/verify.sh` aus (Warnungen blockieren den Start nicht),
+5. führt `definitions/verify.sh` aus (Warnungen blockieren den Start nicht;
+   bei `--dry-run` still übersprungen),
 6. ruft `python3 definitions/app/start_colab.py` auf → Server auf Port 5000 und
    Freigabe des Ports im Colab-Browserfenster.
 
@@ -42,9 +43,9 @@ Alternativen:
 
 | Aufruf | Wirkung |
 |---|---|
-| `bash start.sh` | lokal: Server auf `http://localhost:5000`, `BUNDLE_ROOT=./wissen` |
+| `bash start.sh` | lokal: Server auf `http://localhost:5000`, `BUNDLE_ROOT=$PROJEKT/wissen` (absolut gesetzt, `PROJEKT` = Projektroot) |
 | `bash start.sh --skip-verify` | ohne Setup-Prüfung (schneller) |
-| `bash start.sh --dry-run` | zeigt nur, was getan würde (installiert/startet nichts) |
+| `bash start.sh --dry-run` | zeigt nur, was getan würde (installiert/startet nichts; `verify.sh` wird dabei still übersprungen) |
 | `bash start.sh --help` | Hilfe |
 
 Läuft der Server bereits auf Port 5000, meldet das Skript das und startet keinen
@@ -112,8 +113,8 @@ optional (z. B. nicht installierte globale Skills → `bash definitions/setup.sh
 ```python
 !git clone https://github.com/rhigazi/pmTool
 %cd /content/pmTool
-# Secrets-Zelle aus Schritt 3 ausführen (falls Telegram gewünscht)
 !bash start.sh --colab          # Server + Browserfenster
+# Secrets-Zelle aus Schritt 3 ausführen (falls Telegram gewünscht)
 !bash definitions/verify.sh .   # Setup-Check
 # neues Terminal: cd /content/pmTool && opencode
 ```

@@ -2,8 +2,8 @@
 type: Task
 title: "A4: Aufgabe anlegen neu_aufgabe.py"
 description: Neue Aufgaben-Datei im Phasen-Format inklusive Frontmatter, Body-Abschnitten, Slug-Normalisierung und Kollisionsbehandlung anlegen.
-task_status: im Review
-phase: 5 Review
+task_status: in Doku
+phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-3.md
@@ -58,3 +58,14 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** Umsetzung abgeschlossen (32 Tests). Sammel-Nachbesserung „zentrale Exceptions": `EingabeFehler`-Import-Umstellung auf die zentrale Exception aus `okf_bundle` (lokale Definition entfernt). (Quelle: Übergabeprotokoll, Abschnitte „Aufgabenstatus" und „Session-Rückmeldungen zum Halt".)
 - **Belege:** 102 Tests im Sammel-Lauf; Gesamtsuite 549 grün (Endstand zum Halt).
 - **Offene Punkte:** Review, Testphase, Doku.
+
+## 2026-11-14 — tester (Gebündelte Testphase)
+
+- **Ergebnis:** **Testphase BESTANDEN** (DoD-Beleg): 32 Tests grün, keine offenen Testbefunde. Gesamtlauf: 549 passed (Start = Ende, kein Zuwachs), 0 rot, 0 geskippt.
+- **Offene Punkte:** Review ausstehend.
+
+## 2026-11-14 — reviewer (Review-Runde 2)
+
+- **Ergebnis:** **Freigegeben** — keine kritischen Befunde. 2 Kleinbefunde als offene Punkte.
+- **Befunde:** [A4-1] klein: `ziel`-Zeilen mit `#`-Beginn können Abschnittsstruktur vortäuschen — Maskierung erwägen. [A4-2] klein: Frontmatter-Feld `welle` ist Spec-Erweiterung — in [Phasenmodell](/projekt/phasen.md)/Spec als optionales Feld ergänzen (Doku-Punkt).
+- **Offene Punkte:** A4-1/A4-2 (Aufräum-Takt, siehe [features.md](/features.md)); Doku.

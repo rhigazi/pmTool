@@ -8,7 +8,7 @@
 #
 # Optionen:
 #   --skip-verify   überspringt die Setup-Prüfung (verify.sh)
-#   --dry-run       zeigt nur, was getan würde — installiert und startet nichts
+#   --dry-run       zeigt nur, was getan würde — installiert und startet nichts; verify.sh wird dabei still übersprungen
 #   -h, --help      zeigt diese Hilfe
 set -euo pipefail
 

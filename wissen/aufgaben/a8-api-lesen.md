@@ -2,8 +2,8 @@
 type: Task
 title: "A8: Lese-API overview / file / aufgaben / wellen"
 description: GET-Endpunkte für Übersichtsliste, Dateidetail inklusive Nachträgen sowie getrennte Aufgaben- und Wellenlisten.
-task_status: im Review
-phase: 5 Review
+task_status: in Doku
+phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-1.md
@@ -61,3 +61,14 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Belege:** 33 Tests.
 - **Befunde:** (a) Offener Kleinpunkt: Detail-Endpunkt liefert bei unlesbarer Datei noch 500 statt einer neutralen Meldung (pfad-leak-frei) — für A9-Review/A17 vormerken. (b) Widerspruch im Übergabeprotokoll: Statusspalte nennt „Umsetzung + Review fertig", die Fehlt-Spalte „Offen: Review/Testphase/Doku". Hier als **Review offen** geführt, da der Kleinnachtrag nach dem Review lief.
 - **Offene Punkte:** Review, Testphase, Doku.
+
+## 2026-11-14 — tester (Gebündelte Testphase)
+
+- **Ergebnis:** **Testphase BESTANDEN** (DoD-Beleg): 33 Tests grün + Live-HTTP-Smoke, keine offenen Testbefunde. Gesamtlauf: 549 passed (Start = Ende, kein Zuwachs), 0 rot, 0 geskippt.
+- **Offene Punkte:** Review ausstehend.
+
+## 2026-11-14 — reviewer (Review-Runde 1, Kleinnachtrag)
+
+- **Ergebnis:** **Freigegeben** — keine kritischen Befunde. 1 Kleinbefund.
+- **Befunde:** [A8-1] klein: `_zeitstempel`-Guard in `overview._eintrag` (in der Sicherheits-Nachbesserung mit erledigt, siehe Eintrag coder 2026-11-14).
+- **Offene Punkte:** Doku/Abschluss.

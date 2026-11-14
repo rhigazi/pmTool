@@ -2,6 +2,56 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-14: K1-Schutz zweischichtig (Modulgrenze + zentraler Handler-Schutz)
+
+**Entscheidung:** Der Schutz vor Pfad-Leaks ist zweischichtig: (1) an der Modulgrenze — neutrale Meldungskonstanten `MELDUNG_NICHT_GEFUNDEN`/`MELDUNG_NICHT_LESBAR` in `okf_bundle`, Übersetzung in `nachtrag._lies`/`okf_bundle._lies_text`; (2) zentral im `server._domaenen_handler` über `_sichere_meldung`, der nur echte OS-Fehler mit `errno` ersetzt, Domänenmeldungen aber lesbar lässt.
+
+**Begründung:** Ein einzelner Schutzpunkt reicht nicht — Pfade können sowohl über Modulmeldungen als auch über unerwartete OS-Fehler nach außen gelangen; Domänenmeldungen sollen für die Fehlersuche erhalten bleiben.
+
+**Auswirkung:** Geschlossener Pfad-Leak für A7/A9 (Commit des Sicherheits-Blocks); 29 neue Tests, Gesamtsuite 676 grün; Bestätigungs-Review läuft.
+
+## 2026-11-14: API-Fehlercodes der Schreibstrecke
+
+**Entscheidung:** Fehlende Datei → 404, Nicht-`.md`/Verzeichnis → 400, ungültiger Rechte-Wert → 403 (Fail-Closed-Reihenfolge: Whitelist vor Pfad-Check), keine setzbaren Felder → 400 („Keine setzbaren Felder").
+
+**Begründung:** Validierung vollständig vor dem Schreiben; neutrale Fehlermeldungen ohne Pfad-Leaks.
+
+**Auswirkung:** `okf_bundle.pruefe_zieldatei()`/`_pruefe_schreibziel` werden in `nachtrag.anfuegen` und `meta.setzen` angewandt; `POST /api/meta` ohne setzbare Felder liefert 400 statt 200-No-Op (PM-Entscheidung K2).
+
+## 2026-11-14: Lokal-Betrieb/Desktop-Modus — MVP/Colab zuerst (Entscheidung der Projektleitung)
+
+**Entscheidung:** Endgültig: **Erst die Colab-Version (MVP) fertigstellen, danach erweitern.** Der Desktop-Modus (Option B: Desktop-Fenster via `pywebview` mit direktem Aufruf der Domänen-Module — neue Abhängigkeit) wird danach als eigenes Feature geplant und bleibt als **A21 „Desktop-Modus/Lokal-Betrieb"** vorgemerkt (Nummer reserviert, noch keine Aufgaben-Datei). Option A (Ein-Klick-Start mit unsichtbarem localhost-Server) ggf. als Kleinigkeit vorher; Option C (File System Access API — nur Chromium, Logik-Dopplung) nicht empfohlen.
+
+**Begründung:** Entscheidung der Projektleitung 2026-11-14 (bestätigt die vorläufige Standardentscheidung): Machbarkeit ist geprüft — ein reines Frontend im Browser ist ohne Webserver nicht sauber möglich; der MVP-Fokus bleibt erhalten.
+
+**Auswirkung:** MVP/Colab-Ansatz unverändert; A21 in [features.md](/features.md) vorgemerkt; die frühere „vorläufige Standardentscheidung" ist damit bestätigt.
+
+## 2026-11-14: Moli-Integration — Moli wird installiert, Harness bleibt Fallback
+
+**Entscheidung:** Moli wird installiert (`setup.sh --global`, Installer der Projektleitung — Commit `5bc453f`). Der Node-DOM-Harness bleibt Fallback, wo Moli nicht verfügbar ist; UI-Tests nutzen Moli künftig, wo möglich.
+
+**Begründung:** Die Moli-Frage ist durch die Projektleitung entschieden; Moli ist die im Phasenmodell vorgesehene UI-Test-Instanz (Moli-Szenarien).
+
+**Auswirkung:** A17 (Moli-Kernszenario) wird realisierbar; die bisherige Standardentscheidung „Harness" endet. Die Moli-Frage ist aus den offenen Punkten genommen.
+
+## 2026-11-14: Sicherungs-Push nach grünen Tests (Reset-Schutz)
+
+**Entscheidung:** Sobald der Tester einen Stand positiv getestet hat (alle Tests grün), werden die geänderten Dateien sofort committed und nach GitHub gepusht — Reset-Schutz.
+
+**Begründung:** Container-/Sitzungsverlust (Colab) — ein Zwischen-Commit nach jedem grünen Tester-Stand ist jedem Datenverlust vorzuziehen. Regel von der Projektleitung gewünscht, in `AGENTS.md` + `definitions/AGENTS.md` aufgenommen (Commit `666bdba`).
+
+**Auswirkung:** Push-Pflicht nach jedem grünen Tester-Stand, zusätzlich zu den Commits je Takt/Meilenstein.
+
+## 2026-11-14: setup.sh --global (okf-Skill + Moli-Installer) — übernommen nach Klärung
+
+**Entscheidung:** Die Änderung in `definitions/setup.sh` (Zweig `--global`, Sektion „8) Global: Wichtige Skills & Browser": `npx skills add … --skill okf-knowledge-base` sowie ein Moli-Installer per `curl … | sh`) war zunächst **quarantänisiert** (uncommitted, keine Nutzung; PM-Entscheidung: keine neuen Abhängigkeiten ohne Bescheid, `curl | sh` ist riskant; Rückfrage an die Projektleitung per Telegram).
+
+**Klärungs-Nachtrag:** Geklärt 2026-11-14: stammt von der Projektleitung, übernommen (Commit `5bc453f`); Installer vor Ausführung gesichtet (sauber: HTTPS/TLS1.2, staged Install, Cleanup).
+
+**Begründung:** Ursprünglich: unauftragte Änderung + ungeprüfter Remote-Code; nach Klärung: gewollte Projektleitungs-Änderung mit gesichtetem Installer.
+
+**Auswirkung:** `setup.sh --global` installiert okf-Skill + Moli; Härtung (Pin/SHA256, Guard, npx-Doku) läuft als [A20](/aufgaben/a20-setup-haertung.md).
+
 ## 2026-11-14: Moli-Frage — Standardentscheidung Harness bleibt vorerst
 
 **Entscheidung:** Bis zu abweichender Weisung der Projektleitung bleibt der Node-DOM-Harness (HTTP-Requests gegen den laufenden Server + DOM-Harness auf Basis des vorhandenen Node) der Standardweg für UI-Tests; Moli wird nicht nachinstalliert. **Hinweis:** Die Moli-Skills sind in der Umgebung jetzt verfügbar (u. a. `moli-cdp-server`); die Rückfrage an die Projektleitung (Moli installieren oder Harness-Weg beibehalten?) läuft weiter. Bei abweichender Weisung wird umgestellt und dies hier korrigiert.
@@ -9,6 +59,8 @@ Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit *
 **Begründung:** `moli` fehlt im PATH; die UI-Tests laufen per HTTP + Node-DOM-Harness ohne neue Abhängigkeit (Projektregel: keine neuen Abhängigkeiten ohne Bescheid). Gemäß Projektregel wird mit der dokumentierten Standardentscheidung weitergearbeitet und später korrigiert, falls die Projektleitung abweicht.
 
 **Auswirkung:** Die Testberichte weisen die Abweichung (Harness statt Moli) weiterhin aus; die offene Klärungsfrage bleibt im Übergabeprotokoll unter „Offene Punkte" geführt.
+
+**Nachtrag (2026-11-14):** Ersetzt durch die Entscheidung „Moli-Integration" — Moli wird installiert, der Harness bleibt Fallback. Die Moli-Frage ist damit geklärt.
 
 ## 2026-11-14: verify.sh akzeptiert definitions/app als Fallback (A19)
 

@@ -2,8 +2,8 @@
 type: Task
 title: "A12: Detailansicht Markdown, Nachtrag, owner/Status-Bedienung"
 description: Detailansicht mit Frontmatter-Kopf, sicherem Markdown-Rendering, Nachtragsformular sowie owner-Umschalter und den Status-Buttons Klarung/Geschlossen.
-task_status: im Review
-phase: 5 Review
+task_status: in Doku
+phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-2.md
@@ -60,3 +60,20 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** `detail.js` mit XSS-sicherem Minimal-Renderer, Nachtrag-Formular, owner-Umschalter, ausschließlich `Klarung`/`Geschlossen`-Buttons, strikte Payload ohne leere Felder. (Quelle: Session-Rückmeldung „A12 Detailansicht" im Übergabeprotokoll.)
 - **Belege:** 49 Tests + E2E-Smoke; Gesamtsuite 539+ grün (Stand zum Halt).
 - **Offene Punkte:** Review, Testphase (Moli/Harness), Doku.
+
+## 2026-11-14 — tester (Gebündelte Testphase)
+
+- **Ergebnis:** **Testphase BESTANDEN** (DoD-Beleg): 49 Tests grün; UI-Szenarien T1–T9 via Node-DOM-Harness bestanden. **Restpunkt T10** dokumentiert: 403-Meldung im UI nur indirekt belegt (die UI bietet per Design keinen verbotenen Status; 403 via API-Smoke belegt) — Restpunkt wird von einem `coder` per gezieltem Test geschlossen (laufend). Testdurchführungs-Notiz (kein Produktbefund): Browsernachweis T4/T9 erfordert frische DOM-Referenzen nach View-Wechsel.
+- **Offene Punkte:** Restpunkt T10 (laufend); Review.
+
+## 2026-11-14 — reviewer (Review-Runde 1)
+
+- **Ergebnis:** **Freigegeben** — keine kritischen Befunde. 3 Kleinbefunde.
+- **Befunde:** [A12-1] klein: Status-Mapping-Spiegel. [A12-2] klein: doppeltes Absenden/Doppelklick-Schutz (wurde mit T10 geschlossen). [A12-3] klein: Owner-Auswahl „—".
+- **Offene Punkte:** A12-1/A12-3 (Aufräum-Takt, siehe [features.md](/features.md)); Doku/Abschluss.
+
+## 2026-11-14 — coder (Restpunkt T10 + A12-2, abgeschlossen)
+
+- **Ergebnis:** `detail.js` minimal additiv (Submit/Status-Buttons während laufender Requests `disabled`, try/finally). T10-Test `test_t10_verbotener_status_403_zeigt_fehler_ohne_zustandswechsel` belegt E2E gegen echten Flask-Server: erzwungener 403, fail-loud-Meldung, kein Zustandswechsel, Bundle bytegenau unverändert. A12-2: doppeltes Absenden → genau ein Eintrag; Doppelklick „Klarung" → genau ein Schreibvorgang. TDD-Rot-Nachweis für T10 in Wegwerf-Kopie unter `/tmp` (keine Repo-Mutation).
+- **Belege:** `test_detail.py` 52 grün (49 + 3 neue); Commit `5eaf457`.
+- **Offene Punkte:** Owner-Umschalter ohne eigenen Doppel-Wechsel-Schutz (bewusst nicht beauftragt); Moli-Browser-Szenarien T1–T10 beim `tester` offen; Doku/Abschluss.

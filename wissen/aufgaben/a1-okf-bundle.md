@@ -2,8 +2,8 @@
 type: Task
 title: "A1: Fundament okf_bundle.py (Pfadschutz, Frontmatter-I/O, Scan)"
 description: Zentrale, framework-freie Zugriffsschicht für Pfadschutz, Frontmatter-/Datei-I/O mit atomarem Schreiben und Bundle-Scan.
-task_status: im Test
-phase: 6 Test
+task_status: im Review
+phase: 5 Review
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-7.md
@@ -63,3 +63,21 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** Umsetzung abgeschlossen; Review-Nachbesserung erledigt (u. a. Guard reservierter Dateien `ReservierteDateiFehler`, zentrale Exceptions). Sammel-Nachbesserung „zentrale Exceptions": `EingabeFehler` wird zentral aus `okf_bundle` geführt, lokale Definitionen in den Nutzer-Modulen entfernt. (Quelle: Übergabeprotokoll, Abschnitte „Aufgabenstatus" und „Session-Rückmeldungen zum Halt".)
 - **Belege:** 45 Tests (A1), 102 Tests im Sammel-Lauf; Gesamtsuite 549 grün (Endstand zum Halt).
 - **Offene Punkte:** formale Testphase (gebündelt vorgesehen) und Doku.
+
+## 2026-11-14 — tester (Gebündelte Testphase)
+
+- **Ergebnis:** **Testphase BESTANDEN** (DoD-Beleg): 45 Tests grün, keine offenen Testbefunde. Gesamtlauf der gebündelten Testphase: **549 passed (Start = Ende, kein Zuwachs), 0 rot, 0 geskippt**.
+- **Befunde:** Flaky-Paar `test_t1b`/`test_t2` (`test_setup_verteilung.py`) bei serialisierten Läufen stabil (3× bestätigt) — Empfehlung: Testläufe serialisieren.
+- **Offene Punkte:** Review ausstehend.
+
+## 2026-11-14 — reviewer (Review-Runde 2)
+
+- **Ergebnis:** **Nachbesserung läuft** (Rücklauf an `coder`). Sicherheit sauber (keine Befunde zu Pfad-/Reserviert-Schutz).
+- **Befunde:** [B1] wesentlich: `set_meta`-Wertkorruption bei mehrzeiligen Frontmatter-Werten mit Leerzeilen (`okf_bundle._setze_zeilen`). [B2] klein: Docstring `lesen_tolerant`.
+- **Offene Punkte:** [B1] in Umsetzung (Rücklauf läuft); [B2] als Kleinbefund geführt (Aufräum-Takt, siehe [features.md](/features.md)).
+
+## 2026-11-14 — coder (Sicherheits-Nachbesserung, abgeschlossen)
+
+- **Ergebnis:** [B1] behoben: `set_meta`-Wertblock-Grenzen korrekt (`_zum_wertblock`). [B2] behoben: `lesen_tolerant` liefert bei ungültigem YAML `({}, body)` (bewusste Verhaltenskorrektur statt reiner Doku-Anpassung).
+- **Belege:** 29 neue Tests im Sicherheits-Block (alle rot→grün belegt), Gesamtsuite 676 grün.
+- **Offene Punkte:** Bestätigungs-Review läuft parallel.

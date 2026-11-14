@@ -2,8 +2,8 @@
 type: Task
 title: "A7: Server-Gerüst und Start server.py"
 description: Flask-App-Factory mit statischer Auslieferung, einheitlichem JSON-Fehlerformat und CLI-Start über BUNDLE_ROOT/PORT.
-task_status: im Test
-phase: 6 Test
+task_status: im Review
+phase: 5 Review
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-6.md
@@ -58,3 +58,20 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** Umsetzung abgeschlossen; Review ohne kritische Befunde; Smoke-Test durchgeführt. (Quelle: Übergabeprotokoll, Abschnitt „Aufgabenstatus".)
 - **Belege:** 12 Tests + Smoke.
 - **Offene Punkte:** formale Testphase (gebündelt vorgesehen) und Doku.
+
+## 2026-11-14 — tester (Gebündelte Testphase)
+
+- **Ergebnis:** **Testphase BESTANDEN** (DoD-Beleg): 23 Tests grün, keine offenen Testbefunde. Gesamtlauf: 549 passed (Start = Ende, kein Zuwachs), 0 rot, 0 geskippt.
+- **Offene Punkte:** Review ausstehend.
+
+## 2026-11-14 — reviewer (Review-Runde 1)
+
+- **Ergebnis:** **Nachbesserung läuft** (gemeinsamer Rücklauf A7+A9 an `coder`).
+- **Befunde:** [A7-1] wesentlich: Pfad-Leak in `_domaenen_handler` (gleiche Ursache wie A9-K1). [A7-2] klein: Startfehler-Meldung nennt absoluten Pfad.
+- **Offene Punkte:** [A7-1] in Umsetzung; [A7-2] Aufräum-Takt (siehe [features.md](/features.md)).
+
+## 2026-11-14 — coder (Sicherheits-Nachbesserung, abgeschlossen)
+
+- **Ergebnis:** [K1]/[A7-1] Pfad-Leak geschlossen: neutrale Meldungskonstanten in `okf_bundle` (`MELDUNG_NICHT_GEFUNDEN`/`MELDUNG_NICHT_LESBAR`), Übersetzung in `nachtrag._lies`/`okf_bundle._lies_text`, zentraler `_sichere_meldung`-Schutz in `server._domaenen_handler` (ersetzt nur echte OS-Fehler mit `errno`, Domänenmeldungen bleiben lesbar).
+- **Belege:** 29 neue Tests (alle rot→grün belegt), Gesamtsuite 676 grün; Commit des Sicherheits-Blocks.
+- **Offene Punkte:** Bestätigungs-Review läuft parallel.

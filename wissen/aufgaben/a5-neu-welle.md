@@ -56,3 +56,14 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** Umsetzung abgeschlossen (48 Tests); `ziel` ist Pflicht (PM-Entscheidung, siehe Testfall T6b). Sammel-Nachbesserung „zentrale Exceptions": Import-Umstellung auf den zentralen `EingabeFehler` aus `okf_bundle`, Geschwister-Import in `neu_welle.py` aufgelöst. (Quelle: Übergabeprotokoll, Abschnitte „Aufgabenstatus" und „Session-Rückmeldungen zum Halt".)
 - **Belege:** 102 Tests im Sammel-Lauf; Gesamtsuite 549 grün (Endstand zum Halt).
 - **Offene Punkte:** Review, Testphase, Doku.
+
+## 2026-11-14 — tester (Gebündelte Testphase)
+
+- **Ergebnis:** **Testphase BESTANDEN** (DoD-Beleg): 49 Tests grün, keine offenen Testbefunde. Gesamtlauf: 549 passed (Start = Ende, kein Zuwachs), 0 rot, 0 geskippt.
+- **Offene Punkte:** Review ausstehend.
+
+## 2026-11-14 — reviewer (Review-Runde 2)
+
+- **Ergebnis:** **Freigegeben** — keine kritischen Befunde; Sicherheit sauber. Die Nachbesserung [B1] wurde umgesetzt (Commit `d651ec6`: reservierte Wellen-Kürzel erhalten Suffix statt 403, 6 Regressionstests, 55 grün); Bestätigungs-Review ausstehend.
+- **Befunde:** [B1] wesentlich (behoben, Commit `d651ec6`): `_freier_pfad` ohne Reserviert-Skip → 403 statt `-2`-Suffix. Klein offen: [B2] `FALLBACK_KUERZEL` vs. `EingabeFehler` inkonsistent zu A4; [B3] `description`-Feld fehlt bei Wellen; [B4] Slug-Logik dupliziert zu `neu_aufgabe`.
+- **Offene Punkte:** B2/B3/B4 (Aufräum-Takt, siehe [features.md](/features.md)); Review-Bestätigung; Doku.

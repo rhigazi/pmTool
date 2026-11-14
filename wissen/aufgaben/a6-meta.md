@@ -2,8 +2,8 @@
 type: Task
 title: "A6: Meta-Update meta.py (owner/Status mit Rechteprüfung)"
 description: Serverseitige Rechteprüfung für owner- und Status-Änderungen mit atomarem Schreiben in einem Vorgang.
-task_status: im Test
-phase: 6 Test
+task_status: in Doku
+phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-5.md
@@ -62,3 +62,20 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** Umsetzung abgeschlossen; Review ohne kritische Befunde; Testhärtung H1/H5/H7. (Quelle: Übergabeprotokoll, Abschnitt „Aufgabenstatus".)
 - **Belege:** 30 Tests.
 - **Offene Punkte:** formale Testphase (gebündelt vorgesehen) und Doku.
+
+## 2026-11-14 — tester (Gebündelte Testphase)
+
+- **Ergebnis:** **Testphase BESTANDEN** (DoD-Beleg): 30 Tests grün, keine offenen Testbefunde. Gesamtlauf: 549 passed (Start = Ende, kein Zuwachs), 0 rot, 0 geskippt.
+- **Offene Punkte:** Review ausstehend.
+
+## 2026-11-14 — reviewer (Review-Runde 1)
+
+- **Ergebnis:** **Freigegeben** — keine kritischen Befunde. 2 Kleinbefunde.
+- **Befunde:** [A6-1] klein: H1/H5/H7-Belege im Ergebnisprotokoll je H-Punkt mit Testnamen benennen (Doku-Punkt, wurde in der Doku-Runde aufgegriffen — siehe documenter-Eintrag). [A6-2] klein/optional: T2 zusätzlicher Body-Hash-Test.
+- **Offene Punkte:** A6-1 (Doku-Runde), A6-2 (Aufräum-Takt, siehe [features.md](/features.md)).
+
+## 2026-11-14 — documenter (Doku-Punkt A6-1: H1/H5/H7-Belege)
+
+- **Ergebnis:** Testhärtung belegt über die Zusatztests in `definitions/app/tests/test_meta.py` (Commit `9f42200`, „Testhärtung (H1/H5/H7, Mutantenprobe bestanden)"): `test_kombiniert_verboten_kein_schreibvorgang`, `test_ohne_aenderung_kein_schreibvorgang`, `test_owner_wird_nicht_doppelt_geschrieben`, `test_fehlende_datei`, `test_crlf_body_bleibt_bytegleich`, `test_task_status_ziele_passen_zum_status_mapping`.
+- **Befund:** Die H-Kennungen H1/H5/H7 selbst sind im Bundle nicht dokumentiert (nur im Commit-Text genannt) — eine 1:1-Zuordnung H-Punkt → Testname ist daraus nicht belegbar.
+- **Offene Punkte:** H-Definitionen nachreichen oder Zuordnung bestätigen lassen (Rückfrage an den `reviewer`); A6-2 (T2 Body-Hash) offen.

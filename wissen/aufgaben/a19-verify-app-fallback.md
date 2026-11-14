@@ -2,8 +2,8 @@
 type: Task
 title: "A19: verify.sh akzeptiert definitions/app als Fallback"
 description: Verify-Abschnitt 7 prüft die App unter app/ oder definitions/app/ (Fallback analog zu start.sh) inklusive passender Tests.
-task_status: offen
-phase: 2 Planung
+task_status: im Review
+phase: 5 Review
 priority: mittel
 assigned_to: coder
 user_story: /projekt/user-stories/us-6.md
@@ -21,7 +21,7 @@ owner: ai
 - Im verteilten Ziel (App in `app/`) bleibt das Verhalten unverändert (Exit 0).
 - Fehlen beide Orte, schlägt `verify.sh` mit Exit 1 fehl und die Meldung nennt beide geprüften Pfade (pfad-frei im Fehlerfall analog zu den übrigen Abschnitten).
 - Die übrigen Abschnitte von `verify.sh` bleiben funktional unverändert (Regel R12 analog zu A15).
-- Passende Tests in `test_setup_verteilung.py` ergänzen und grün.
+- Passende Tests in `test_verify_fallback.py` ergänzen und grün.
 
 # Testfälle (TDD)
 
@@ -41,8 +41,15 @@ owner: ai
 # Betroffene Dateien
 
 - `definitions/verify.sh`
-- `definitions/app/tests/test_setup_verteilung.py`
+- `definitions/app/tests/test_verify_fallback.py`
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-14 — coder (Umsetzung, abgeschlossen)
+
+- **Ergebnis:** `verify.sh` Abschnitt 7 akzeptiert `app/…` oder `definitions/app/…` (Vorrang `app/`, Fallback analog `start.sh`); `bad` nur bei Fehlen beider Varianten; die App-Suite wird im gefundenen Verzeichnis gesucht. `bash definitions/verify.sh .` vorher Exit 1 → **nachher Exit 0**. A20-Teil 2 mit erledigt: `verify.sh` Zeile 70 Hinweistext „wird von container.sh installiert" → „wird über `setup.sh --global` installiert"; im Kontroll-Lauf zeigt Abschnitt 6 „✓ moli Browser" (moli per Symlink im PATH — Umgebungslösung des PM).
+- **Belege:** Neue Testdatei `definitions/app/tests/test_verify_fallback.py` (5 Tests, rot 3 → grün 5); serialisierte Gesamtsuite 644 grün; Commit `4d1f335`.
+- **Befunde:** PM-Entscheidung zum offenen Punkt: Eine rote App-Suite bleibt `bad`/Exit-1-Grund (Korrektur läuft als letzter Kleinschritt). `test_setup_verteilung.py` wurde bewusst nicht angefasst und ist nicht betroffen.
+- **Offene Punkte:** Review (Bestätigung im Nachbesserungs-Batch); Flaky-Vermerk zu parallelen verify-Läufen siehe [Projekt-Log](/log.md).

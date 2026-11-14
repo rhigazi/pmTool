@@ -2,8 +2,8 @@
 type: Task
 title: "A15: setup.sh/verify.sh um App-Verteilung erweitern"
 description: Setup verteilt app/ nach bestehendem Muster in Zielprojekte, verify.sh prüft zusätzlich App-Dateien und App-Tests; README-Tabelle ergänzt.
-task_status: im Review
-phase: 5 Review
+task_status: in Doku
+phase: 7 Dokumentation
 priority: mittel
 assigned_to: coder
 user_story: /projekt/user-stories/us-6.md
@@ -49,7 +49,7 @@ pytest-Tests, die `setup.sh`/`verify.sh` per `subprocess` gegen `tmp_path` ausf�
 - `definitions/setup.sh`
 - `definitions/verify.sh`
 - `definitions/README.md`
-- `definitions/tools/tests/test_setup_app.py`
+- `definitions/app/tests/test_setup_verteilung.py`
 
 # Ergebnisse
 
@@ -57,7 +57,24 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 
 ## 2026-11-14 — coder (Umsetzung, Stand zum Halt)
 
-- **Ergebnis:** `setup.sh`-Abschnitt „9) App" (`copy_tree` ohne `__pycache__`), `verify.sh`-Abschnitt „7) App", README mit Colab-Start-Zellen, `definitions/app/tests/test_setup_verteilung.py` (9+1 Tests). (Quelle: Session-Rückmeldung „A15 setup/verify/README" im Übergabeprotokoll.)
+- **Ergebnis:** `setup.sh`-Abschnitt „10) App (app/)" (`copy_tree` ohne `__pycache__`), `verify.sh`-Abschnitt „7) App", README mit Colab-Start-Zellen, `definitions/app/tests/test_setup_verteilung.py` (9+1 Tests). (Quelle: Session-Rückmeldung „A15 setup/verify/README" im Übergabeprotokoll.)
 - **Belege:** Gesamtsuite 549 grün, Exit 0.
 - **Befunde:** (a) `tools/`-Abschnitt in `setup.sh` kopiert weiterhin `__pycache__` (Abschnitt 4 ohne `copy_tree`-Filter; R12: bestehende Abschnitte unverändert gelassen) — vom `tester` bestätigt, kleine eigene Aufgabe. (b) `verify.sh` Abschnitt 7 akzeptiert nur `app/` und schlägt im Dev-Repo (`definitions/app/`) fehl — als [A19](a19-verify-app-fallback.md) vorgemerkt (Entscheidung 2026-11-14).
 - **Offene Punkte:** Review, Testphase, Doku.
+
+## 2026-11-14 — tester (Gebündelte Testphase)
+
+- **Ergebnis:** **Testphase BESTANDEN** (DoD-Beleg): 10 Tests grün, 2× serialisiert stabil. `test_setup_verteilung.py` ist von der Projektleitungs-Änderung in `setup.sh --global` unberührt (die Tests rufen `setup.sh` nie mit `--global` auf). Der `tester` hat `setup.sh --global` bewusst nie ausgeführt (hätte den Installer getriggert).
+- **Offene Punkte:** Review ausstehend.
+
+## 2026-11-14 — reviewer (Review-Runde 1)
+
+- **Ergebnis:** **Nachbesserung läuft** (Rücklauf an `coder`).
+- **Befunde:** [A15-1] wesentlich: T7 prüft nur einen Teil — auf ganzes `app/tests` erweitern, T5b-Skip streichen (AK „verify grün" erzwingen). [A15-2] klein: `.pytest_cache`-Filter in `copy_tree`.
+- **Offene Punkte:** A15-1/A15-2 in Umsetzung.
+
+## 2026-11-14 — coder (Nachbesserung, abgeschlossen)
+
+- **Ergebnis:** [A15-1] behoben: T7 prüft jetzt ganz `app/tests` (mit `-p no:cacheprovider`), T5b-Skip gestrichen (AK „verify grün" wird erzwungen). [A15-2] behoben: `copy_tree` filtert `.pytest_cache` (Dateien + Verzeichnisse) mit Fixture-Ergänzung. [A15-3] Nummerierung behoben. [A15-4] Doku-Mismatch behoben (Verweise in diesem Blatt korrigiert: Testdatei `definitions/app/tests/test_setup_verteilung.py`, Sektion „10) App (app/)").
+- **Belege:** `test_setup_verteilung.py` 13/13 serialisiert grün.
+- **Offene Punkte:** Nebenbefund `tools/`-Abschnitt kopiert `__pycache__` bleibt offen (R12); Doku/Abschluss.
