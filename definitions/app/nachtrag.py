@@ -32,7 +32,7 @@ def anfuegen(bundle_rel_pfad: str, text: str | None, datum: str | date | None = 
     """
     eintrag = _eintrag(text)
     datum_text = _datum_text(datum)
-    ziel = okf_bundle.resolve_path(bundle_rel_pfad)
+    ziel = okf_bundle.pruefe_zieldatei(bundle_rel_pfad)
     bestand = _lies(ziel)
     ende = "\r\n" if "\r\n" in bestand else "\n"
 
@@ -100,5 +100,11 @@ def _abstand(teil: str, ende: str) -> str:
 
 
 def _lies(ziel: Path) -> str:
-    with open(ziel, encoding="utf-8", newline="") as datei:
-        return datei.read()
+    """Liest die Datei; OS-Meldungen werden neutral übersetzt (nie Pfade/Details)."""
+    try:
+        with open(ziel, encoding="utf-8", newline="") as datei:
+            return datei.read()
+    except FileNotFoundError:
+        raise FileNotFoundError(okf_bundle.MELDUNG_NICHT_GEFUNDEN) from None
+    except (OSError, UnicodeDecodeError):
+        raise PermissionError(okf_bundle.MELDUNG_NICHT_LESBAR) from None

@@ -391,3 +391,98 @@ def test_fehlender_path_ist_400(client, endpunkt, nutzlast):
 
     assert antwort.status_code == 400
     assert antwort.get_json()["error"]
+
+
+# --- K1: Keine Pfade oder OS-Details in Fehlermeldungen --------------------
+
+
+@pytest.mark.parametrize(
+    ("endpunkt", "nutzlast"),
+    [
+        ("/api/nachtrag", {"text": "Text"}),
+        ("/api/meta", {"owner": "ai"}),
+    ],
+)
+def test_k1_fehlermeldung_ohne_pfad_und_os_details(client, bundle, endpunkt, nutzlast):
+    antwort = client.post(endpunkt, json={"path": "aufgaben/gibt-es-nicht.md", **nutzlast})
+
+    assert antwort.status_code == 404
+    text = antwort.get_data(as_text=True)
+    assert antwort.get_json()["error"].strip()
+    assert str(bundle) not in text
+    assert "gibt-es-nicht" not in text
+    assert "No such file or directory" not in text
+    assert "Errno" not in text
+
+
+# --- W1: Schreibziel wird vor dem Schreiben validiert ----------------------
+
+
+NICHT_MD = "aufgaben/notiz.txt"
+NICHT_MD_INHALT = "---\ntype: Note\ntitle: Notiz\n---\n\nNur Text.\n"
+
+
+@pytest.mark.parametrize(
+    ("endpunkt", "nutzlast"),
+    [
+        ("/api/nachtrag", {"text": "Nachtrag."}),
+        ("/api/meta", {"owner": "ai"}),
+    ],
+)
+def test_w1_nicht_md_ziel_wird_nicht_beschrieben(client, bundle, endpunkt, nutzlast):
+    (bundle / NICHT_MD).write_text(NICHT_MD_INHALT, encoding="utf-8")
+    vorher = (bundle / NICHT_MD).read_bytes()
+
+    antwort = client.post(endpunkt, json={"path": NICHT_MD, **nutzlast})
+
+    assert 400 <= antwort.status_code < 500
+    assert antwort.get_json()["error"]
+    assert (bundle / NICHT_MD).read_bytes() == vorher
+
+
+@pytest.mark.parametrize("ziel", ["verz.md", "aufgaben"])
+@pytest.mark.parametrize(
+    ("endpunkt", "nutzlast"),
+    [
+        ("/api/nachtrag", {"text": "Nachtrag."}),
+        ("/api/meta", {"owner": "ai"}),
+    ],
+)
+def test_w1_verzeichnis_als_ziel_ist_4xx(client, bundle, endpunkt, nutzlast, ziel):
+    (bundle / "verz.md").mkdir()
+    bestand_vorher = _bestand(bundle)
+
+    antwort = client.post(endpunkt, json={"path": ziel, **nutzlast})
+
+    assert 400 <= antwort.status_code < 500
+    assert antwort.get_json()["error"]
+    assert _bestand(bundle) == bestand_vorher
+
+
+# --- K2: /api/meta ohne setzbare Felder ist 400 ----------------------------
+
+
+@pytest.mark.parametrize(
+    "daten",
+    [
+        {},
+        {"owner": None},
+        {"owner": None, "status": None},
+        {"unbekannt": "x", "auch_unbekannt": 1},
+    ],
+)
+def test_k2_meta_ohne_setzbare_felder_ist_400(client, bundle, daten):
+    hash_vorher = _datei_hash(bundle, AUFGABE)
+
+    antwort = client.post("/api/meta", json={"path": AUFGABE, **daten})
+
+    assert antwort.status_code == 400
+    assert antwort.get_json()["error"]
+    assert _datei_hash(bundle, AUFGABE) == hash_vorher
+
+
+def test_k2_meta_mit_setzbarem_feld_trotz_null(client, bundle):
+    antwort = client.post("/api/meta", json={"path": AUFGABE, "owner": None, "status": "Klarung"})
+
+    assert antwort.status_code == 200
+    assert antwort.get_json()["frontmatter"]["task_status"] == "in Klärung"

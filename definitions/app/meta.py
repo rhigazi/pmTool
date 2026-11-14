@@ -39,6 +39,8 @@ def setzen(pfad: str, owner: str | None = None, status: str | None = None) -> di
     if status is not None:
         status = _pruefe_status(status)
 
+    # Validierung vollständig vor dem Lesen: nur bestehende .md-Dateien.
+    okf_bundle.pruefe_zieldatei(pfad)
     frontmatter, _ = okf_bundle.lesen(pfad)
 
     updates: dict[str, Any] = {}

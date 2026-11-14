@@ -282,3 +282,145 @@ def test_kein_flask_import():
     quelle = Path(okf_bundle.__file__).read_text(encoding="utf-8").lower()
 
     assert "flask" not in quelle
+
+
+# --- Review A9/A7: neutrale Fehlermeldungen (K1) ---------------------------
+
+
+def test_lesen_fehlende_datei_meldung_ist_neutral(bundle):
+    with pytest.raises(FileNotFoundError) as fehler:
+        okf_bundle.lesen("aufgaben/gibt-es-nicht.md")
+
+    meldung = str(fehler.value)
+    assert meldung == okf_bundle.MELDUNG_NICHT_GEFUNDEN
+    assert str(bundle) not in meldung
+    assert "No such file or directory" not in meldung
+    assert "Errno" not in meldung
+
+
+def test_lesen_tolerant_fehlende_datei_meldung_ist_neutral(bundle):
+    with pytest.raises(FileNotFoundError) as fehler:
+        okf_bundle.lesen_tolerant("aufgaben/gibt-es-nicht.md")
+
+    assert str(fehler.value) == okf_bundle.MELDUNG_NICHT_GEFUNDEN
+    assert str(bundle) not in str(fehler.value)
+
+
+# --- Review A9: Schreibziel-Validierung (W1) -------------------------------
+
+
+def test_schreiben_nicht_md_ist_abgelehnt(bundle):
+    with pytest.raises(BundlePfadFehler):
+        okf_bundle.schreiben("notiz.txt", "---\ntype: Note\n---\n\nText.\n")
+
+    assert not (bundle / "notiz.txt").exists()
+
+
+def test_schreiben_auf_verzeichnis_ist_abgelehnt(bundle):
+    (bundle / "verz.md").mkdir()
+
+    with pytest.raises(BundlePfadFehler):
+        okf_bundle.schreiben("verz.md", "---\ntype: Note\n---\n")
+
+    assert (bundle / "verz.md").is_dir()
+    assert list((bundle / "verz.md").iterdir()) == []
+
+
+def test_set_meta_nicht_md_ist_abgelehnt(bundle):
+    (bundle / "notiz.txt").write_text("---\ntype: Note\n---\n\nText.\n", encoding="utf-8")
+    vorher = (bundle / "notiz.txt").read_bytes()
+
+    with pytest.raises(BundlePfadFehler):
+        okf_bundle.set_meta("notiz.txt", {"owner": "ai"})
+
+    assert (bundle / "notiz.txt").read_bytes() == vorher
+
+
+def test_pruefe_zieldatei_verlangt_bestehende_md_datei(bundle):
+    (bundle / "verz.md").mkdir()
+    (bundle / "notiz.txt").write_text("---\ntype: Note\n---\n", encoding="utf-8")
+
+    assert okf_bundle.pruefe_zieldatei("aufgaben/a1.md") == okf_bundle.resolve_path("aufgaben/a1.md")
+    with pytest.raises(FileNotFoundError):
+        okf_bundle.pruefe_zieldatei("aufgaben/gibt-es-nicht.md")
+    with pytest.raises(BundlePfadFehler):
+        okf_bundle.pruefe_zieldatei("verz.md")
+    with pytest.raises(BundlePfadFehler):
+        okf_bundle.pruefe_zieldatei("notiz.txt")
+
+
+# --- Review A1: mehrzeilige Frontmatter-Werte mit Leerzeilen ---------------
+
+
+def test_set_meta_ersetzt_mehrzeiligen_wert_mit_leerzeile(bundle):
+    pfad = bundle / "aufgaben/mehrzeilig.md"
+    pfad.write_text(
+        "---\n"
+        "type: Task\n"
+        "description: |\n"
+        "  Erster Absatz.\n"
+        "\n"
+        "  Zweiter Absatz.\n"
+        "task_status: offen\n"
+        "---\n\n# Ziel\n",
+        encoding="utf-8",
+    )
+
+    frontmatter = okf_bundle.set_meta("aufgaben/mehrzeilig.md", {"description": "Kurz"})
+
+    assert frontmatter["description"] == "Kurz"
+    assert frontmatter["task_status"] == "offen"
+    assert "Zweiter Absatz" not in pfad.read_text(encoding="utf-8")
+
+
+def test_set_meta_ersetzt_blockliste_mit_leerzeile(bundle):
+    pfad = bundle / "aufgaben/liste.md"
+    pfad.write_text(
+        "---\n"
+        "type: Task\n"
+        "akzeptanz:\n"
+        "- Kriterium eins.\n"
+        "\n"
+        "- Kriterium zwei.\n"
+        "task_status: offen\n"
+        "---\n\n# Ziel\n",
+        encoding="utf-8",
+    )
+
+    frontmatter = okf_bundle.set_meta("aufgaben/liste.md", {"akzeptanz": ["Nur noch eins."]})
+
+    assert frontmatter["akzeptanz"] == ["Nur noch eins."]
+    assert frontmatter["task_status"] == "offen"
+    assert "Kriterium zwei" not in pfad.read_text(encoding="utf-8")
+
+
+def test_set_meta_erhaelt_leerzeilen_vor_folgeschluessel(bundle):
+    """Leerzeilen zwischen Wert und nächstem Key gehören nicht zum Wertblock."""
+    pfad = bundle / "aufgaben/abstand.md"
+    pfad.write_text(
+        "---\n"
+        "type: Task\n"
+        "description: |\n"
+        "  Nur ein Absatz.\n"
+        "\n"
+        "task_status: offen\n"
+        "---\n\n# Ziel\n",
+        encoding="utf-8",
+    )
+
+    frontmatter = okf_bundle.set_meta("aufgaben/abstand.md", {"description": "Kurz"})
+
+    assert frontmatter["description"] == "Kurz"
+    assert frontmatter["task_status"] == "offen"
+    assert "description: Kurz\n\ntask_status: offen" in pfad.read_text(encoding="utf-8")
+
+
+def test_lesen_tolerant_ungueltiges_yaml_liefert_body(bundle):
+    pfad = bundle / "aufgaben/kaputt.md"
+    pfad.write_text("---\ntype: Task\nbroken: [unclosed\n---\n\n# Ziel\n", encoding="utf-8")
+
+    frontmatter, body = okf_bundle.lesen_tolerant("aufgaben/kaputt.md")
+
+    assert frontmatter == {}
+    assert body == "\n# Ziel\n"
+    assert "broken" not in body

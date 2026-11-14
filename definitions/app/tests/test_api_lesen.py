@@ -338,6 +338,24 @@ def test_t13_verschwundene_datei_bricht_uebersicht_nicht(client, monkeypatch):
     assert "aufgaben/weg.md" not in _pfade(antwort)
 
 
+def test_t13_datei_verschwindet_zwischen_lesen_und_stat(client, bundle, monkeypatch):
+    """Per-Datei-Guard: auch ein verschwundener Zeitstempel bricht die Liste nicht."""
+    original = okf_bundle.lesen_tolerant
+
+    def verschwindend(pfad):
+        ergebnis = original(pfad)
+        if pfad == "aufgaben/a1.md":
+            (bundle / pfad).unlink()
+        return ergebnis
+
+    monkeypatch.setattr(okf_bundle, "lesen_tolerant", verschwindend)
+
+    antwort = client.get("/api/overview")
+
+    assert antwort.status_code == 200
+    assert "aufgaben/a1.md" not in _pfade(antwort)
+
+
 def test_t13_lesefehler_meldung_ohne_pfad(client, bundle):
     (bundle / KAPUTTE_DATEI).write_bytes(b"\xff\xfe\x00kaputt")
 

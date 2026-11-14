@@ -20,6 +20,11 @@ BUNDLE_ROOT = os.environ.get("BUNDLE_ROOT", "/content/pmTool/wissen")
 
 RESERVIERTE_DATEIEN = frozenset({"index.md", "log.md", "features.md"})
 
+# Neutrale Fehlermeldungen; OS-Meldungen dürfen nie durchgereicht werden,
+# weil sie absolute Pfade und Systemdetails enthalten (overview.py).
+MELDUNG_NICHT_GEFUNDEN = "Datei nicht gefunden."
+MELDUNG_NICHT_LESBAR = "Datei nicht lesbar."
+
 _SCHLUESSEL = re.compile(r"([A-Za-z0-9_.-]+)\s*:")
 
 
@@ -78,11 +83,32 @@ def ist_reserviert(pfad: str | os.PathLike[str]) -> bool:
 
 
 def _pruefe_schreibziel(pfad: str | os.PathLike[str]) -> Path:
-    """Löst den Pfad auf und weist reservierte Ziele vor jedem Zugriff ab."""
+    """Löst den Pfad auf und weist ungeeignete Ziele vor jedem Zugriff ab.
+
+    Zulässig sind ausschließlich ``.md``-Ziele; reservierte Dateien sind
+    schreibgeschützt und Verzeichnisse sind nie ein Schreibziel.
+    """
     ziel = resolve_path(pfad)
     if ist_reserviert(pfad) or ist_reserviert(ziel):
         name = Path(str(pfad)).name
         raise ReservierteDateiFehler(f"Reservierte Datei ist schreibgeschützt: {name}")
+    if ziel.suffix.lower() != ".md":
+        raise BundlePfadFehler("Nur .md-Dateien sind zulässig")
+    if ziel.exists() and not ziel.is_file():
+        raise BundlePfadFehler("Ziel ist keine Datei")
+    return ziel
+
+
+def pruefe_zieldatei(pfad: str | os.PathLike[str]) -> Path:
+    """Bestehende ``.md``-Datei als Lese-/Schreibziel oder neutraler Fehler.
+
+    Validierung vollständig vor dem Zugriff: fehlende Dateien liegen als
+    :class:`FileNotFoundError` (404) vor, ungeeignete Ziele als
+    :class:`BundlePfadFehler` (400) — nie mit Pfad- oder OS-Details.
+    """
+    ziel = _pruefe_schreibziel(pfad)
+    if not ziel.is_file():
+        raise FileNotFoundError(MELDUNG_NICHT_GEFUNDEN)
     return ziel
 
 
@@ -107,8 +133,14 @@ def _zerlege(text: str) -> tuple[list[str] | None, str, str]:
 
 
 def _lies_text(ziel: Path) -> str:
-    with open(ziel, encoding="utf-8", newline="") as datei:
-        return datei.read()
+    """Liest die Datei; OS-Meldungen werden neutral übersetzt (nie Pfade/Details)."""
+    try:
+        with open(ziel, encoding="utf-8", newline="") as datei:
+            return datei.read()
+    except FileNotFoundError:
+        raise FileNotFoundError(MELDUNG_NICHT_GEFUNDEN) from None
+    except (OSError, UnicodeDecodeError):
+        raise PermissionError(MELDUNG_NICHT_LESBAR) from None
 
 
 def _parse_frontmatter(zeilen: list[str]) -> dict:
@@ -133,16 +165,20 @@ def lesen(pfad: str | os.PathLike[str]) -> tuple[dict, str]:
 
 
 def lesen_tolerant(pfad: str | os.PathLike[str]) -> tuple[dict, str]:
-    """Wie :func:`lesen`, aber ohne Frontmatter ``({}, volltext)`` statt Fehler."""
+    """Wie :func:`lesen`, aber ohne lesbares Frontmatter ``({}, body)`` statt Fehler.
+
+    Ohne Frontmatter und bei ungültigem YAML bleibt der Body erhalten;
+    Frontmatter-Zeilen erscheinen nie im Body.
+    """
     ziel = resolve_path(pfad)
     text = _lies_text(ziel)
     zeilen, body, _ = _zerlege(text)
     if zeilen is None:
-        return {}, text
+        return {}, body
     try:
         return _parse_frontmatter(zeilen), body
     except FrontmatterFehler:
-        return {}, text
+        return {}, body
 
 
 def _yaml_zeilen(schluessel: str, wert: object) -> list[str]:
@@ -174,9 +210,27 @@ def _setze_zeilen(zeilen: list[str], schluessel: str, wert: object) -> list[str]
         return ergebnis + _yaml_zeilen(schluessel, wert)
 
     ende = start + 1
-    while ende < len(ergebnis) and ergebnis[ende][:1] in (" ", "\t", "-"):
+    while ende < len(ergebnis) and _zum_wertblock(ergebnis, ende):
         ende += 1
     return ergebnis[:start] + _yaml_zeilen(schluessel, wert) + ergebnis[ende:]
+
+
+def _zum_wertblock(zeilen: list[str], index: int) -> bool:
+    """Zeile ``index`` gehört noch zum Wertblock des vorherigen Keys.
+
+    Fortsetzungszeilen (eingerückt oder ``-``) zählen immer; Leerzeilen nur,
+    wenn danach eine weitere Fortsetzungszeile folgt — sonst wäre es der
+    Abstand zum nächsten Key.
+    """
+    zeile = zeilen[index]
+    if zeile[:1] in (" ", "\t", "-"):
+        return True
+    if zeile.strip() != "":
+        return False
+    for folge in zeilen[index + 1 :]:
+        if folge.strip():
+            return folge[:1] in (" ", "\t", "-")
+    return False
 
 
 def set_meta(pfad: str | os.PathLike[str], updates: dict) -> dict:

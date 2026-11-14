@@ -19,8 +19,9 @@ import status
 
 UNBEKANNTER_TYP = "unbekannt"
 HINWEIS_NICHT_LESBAR = "nicht lesbar"
-MELDUNG_NICHT_GEFUNDEN = "Datei nicht gefunden."
-MELDUNG_NICHT_LESBAR = "Datei nicht lesbar."
+# Einzige Quelle der neutralen Meldungen ist okf_bundle (keine Pfade/OS-Details).
+MELDUNG_NICHT_GEFUNDEN = okf_bundle.MELDUNG_NICHT_GEFUNDEN
+MELDUNG_NICHT_LESBAR = okf_bundle.MELDUNG_NICHT_LESBAR
 
 # Markerzeile laut Technischer Spec; Folgezeilen eines Nachtrags beginnen mit ``> ``.
 _MARKER = re.compile(
@@ -125,6 +126,7 @@ def _eintrag(pfad: str) -> dict | None:
     """Übersichtseintrag einer Datei; ``None``, wenn sie inzwischen gelöscht ist."""
     try:
         frontmatter, _ = okf_bundle.lesen_tolerant(pfad)
+        zeitstempel = _zeitstempel(pfad)
     except FileNotFoundError:
         return None
     except (OSError, UnicodeDecodeError):
@@ -138,7 +140,7 @@ def _eintrag(pfad: str) -> dict | None:
         "titel": _text(frontmatter.get("title")) or "",
         "status": ui_status,
         "owner": status.owner_default(frontmatter),
-        "zuletzt_geaendert": _zeitstempel(pfad),
+        "zuletzt_geaendert": zeitstempel,
     }
     if hinweis:
         eintrag["hinweis"] = hinweis

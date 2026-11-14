@@ -156,3 +156,35 @@ def test_t11_ungueltiges_datum(bundle, datum):
         anfuegen("aufgaben/a1.md", "Text", datum)
 
     assert _hash(_lies(pfad)) == _hash(vorher)
+
+
+# --- Review A9: Schreibziel-Validierung (W1) -------------------------------
+
+
+def test_nicht_md_ziel_aendert_nichts(bundle):
+    pfad = bundle / "notiz.txt"
+    pfad.write_text("---\ntype: Note\n---\n\nText.\n", encoding="utf-8")
+    vorher = pfad.read_bytes()
+
+    with pytest.raises(BundlePfadFehler):
+        anfuegen("notiz.txt", "Nachtrag.", "2026-11-14")
+
+    assert pfad.read_bytes() == vorher
+
+
+def test_verzeichnis_als_ziel_ist_abgelehnt(bundle):
+    (bundle / "verz.md").mkdir()
+
+    with pytest.raises(BundlePfadFehler):
+        anfuegen("verz.md", "Nachtrag.", "2026-11-14")
+
+    assert (bundle / "verz.md").is_dir()
+    assert list((bundle / "verz.md").iterdir()) == []
+
+
+def test_fehlende_datei_ist_neutral(bundle):
+    with pytest.raises(FileNotFoundError) as fehler:
+        anfuegen("aufgaben/gibt-es-nicht.md", "Nachtrag.", "2026-11-14")
+
+    assert str(fehler.value) == okf_bundle.MELDUNG_NICHT_GEFUNDEN
+    assert str(bundle) not in str(fehler.value)

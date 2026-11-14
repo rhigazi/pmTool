@@ -267,3 +267,27 @@ def test_crlf_body_bleibt_bytegleich(bundle):
     assert body_nachher.encode("utf-8") == body_vorher
     assert roh_nachher.endswith(b"---\r\n" + body_vorher)
     assert b"\n" not in roh_nachher.replace(b"\r\n", b"")
+
+
+# --- Review A9: Schreibziel-Validierung (W1) -------------------------------
+
+
+def test_nicht_md_ziel_ist_abgelehnt(bundle):
+    pfad = bundle / "notiz.txt"
+    pfad.write_text("---\ntype: Note\ntitle: Notiz\n---\n\nNur Text.\n", encoding="utf-8")
+    vorher = pfad.read_bytes()
+
+    with pytest.raises(BundlePfadFehler):
+        meta.setzen("notiz.txt", owner="ai")
+
+    assert pfad.read_bytes() == vorher
+
+
+def test_verzeichnis_als_ziel_ist_abgelehnt(bundle):
+    (bundle / "verz.md").mkdir()
+
+    with pytest.raises(BundlePfadFehler):
+        meta.setzen("verz.md", owner="ai")
+
+    assert (bundle / "verz.md").is_dir()
+    assert list((bundle / "verz.md").iterdir()) == []

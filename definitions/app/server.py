@@ -115,7 +115,13 @@ def create_app(bundle_root: str | os.PathLike[str]) -> Flask:
         daten = _json_nutzdaten()
         pfad = _pflicht_pfad(daten)
         # Nur gesetzte Felder weitergeben: ``meta`` prüft die Whitelist strikt.
-        ziele = {feld: daten[feld] for feld in ("owner", "status") if feld in daten}
+        ziele = {
+            feld: daten[feld]
+            for feld in ("owner", "status")
+            if feld in daten and daten[feld] is not None
+        }
+        if not ziele:
+            raise okf_bundle.EingabeFehler("Keine setzbaren Felder")
         return jsonify(path=pfad, frontmatter=meta.setzen(pfad, **ziele))
 
     return app
@@ -201,10 +207,22 @@ def _domaenen_handler(code: int):
     """JSON-Fehlerhandler für Domänen-Exceptions mit verständlicher Meldung."""
 
     def handler(fehler: Exception):
-        meldung = str(fehler).strip() or DEUTSCHE_MELDUNGEN.get(code) or "Anfrage fehlgeschlagen"
+        meldung = _sichere_meldung(fehler, code)
         return jsonify(error=meldung), code
 
     return handler
+
+
+def _sichere_meldung(fehler: Exception, code: int) -> str:
+    """Eigene Domänenmeldungen durchreichen; OS-Meldungen können Pfade enthalten.
+
+    Echte Betriebssystemfehler (``errno`` gesetzt) werden durch den neutralen
+    Standardtext ersetzt — Fehlermeldungen nennen nie Dateipfade oder OS-Details.
+    """
+    if isinstance(fehler, OSError) and fehler.errno is not None:
+        return DEUTSCHE_MELDUNGEN.get(code) or "Anfrage fehlgeschlagen"
+    meldung = str(fehler).strip()
+    return meldung or DEUTSCHE_MELDUNGEN.get(code) or "Anfrage fehlgeschlagen"
 
 
 def _pruefe_bundle_root(bundle_root: str | os.PathLike[str] | None) -> Path:
