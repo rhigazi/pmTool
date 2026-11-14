@@ -84,6 +84,19 @@ def test_t2_zeitstempel_ist_iso_8601(client):
         assert zeit.tzinfo is not None
 
 
+def test_t2_welle_feld_wird_durchgereicht(client, bundle):
+    _schreibe(
+        bundle,
+        ZWEITE_AUFGABE,
+        "---\ntype: Task\ntitle: \"A2: In Welle\"\ntask_status: offen\n"
+        "welle: /wellen/w1.md\n---\n\n# Ziel\n",
+    )
+
+    eintraege = {eintrag["path"]: eintrag for eintrag in client.get("/api/overview").get_json()}
+
+    assert eintraege[ZWEITE_AUFGABE]["welle"] == "/wellen/w1.md"
+
+
 def test_t3_status_mapping_in_umsetzung(client, bundle):
     _aufgabe(bundle, ZWEITE_AUFGABE, "A2: In Umsetzung", task_status="in Umsetzung")
 

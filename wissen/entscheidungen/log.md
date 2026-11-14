@@ -2,6 +2,14 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-14: Regelmäßige Sicherungs-Commits (Anweisung Projektleitung)
+
+**Entscheidung:** Der Code-/Projektstand wird in regelmäßigen Abständen in das Repository gepusht — nicht erst nach vollständig abgeschlossenen Meilensteinen. Ein Zwischen-Commit (auch bei laufenden Arbeiten) ist jedem Datenverlust vorzuziehen, da die Arbeitsumgebung (Colab-Container) ausfallen kann.
+
+**Begründung:** Anweisung der Projektleitung: verhindern, dass bei einem Container-Ausfall der Stand verloren geht und bei Null angefangen werden muss.
+
+**Auswirkung:** Der Projektmanager committed und pusht mindestens bei jeder großen Statusmeldung sowie nach jedem abgeschlossenen Takt — zusätzlich zu den Commits nach Aufgaben/Meilensteinen. Zwischenstände werden in der Commit-Nachricht als solche gekennzeichnet.
+
 ## 2026-11-14: Reservierte Dateien sind für die App generell gesperrt (Guard in okf_bundle)
 
 **Entscheidung:** `index.md`, `features.md` und `log.md` sind für **alle** App-Schreibzugriffe gesperrt — auch als Ziel von Nachträgen. Die Pflege dieser KI-Dateien erfolgt ausschließlich durch Projektmanager/documenter (OpenCode-CLI). `okf_bundle.py` erhält einen zentralen Guard: `schreiben()`/`set_meta()` weisen reservierte Ziele mit eigener Exception `ReservierteDateiFehler` ab (A6 mappt sie auf HTTP 403). A3-Testfall T9 wird entsprechend von „anfügend erlaubt" auf „abgewiesen" korrigiert.

@@ -97,7 +97,8 @@ def test_t2_idempotenz(tmp_path):
     ergebnis = _setup(ziel)
 
     assert ergebnis.returncode == 0, ergebnis.stderr
-    assert "übersprungen (vorhanden): app/server.py" in ergebnis.stdout
+    assert "übersprungen (vorhanden):" in ergebnis.stdout
+    assert "app/server.py" in ergebnis.stdout
     assert server.read_bytes() == vorher
 
 

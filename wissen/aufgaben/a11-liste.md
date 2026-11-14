@@ -2,8 +2,8 @@
 type: Task
 title: "A11: Listenansicht mit Filtern und Klarung-Hervorhebung"
 description: Tabellenrendering aus der Overview-API mit Status- und owner-Filter, Hervorhebung offener Klärungen sowie Leer- und Fehlerzustand.
-task_status: offen
-phase: 2 Planung
+task_status: im Review
+phase: 5 Review
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-1.md
