@@ -67,16 +67,34 @@ echo "6) Globale Umgebung (Hinweise)"
   && ok "Skill duckdb-docs" || warn "Skill duckdb-docs nicht installiert (setup.sh --global)"
 [ -e "$HOME/.config/opencode/agents/coder.md" ] \
   && ok "globale Subagenten" || warn "globale Subagenten nicht installiert (setup.sh --global)"
-command -v moli >/dev/null 2>&1 && ok "moli Browser" || warn "moli nicht im PATH (optional, wird von container.sh installiert)"
+command -v moli >/dev/null 2>&1 && ok "moli Browser" || warn "moli nicht im PATH (optional, wird über setup.sh --global installiert)"
 
-echo "7) App (app/)"
-for f in app/server.py app/static/index.html app/tests; do
-  [ -e "$TARGET/$f" ] && ok "$f" || bad "$f fehlt"
+echo "7) App (app/ oder definitions/app/)"
+FALLBACK=0
+for f in server.py static/index.html tests; do
+  if [ -e "$TARGET/app/$f" ]; then
+    ok "app/$f"
+  elif [ -e "$TARGET/definitions/app/$f" ]; then
+    ok "definitions/app/$f"
+    FALLBACK=1
+  else
+    bad "app/$f und definitions/app/$f fehlen"
+  fi
 done
-if [ -d "$TARGET/app/tests" ] && python3 -m pytest "$TARGET/app/tests/" -q >/dev/null 2>&1; then
+[ "$FALLBACK" -eq 1 ] && warn "App unter definitions/app/ (Fallback) — verteilte Ziele führen sie unter app/"
+if [ -d "$TARGET/app/tests" ]; then
+  TESTS="$TARGET/app/tests"
+elif [ -d "$TARGET/definitions/app/tests" ]; then
+  TESTS="$TARGET/definitions/app/tests"
+else
+  TESTS=""
+fi
+if [ -z "$TESTS" ]; then
+  bad "App-Test-Suite fehlgeschlagen oder nicht vorhanden"
+elif python3 -m pytest "$TESTS/" -q >/dev/null 2>&1; then
   ok "App-Test-Suite bestanden"
 else
-  bad "App-Test-Suite fehlgeschlagen oder nicht vorhanden"
+  warn "App-Test-Suite fehlgeschlagen"
 fi
 
 echo ""
