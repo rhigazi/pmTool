@@ -2,8 +2,8 @@
 type: Task
 title: "A1: Fundament okf_bundle.py (Pfadschutz, Frontmatter-I/O, Scan)"
 description: Zentrale, framework-freie Zugriffsschicht für Pfadschutz, Frontmatter-/Datei-I/O mit atomarem Schreiben und Bundle-Scan.
-task_status: offen
-phase: 2 Planung
+task_status: in Umsetzung
+phase: 4 Umsetzung
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-7.md
@@ -12,7 +12,7 @@ owner: ai
 
 # Ziel
 
-`definitions/app/okf_bundle.py` wird die zentrale, getestete Zugriffsschicht auf das Bundle: `resolve_path(rel)` mit Ausbruchsschutz (normalisiert, `realpath`-Präfix-Check, Symlink-Ausbruch), `lesen(pfad)` (strikt, Frontmatter via `yaml.safe_load`), `lesen_tolerant(pfad)` (ohne Frontmatter → `{}`), `set_meta(pfad, updates)` (nur Frontmatter-Keys, Body byte-identisch), `scan()` (alle `.md` außer `index.md`/`log.md`), atomares Schreiben (`tmp` + `os.replace`) und `ist_reserviert(pfad)`. Das Modul ist framework-frei (kein Flask-Import).
+`definitions/app/okf_bundle.py` wird die zentrale, getestete Zugriffsschicht auf das Bundle: `resolve_path(rel)` mit Ausbruchsschutz (normalisiert, `realpath`-Präfix-Check, Symlink-Ausbruch), `lesen(pfad)` (strikt, Frontmatter via `yaml.safe_load`), `lesen_tolerant(pfad)` (ohne Frontmatter → `{}`), `set_meta(pfad, updates)` (nur Frontmatter-Keys, Body byte-identisch), `scan()` (alle `.md` außer `index.md`/`log.md`/`features.md`), atomares Schreiben (`tmp` + `os.replace`) und `ist_reserviert(pfad)`. Das Modul ist framework-frei (kein Flask-Import).
 
 # Akzeptanzkriterien
 
@@ -20,7 +20,7 @@ owner: ai
 - `resolve_path` normalisiert den Pfad, prüft per `realpath`-Präfixzugehörigkeit und erkennt Symlink-Ausbrüche.
 - `set_meta` verändert ausschließlich die angegebenen Frontmatter-Keys; übrige Keys und Body bleiben byte-identisch.
 - Schreibvorgänge sind atomar: bei Fehler bleibt die Originaldatei unverändert.
-- `scan()` liefert alle `.md`-Dateien außer `index.md` und `log.md`; `ist_reserviert` erkennt beide.
+- `scan()` liefert alle `.md`-Dateien außer `index.md`, `log.md` und `features.md`; `ist_reserviert` erkennt alle drei.
 - `lesen` wirft bei fehlendem Frontmatter `FrontmatterFehler`, `lesen_tolerant` nicht.
 - Tests arbeiten ausschließlich auf Fixture-Kopien unter `tmp_path`; `/content/pmTool/wissen` wird von pytest nie beschrieben.
 
@@ -36,8 +36,8 @@ owner: ai
 - **T8 Frontmatter fehlt (tolerant):** `lesen_tolerant()` → `({}, volltext)`, keine Exception.
 - **T9 Frontmatter-Erhalt:** `set_meta(p, {"owner": "ai"})` → `type`/`title`/`user_story` unverändert, Body-SHA256 identisch.
 - **T10 Atomarität:** `os.replace` per monkeypatch auf `OSError` → Original byte-identisch, Exception propagiert.
-- **T11 Scan:** Bundle mit `index.md`, `log.md` und 2 Punkten → genau die 2 nicht-reservierten Dateien.
-- **T12 Reserviert:** `ist_reserviert` für `index.md`, `log.md`, Punkt → `True, True, False`.
+- **T11 Scan:** Bundle mit `index.md`, `log.md`, `features.md` und 2 Punkten → genau die 2 nicht-reservierten Dateien.
+- **T12 Reserviert:** `ist_reserviert` für `index.md`, `log.md`, `features.md`, Punkt → `True, True, True, False`.
 
 # Kontext
 

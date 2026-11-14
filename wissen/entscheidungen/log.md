@@ -2,6 +2,30 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-14: Reservierte Dateien sind für die App generell gesperrt (Guard in okf_bundle)
+
+**Entscheidung:** `index.md`, `features.md` und `log.md` sind für **alle** App-Schreibzugriffe gesperrt — auch als Ziel von Nachträgen. Die Pflege dieser KI-Dateien erfolgt ausschließlich durch Projektmanager/documenter (OpenCode-CLI). `okf_bundle.py` erhält einen zentralen Guard: `schreiben()`/`set_meta()` weisen reservierte Ziele mit eigener Exception `ReservierteDateiFehler` ab (A6 mappt sie auf HTTP 403). A3-Testfall T9 wird entsprechend von „anfügend erlaubt" auf „abgewiesen" korrigiert.
+
+**Begründung:** Die Schreibrechte-Matrix der Spec verbietet der App die Pflege dieser Dateien; ein Guard im Fundament schützt das tiefer liegend (Defense-in-Depth) und klärt den Widerspruch mit A3-T9.
+
+**Auswirkung:** okf_bundle-API erweitert (`ReservierteDateiFehler`), A1-Nachbesserung inkl. Review-Empfehlungen (CRLF/Ungültig-YAML-Tests, Schlüssel-Regex, `scan()`-Filter, Docstring-Hinweis), A3/A6 angepasst.
+
+## 2026-11-14: features.md ist für die App reserviert (schreibgeschützt)
+
+**Entscheidung:** `features.md` wird wie `index.md` und `log.md` als reserviert behandelt: Die App darf sie nicht ersetzen und führt sie nicht in der Übersicht. `okf_bundle.py` erkennt sie als reservierte Datei (`scan()`, `ist_reserviert()`).
+
+**Begründung:** `features.md` ist laut Schreibrechte-Matrix eine KI-Datei (gepflegt von Projektmanager/documenter). Ohne Reservierung wäre sie für App-Schreibzugriffe offen und würde als normaler Punkt mit Status/owner erscheinen.
+
+**Auswirkung:** Spec, US-7 und Aufgaben A1/A6/A8 angepasst; A1 erhält eine Mini-Nachbesserung, A6/A8 bauen bei der Umsetzung auf dem erweiterten Reserve-Begriff auf.
+
+## 2026-11-14: owner-Vorrang und Status-Owner-Defaults im Datenmodell
+
+**Entscheidung:** Ein explizit gesetztes Frontmatter-Feld `owner` hat immer Vorrang vor dem owner-Default aus dem Status (sonst würde eine vom Menschen umgeschaltete Zuständigkeit von der Anzeige überschrieben). Für Punkte mit `status`-Feld ohne `task_status` (Wellen) gelten die Defaults: `Klarung` → `mensch`, `Offen`/`In Arbeit`/`Testing`/`Dokumentation` → `ai`, `Geschlossen` → `None` (Anzeige „—“).
+
+**Begründung:** Klärung von Auslegungsfragen aus der Umsetzung von A2; ohne Vorrangregel wären owner-Umschaltungen aus US-5 nicht korrekt darstellbar.
+
+**Auswirkung:** In der Technischen Spec als owner-Default-Regel festgehalten; `status.py` und alle Konsumenten (A6/A8/A11) orientieren sich daran.
+
 ## 2026-11-14: Projekt vollständig ins GitHub-Repository umgezogen
 
 **Entscheidung:** Das Projekt liegt vollständig in `/content/pmTool` (Repository `github.com/rhigazi/pmTool`, Branch `main`): `definitions/` (Single Source of Truth), `wissen/` (OKF-Bundle), `docs/prd.md`, dazu die installierte Projekt-Wurzel (`AGENTS.md`, `.opencode/agents/`, `opencode.jsonc`, `tools/`). Alle Pfade wurden von `/content/wissen` auf `/content/pmTool/wissen` umgestellt (Spec, User Stories, Planung, Aufgaben, PRD). Bestehende Einträge in diesem Log bleiben unverändert (Historie). Ausschlüsse: `sample_data/`, `.config/`, `config.json` (Secret), Cruft-Dateien (`.gitignore`).

@@ -28,7 +28,7 @@ Lese-Endpunkte gemäß Spec: `GET /api/overview` (Liste mit `path, typ, titel, s
 - **T2 Feldschema:** Keys ⊇ `path, typ, titel, status, owner, zuletzt_geaendert`.
 - **T3 Status-Mapping (`in Umsetzung`):** `status == "In Arbeit"`.
 - **T4 Sortierung:** absteigend nach `zuletzt_geaendert`, Tie-Breaker `path`.
-- **T5 Reserve ausgeschlossen:** `index.md`/`log.md` nicht gelistet.
+- **T5 Reserve ausgeschlossen:** `index.md`/`log.md`/`features.md` nicht gelistet.
 - **T6 Detaildatei:** `frontmatter.type == "Task"`, `markdown` ohne Frontmatter, `nachtraege` ist eine Liste.
 - **T7 Traversal:** `?path=../../etc/passwd` → 400 `{error}`, Body ohne `root:`.
 - **T8 Fehlende Datei:** → 404 `{error}`.
@@ -42,7 +42,7 @@ Lese-Endpunkte gemäß Spec: `GET /api/overview` (Liste mit `path, typ, titel, s
 - **Abhängigkeiten:** A7 (App-Factory), A1 (`okf_bundle`), A2 (`status`).
 - **Konfliktgruppe G7b+G7a:** `server.py` und `overview.py` — **nicht parallel zu A7/A9**.
 - **Nachfolger:** A9 baut die Schreib-Endpunkte auf derselben App; A11/A12/A14 konsumieren die Lese-Endpunkte.
-- **Entscheidungen:** R4 (Overview-Umfang: alle nicht-reservierten `.md`, `type` als `typ`, `index.md`/`log.md` ausgeschlossen), R7 (mtime als ISO-Zeitstempel), R3 (`owner` fehlt → `null`/„—", kein Migrationsschreiben).
+- **Entscheidungen:** R4 (Overview-Umfang: alle nicht-reservierten `.md`, `type` als `typ`, `index.md`/`log.md`/`features.md` ausgeschlossen), R7 (mtime als ISO-Zeitstempel), R3 (`owner` fehlt → `null`/„—", kein Migrationsschreiben).
 - **Verweise:** Schnittstellen-Tabelle in [Technischer Spec](/projekt/technische-spec.md#schnittstellen-json-api-des-servers).
 
 # Betroffene Dateien

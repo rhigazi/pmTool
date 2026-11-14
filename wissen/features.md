@@ -18,7 +18,7 @@ tags: [features, steuerung]
 
 # Offene Features
 
-*Noch keine.*
+* [OKF Projekt-Manager (SPA)](features/okf-projekt-manager-spa.md) — Tracker auf das OKF-Bundle: Status/owner anzeigen, Nachträge, Aufgaben und Wellen anlegen, Colab-Start · **in Umsetzung** · Priorität **hoch** — Teil-Umsetzung A2 (`status.py`, 44 Tests grün) abgeschlossen; Aufgaben [A1](aufgaben/a1-okf-bundle.md) bis [A17](aufgaben/a17-e2e.md)
 
 # Umgesetzte Features
 

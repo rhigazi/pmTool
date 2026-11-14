@@ -2,8 +2,8 @@
 type: Task
 title: "A10: Frontend-Gerüst Navigation, Layout, Router, API-Client"
 description: index.html mit fünf Navigationspunkten, style.css, fetch-Wrapper api.js und Hash-Router app.js als Startpunkt der Frontend-Kette.
-task_status: offen
-phase: 2 Planung
+task_status: im Test
+phase: 6 Test
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-1.md
@@ -49,7 +49,7 @@ Statische Prüfungen (T1–T4) laufen ohne Browser; T5–T8 sind UI-Szenarien f�
 - `definitions/app/static/style.css`
 - `definitions/app/static/js/api.js`
 - `definitions/app/static/js/app.js`
-- `definitions/app/tests/test_frontend_geruest.py` (statische Prüfungen)
+- `definitions/app/tests/test_static.py` (statische Prüfungen)
 
 # Ergebnisse
 

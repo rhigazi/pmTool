@@ -34,7 +34,7 @@ owner: ai
 - **T5 Status Geschlossen (Aufgabe):** `task_status: abgeschlossen`.
 - **T6 Status Klarung (Welle):** `status: Klarung`.
 - **T7 Pipeline-Status verboten (`In Arbeit`):** `RechteFehler` (403), Datei unverändert.
-- **T8 Reservierte Datei:** `RechteFehler`.
+- **T8 Reservierte Dateien** (`index.md`, `log.md`, `features.md`): jeweils `RechteFehler`.
 - **T9 Fehlendes Frontmatter:** `FrontmatterFehler`, keine Änderung.
 - **T10 Kombiniert:** beide Felder, ein Schreibvorgang.
 - **T11 „zuletzt geändert":** mtime nachher ≥ vorher.

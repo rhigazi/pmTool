@@ -2,8 +2,8 @@
 type: Task
 title: "A2: Status-Mapping status.py"
 description: Reine Funktionen für die Abbildung von task_status/status auf die 6 UI-Status und den owner-Default, ohne Dateizugriffe.
-task_status: offen
-phase: 2 Planung
+task_status: in Doku
+phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-1.md
@@ -48,4 +48,31 @@ owner: ai
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-14 — coder (Umsetzung, Red-Green-Refactor)
+
+- **Ergebnis:** `definitions/app/status.py` (Mapping `task_status` → UI-Status inkl. owner-Default-Regel mit Vorrang des expliziten `owner`-Felds) und `tests/test_status.py` angelegt.
+- **Belege:** Red — Import-Fehler, 0 Tests grün. Green — 38 Tests passed.
+- **Befunde:** Interpretationen zur owner-Vorrang-Regel und zu den Status-Owner-Defaults wurden vom Projektmanager bestätigt und in der Spec festgehalten.
+- **Offene Punkte:** keine.
+
+## 2026-11-14 — coder (Nachbesserung aus Review)
+
+- **Ergebnis:** Test-Lücke geschlossen (parametrisierter Test über alle 6 `status`-Owner-Defaults), Docstring präzisiert, `UI_STATUS_WERTE` als eigene Konstante entkoppelt, Parameter `ui_status` → `status_wert` umbenannt.
+- **Belege:** 44 Tests passed.
+- **Offene Punkte:** keine.
+
+## 2026-11-14 — reviewer (Review)
+
+- **Ergebnis:** Gesamturteil **ohne kritische Befunde**. Alle Akzeptanzkriterien erfüllt, alle 11 Mapping-Zeilen 1:1 zur Spec, Edge Cases korrekt, keine Konflikte zu anderen Konfliktgruppen.
+- **Befunde:** Minor-Empfehlungen (Test-Lücke, Docstring, Konstante) — wurden nachgebessert (siehe Eintrag coder/Nachbesserung).
+- **Einschränkung:** Testlauf in der Review-Session nicht möglich (kein Shell-Werkzeug); Nachweis erfolgte durch den `tester`.
+- **Offene Punkte:** keine.
+
+## 2026-11-14 — tester (Test)
+
+- **Ergebnis:** Gesamturteil **bestanden**. `pytest definitions/app/tests/test_status.py -q`: 44 passed. Gesamtsuite: 99 passed (keine Regression).
+- **Befunde:** Abdeckungsabgleich T1–T8 vollständig — alle acht TDD-Fälle durch konkrete Tests gedeckt. Ad-hoc-Prüfungen: keine Dateizugriffe, Trimming/Fallback robust, Fixture-Isolation gegeben.
+- **DoD-Beleg aus Test-Sicht:** alle Akzeptanzkriterien erfüllt und nachgewiesen.
+- **Offene Punkte:** keine.

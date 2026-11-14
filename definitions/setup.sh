@@ -41,6 +41,20 @@ install_file() {  # $1 = Quelle, $2 = Ziel
   echo "  installiert: $2"
 }
 
+copy_tree() {  # $1 = Quellverzeichnis, $2 = Zielverzeichnis (ohne __pycache__/*.pyc)
+  mkdir -p "$2"
+  find "$1" -type d ! -name '__pycache__' -print0 |
+    while IFS= read -r -d '' verzeichnis; do
+      mkdir -p "$2${verzeichnis#"$1"}"
+    done
+  find "$1" -type f ! -path '*/__pycache__/*' ! -name '*.pyc' -print0 |
+    while IFS= read -r -d '' datei; do
+      ziel="$2${datei#"$1"}"
+      mkdir -p "$(dirname "$ziel")"
+      cp "$datei" "$ziel"
+    done
+}
+
 echo "→ Zielprojekt: $TARGET"
 
 echo "1) Projektregeln (AGENTS.md)"
@@ -111,6 +125,27 @@ if python3 -m pytest --version >/dev/null 2>&1; then
   echo "  übersprungen (vorhanden): pytest"
 else
   python3 -m pip install --quiet pytest && echo "  installiert: pytest" || echo "  Warnung: pytest konnte nicht installiert werden"
+fi
+
+echo "9) App (app/)"
+if [ -d "$SRC/app" ]; then
+  for f in "$SRC"/app/*; do
+    [ -e "$f" ] || continue
+    name="$(basename "$f")"
+    case "$name" in
+      __pycache__|.pytest_cache) continue ;;
+    esac
+    if [ -d "$f" ]; then
+      if [ -e "$TARGET/app/$name" ] && [ "$FORCE" -eq 0 ]; then
+        echo "  übersprungen (vorhanden): app/$name"
+      else
+        copy_tree "$f" "$TARGET/app/$name"
+        echo "  installiert: app/$name"
+      fi
+    else
+      install_file "$f" "$TARGET/app/$name"
+    fi
+  done
 fi
 
 echo "✓ Fertig."

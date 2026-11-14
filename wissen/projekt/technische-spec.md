@@ -91,6 +91,8 @@ UI-Szenarien: `moli` gegen `http://localhost:5000` (siehe `tester`-Aufgaben).
 
 Es gibt **kein zweites Statusmodell in den Dateien**: Die sechs UI-Status sind eine reine Anzeige-/Filterebene über das bestehende Modell. Wellen/Punkte ohne `task_status` tragen `status` direkt.
 
+**owner-Default-Regel:** Ein explizit gesetztes Frontmatter-Feld `owner` hat **immer Vorrang** vor jedem Status-Default (damit eine vom Menschen umgeschaltete Zuständigkeit sichtbar bleibt). Fehlt `owner`, gilt die Spalte „owner (Default)". Für Punkte mit `status`-Feld (ohne `task_status`) gelten die Defaults: `Klarung` → `mensch`, `Offen`/`In Arbeit`/`Testing`/`Dokumentation` → `ai`, `Geschlossen` → `None` (Anzeige „—“).
+
 ## Struktur neuer Punkte
 
 - Aufgaben: `wissen/aufgaben/<id>.md` — Format exakt nach Phasenmodell, ergänzt um `owner: ai`.
@@ -108,6 +110,8 @@ Es gibt **kein zweites Statusmodell in den Dateien**: Die sechs UI-Status sind e
 | Status → `Klarung`, `Geschlossen` | ✅ | ✅ |
 | Pipeline-Statuswechsel (`task_status`/`phase`) | ❌ | ✅ (Projektmanager, documenter) |
 | `index.md` / `features.md` / `log.md` pflegen | ❌ | ✅ (Projektmanager, documenter) |
+
+Als **reserviert** gelten `index.md`, `log.md` und `features.md` (KI-Dateien laut Schreibrechte-Matrix): Die App darf sie weder ersetzen noch in der Übersicht führen — auch `features.md` ist für die App schreibgeschützt (Entscheidung 2026-11-14). Der Schutz greift **generell für alle App-Schreibzugriffe, auch als Ziel von Nachträgen** (Guard in `okf_bundle`, `ReservierteDateiFehler` → HTTP 403).
 | Löschen von Dateien/Wellen | ❌ (MVP) | ❌ ohne PM-Entscheidung |
 
 # Schnittstellen (JSON-API des Servers)

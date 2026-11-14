@@ -29,6 +29,7 @@ owner: ai
 - **T4 Ungültiger Status:** `EingabeFehler`, keine Datei.
 - **T5 Ungültiger owner:** `EingabeFehler`.
 - **T6 Leerer Titel:** `EingabeFehler`.
+- **T6b Leeres Ziel:** `ziel` ∈ {"", "   ", `None`, 42} → `EingabeFehler`, Dateianzahl unverändert (`ziel` ist Pflichtfeld, konsistent zu A4).
 - **T7 Kollision:** `…-2.md`, erste Datei unverändert.
 - **T8 Body:** `# Ziel` und `# Aufgaben` vorhanden.
 - **T9 Kürzel:** `Wave 1 — MVP` → `wave-1-mvp.md`.

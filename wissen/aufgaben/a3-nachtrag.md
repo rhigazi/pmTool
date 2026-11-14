@@ -32,7 +32,7 @@ owner: ai
 - **T6 Leere Eingabe:** `EingabeFehler`, Datei-Hash unverändert.
 - **T7 Mehrzeilig:** zwei `>`-Zeilen, kein Formatbruch.
 - **T8 Pfad außerhalb:** `BundlePfadFehler`, keine Datei.
-- **T9 Reserve `log.md`:** nur anfügend erlaubt, Präfix-Hash identisch.
+- **T9 Reserviertes Ziel:** `anfuegen("log.md", ...)` (auch `index.md`, `features.md`) → abgewiesen (Exception), Datei unverändert — reservierte Dateien sind für die App generell gesperrt (Guard in `okf_bundle`).
 
 # Kontext
 

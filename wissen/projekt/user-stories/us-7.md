@@ -11,7 +11,7 @@ Als Projektleitung möchte ich, dass die Wissensdatenbank durch die App nie besc
 
 # Akzeptanzkriterien
 - Schreibvorgänge erhalten bestehendes YAML-Frontmatter (inkl. `type`) und den bestehenden Text; nur erlaubte Operationen (Nachtrag anfügen, neue Datei anlegen, `owner`/definierte Status setzen) werden ausgeführt.
-- Reservierte Dateien (`index.md`, `log.md`) werden durch die App nicht automatisch überschrieben; Log-Einträge der App (falls vorgesehen) werden nur angehängt, nie ersetzt.
+- Reservierte Dateien (`index.md`, `log.md`, `features.md`) werden durch die App nicht automatisch überschrieben; Log-Einträge der App (falls vorgesehen) werden nur angehängt, nie ersetzt.
 - Abgelehnte Operationen (ungültiger Pfad, leere Eingabe, fehlendes Frontmatter, unerlaubtes Ziel) liefern einen klaren Fehler an die Oberfläche, ohne dass Dateien beschädigt oder unvollständig angelegt werden.
 - Pfade werden gegen Ausbrüche aus dem Bundle-Root abgesichert (kein Zugriff außerhalb von `/content/pmTool/wissen/`).
 - Unit-Tests (pytest) decken: Nachtrag-Anfügen, Anlegen von Aufgabe/Welle, `owner`-Update, Mapping-Status, Pfad-Abweisung, Frontmatter-Erhalt.

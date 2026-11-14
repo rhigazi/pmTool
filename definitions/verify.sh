@@ -69,6 +69,16 @@ echo "6) Globale Umgebung (Hinweise)"
   && ok "globale Subagenten" || warn "globale Subagenten nicht installiert (setup.sh --global)"
 command -v moli >/dev/null 2>&1 && ok "moli Browser" || warn "moli nicht im PATH (optional, wird von container.sh installiert)"
 
+echo "7) App (app/)"
+for f in app/server.py app/static/index.html app/tests; do
+  [ -e "$TARGET/$f" ] && ok "$f" || bad "$f fehlt"
+done
+if [ -d "$TARGET/app/tests" ] && python3 -m pytest "$TARGET/app/tests/" -q >/dev/null 2>&1; then
+  ok "App-Test-Suite bestanden"
+else
+  bad "App-Test-Suite fehlgeschlagen oder nicht vorhanden"
+fi
+
 echo ""
 if [ "$FAIL" -eq 0 ]; then
   echo "✓ Setup vollständig und funktionsfähig."

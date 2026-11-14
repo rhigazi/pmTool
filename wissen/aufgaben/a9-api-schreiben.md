@@ -43,6 +43,7 @@ POST-Endpunkte gemäß Spec: `/api/nachtrag`, `/api/task`, `/api/welle`, `/api/m
 - **Konfliktgruppe G7c:** **nach A8** — `server.py` nicht parallel bearbeiten.
 - **Nachfolger:** A12 (Nachtrag/Meta-UI) und A13 (Formulare) nutzen diese Endpunkte.
 - **Entscheidungen:** R1 (nur `Klarung`/`Geschlossen` sind über die API setzbar; Pipeline-Status 403), R8 (atomares Schreiben, kein Locking im MVP), R13 (Datum im Marker als Parameter, Serverzeit UTC).
+- **Design-Notizen aus Reviews A6/A7:** (a) Exception-Mapping der Domänenfehler ist in `server.py` bereits ergänzt (`BundlePfadFehler`/`FrontmatterFehler`/`EingabeFehler` → 400, `ReservierteDateiFehler`/`meta.RechteFehler` → 403, `FileNotFoundError` → 404) — nutzend übernehmen; (b) `meta.setzen` prüft die Whitelist strikt ohne Trimming: Das Frontend (A12) darf leere/Whitespace-Felder nicht senden — nicht gesetzte Felder weglassen; (c) unbekannte Werte (`status="in Klärung"`) liefern 403 statt 400 — bekannter, aber verbotener Pipeline-Status; 400 bleibt ungültigen/unbekannten Werten vorbehalten; (d) Whitelist greift vor dem Lesen: ungültiger Wert + nicht existierende Datei → 403 (bewusst fail-closed).
 - **Verweise:** Schnittstellen-Tabelle und Schreibrechte in [Technischer Spec](/projekt/technische-spec.md#schnittstellen-json-api-des-servers).
 
 # Betroffene Dateien
