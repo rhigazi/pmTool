@@ -90,3 +90,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **PM-Entscheidung:** **Dokumentieren statt clientseitiger Ausblendung** — eine UI-Ausblendung gehört an ein künftiges `schreibgeschuetzt`-Signal der API (post-MVP), nicht an eine clientseitige Duplikation der reservierten Namensliste (analog zum A12-1-Drift-Problem).
 - **Bewertung:** Bekannte **A12-Grenze**, kein Fehler (fail-loud + Datei unverändert); Verhalten bleibt bis Post-MVP so.
 - **Offene Punkte:** `schreibgeschuetzt`-Signal der API + UI-Ausblendung als Post-MVP-Vormerkung (siehe [features.md](/features.md)).
+
+## 2026-11-14 — coder (Kleinbefunde-Takt, Batch B)
+
+- **Ergebnis:** [A12-3] Unbekannter owner fail-loud (`wert (unbekannt)` + Inline-Hinweis). **A12-T4-Hardening:** DOM-Test für den Fehlertext „Bitte einen Nachtrag eingeben.".
+- **Belege:** Kleinbefunde-Takt Batch B (+7 Tests); Gesamtsuite 761 grün.
+- **Offene Punkte:** [A12-1] Mapping-Spiegel (Post-MVP); Schreib-UI-Grenze (`schreibgeschuetzt`-Signal, post-MVP); Doku/Abschluss.

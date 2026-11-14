@@ -81,3 +81,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** **Review-frei** — [A7-1] Pfad-Leak ist dreifach abgesichert (Modulgrenze mit neutralen Meldungskonstanten, `_lies_text`-Übersetzung, zentraler `_sichere_meldung`-Schutz im Handler) und durch echte, nicht abgeschwächte Tests belegt.
 - **Befunde:** keine kritischen/wesentlichen Befunde offen.
 - **Offene Punkte:** [A7-2] klein (Aufräum-Takt); Doku/Abschluss.
+
+## 2026-11-14 — coder (Kleinbefunde-Takt, Batch A)
+
+- **Ergebnis:** [N1] Regressionssicherung: Der errno-Guard in `_sichere_meldung` ist jetzt durch eigene Tests abgedeckt (kein Pfad-Leak im Fehlerpfad).
+- **Belege:** Kleinbefunde-Takt Batch A (+12 Tests); Gesamtsuite 761 grün.
+- **Offene Punkte:** [A7-2] (Aufräum-Takt); Doku/Abschluss.

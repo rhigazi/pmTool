@@ -19,43 +19,37 @@ tags: [features, steuerung]
 # Offene Features
 
 * [OKF Projekt-Manager (SPA)](features/okf-projekt-manager-spa.md) — Tracker auf das OKF-Bundle: Status/owner anzeigen, Nachträge, Aufgaben und Wellen anlegen, Colab-Start · **in Umsetzung** · Priorität **hoch**
-  * **Meilenstein 2026-11-14:** Alle geplanten Feature-Aufgaben A1–A20 sind umgesetzt (A13/A14 als letzte Frontend-Aufgaben); Gesamtsuite **731 grün** (serialisiert).
+  * **Meilenstein 2026-11-14:** Alle geplanten Feature-Aufgaben A1–A20 sind umgesetzt (A13/A14 als letzte Frontend-Aufgaben); Gesamtsuite nach dem Kleinbefunde-Takt **761 grün** (serialisiert).
   * **Umgesetzt (Review/Test/Doku bzw. Nachbesserung):** [A1](aufgaben/a1-okf-bundle.md) `okf_bundle.py` (Fundament, Pfadschutz, zentrale Exceptions), [A3](aufgaben/a3-nachtrag.md) `nachtrag.py`, [A4](aufgaben/a4-neu-aufgabe.md) `neu_aufgabe.py`, [A5](aufgaben/a5-neu-welle.md) `neu_welle.py`, [A6](aufgaben/a6-meta.md) `meta.py`, [A7](aufgaben/a7-server.md) `server.py`, [A8](aufgaben/a8-api-lesen.md) Lese-API (4 GET-Routen, inkl. Kleinnachtrag), [A9](aufgaben/a9-api-schreiben.md) Schreib-API (4 POST-Routen), [A10](aufgaben/a10-frontend-geruest.md) Frontend-Gerüst (Testphase bestanden), [A11](aufgaben/a11-liste.md) Listenansicht, [A12](aufgaben/a12-detail.md) Detailansicht (inkl. T10), [A13](aufgaben/a13-formulare.md) Formulare (81 Tests), [A14](aufgaben/a14-projekt-ansicht.md) Entscheidungen-/Projekt-Ansicht (55 Tests), [A15](aufgaben/a15-setup-verify.md) `setup.sh`/`verify.sh`/README (App-Verteilung, Nummerierung 1–10), [A16](aufgaben/a16-start-colab.md) `start_colab.py`, [A18](aufgaben/a18-start-skript.md) `start.sh` + `docs/colab-start.md`, [A19](aufgaben/a19-verify-app-fallback.md) verify.sh-Fallback, [A20](aufgaben/a20-setup-haertung.md) setup.sh-Härtung
   * **Abgeschlossen:** [A2](aufgaben/a2-status-mapping.md) `status.py` (44 Tests, Test bestanden, Doku)
-  * **Offen:** [A17](aufgaben/a17-e2e.md) E2E-/Moli-Abnahmelauf (Moli-Smoke bereits erfolgreich); dazu das A14-Review, der Kleinbefunde-Takt (3 Batches), die Doku-Runde und die MVP-Abnahme — Bestätigungs-Review (A1/A5/A7/A9/A15/A19) und Testphase 2 (A12/A13/A14) sind bestanden.
+  * **Offen:** [A17](aufgaben/a17-e2e.md) E2E-/Moli-Abnahmelauf (läuft parallel; Moli-Smoke bereits erfolgreich); danach die Doku-Runde, die finale Statuswechsel-Runde und die MVP-Abnahme — Bestätigungs-Review (A1/A5/A7/A9/A15/A19), A13-/A14-Review, Testphase 2 und der Kleinbefunde-Takt sind abgeschlossen; Restpunkte siehe „Offen (Post-MVP/Aufräum)".
   * **Vorgemerkt:** **A21 „Desktop-Modus/Lokal-Betrieb"** — Nummer reserviert, noch keine Aufgaben-Datei; pywebview-Desktop-Modus nach MVP (Entscheidung der Projektleitung 2026-11-14)
 
 # Offene Punkte
 
-## Kleinbefunde für einen späteren Aufräum-/Kleinbefunde-Takt (nicht jetzt beheben)
+## Erledigt — Kleinbefunde-Takt 2026-11-14 (4 Batches, je eigener Commit; Gesamtsuite 761 grün)
 
-* [A1] `[B2]` Docstring `lesen_tolerant` — behoben (Verhaltenskorrektur, siehe Ergebnisprotokoll); verbleibend: H-Definitionen H1/H5/H7 zu A6 klären (siehe A6).
-* [A3] `[A3-1]` **behoben** (reservierte, nicht existierende Datei → 403 statt 500); `[A3-2]` Testlücke: Zweig „`# Nachträge` vor weiteren Überschriften" ungetestet.
-* [A4] `[A4-1]` `ziel`-Zeilen mit `#`-Beginn können Abschnittsstruktur vortäuschen — Maskierung erwägen; `[A4-2]` `welle`-Feld ist Spec-Erweiterung — in [Phasenmodell](/projekt/phasen.md)/Spec als optionales Feld ergänzen.
-* [A5] `[B2]` **per PM-Entscheidung geschlossen** (`FALLBACK_KUERZEL` bleibt bewusst robuster Fallback, im Ergebnisprotokoll begründet); `[B3]` `description`-Feld fehlt bei Wellen; `[B4]` Slug-Logik dupliziert zu `neu_aufgabe`.
-* [A6] `[A6-2]` T2 Body-Hash optional (Testzusatz); H1/H5/H7-Definitionen im Bundle nicht dokumentiert (Doku-Punkt aufgegriffen, Zuordnung H-Punkt → Testname offen).
-* [A7] `[A7-2]` Startfehler-Meldung nennt absoluten Pfad.
-* [A9] `[K3]` Doku-Präzisierung 403-Verhalten im Ergebnisprotokoll erledigt; `[K4]` TOCTOU als bekannte Einschränkung dokumentiert (R8).
-* [A11] `[A11-1]` `className`-Initialisierungen vereinheitlichen.
-* [A12] `[A12-1]` Status-Mapping-Spiegel (langfristig lösen); `[A12-3]` Owner-Auswahl „—"; Owner-Umschalter ohne eigenen Doppel-Wechsel-Schutz (bewusst nicht beauftragt).
-* [A13] `(a)` T8 „beide Ansichten": eine Wellen-Spalte erfordert Änderungen in `liste.js`/`detail.js` (nicht beauftragt) — Klärungspunkt; `(b)` 200-Antwort mit `null`-Body via `postJson` nicht von Fehler unterscheidbar (fail-loud-Grenze).
-* [A15] `[A15-2]` behoben; verbleibend: `tools/`-Abschnitt in `setup.sh` kopiert `__pycache__` (R12) — läuft im Kleinbefunde-Batch C.
-* [A16] `[A16-1]` R11-Zitat in a16/a7 korrigieren oder Ausweichport vormerken; `[A16-2]` `pip`-Rückgabe ignorieren; `[A16-3]` `_port_belegt` 127.0.0.1 vs. 0.0.0.0; `[A16-4]` Env-Weitergabe.
-* [A18] `[A18-1]` `hilfe()` `sed` off-by-one; `[A18-2]` 2 Zusatztests; `[A18-3]` Colab-Trap.
-* [A20] **Pin-Pflege:** URL und SHA256 des Moli-Installers müssen bei Moli-Updates zusammen geändert werden (Folgeaufgabe vormerken, ggf. Teil von A21 oder eigene Kleinigkeit).
+* **Batch A (Backend, +12 Tests):** echte Fixes `MAX_KANDIDATEN`-Off-by-One, A16-2 (`_installiere` → bool/Exit 1), A16-3 (`_port_belegt` bindet `0.0.0.0`); Regressionssicherungen N1–N4, A3-2; N7 als Überschrift „T7b" (Konsistenz zu T6b/T8b).
+* **Batch B (Frontend, +7 Tests):** A13-1 (Label `Titel (Pfad)`), A13-2 (Auswahl-Erhalt), A11-1 (`classList.add` + Wächtertest), A12-3 (unbekannter owner fail-loud), A12-T4 (DOM-Test Fehlertext).
+* **Batch C (Shell, +2 Tests):** A18-1 bis A18-3; R12 — `tools/`-Abschnitt nutzt `copy_tree` + Cache-Filter.
+* **Batch D (A14, +8 Tests):** Befunde 2/3/4/8 (Container-Vertrag, XSS-Laufzeitnachweis, echtes T2-Rendern, Leer-Hinweis „Keine Inhalte.").
+* **A20 vollständig umgesetzt** (Commits `c1a1a23`, `4d1f335`, `f0a37c8`, `cd91b78`) → in Doku.
 
-## Bestätigungs-Review N1–N8 (Kleinbefunde-Takt, läuft in 3 Batches)
+## Offen (Post-MVP / Aufräum)
 
-* N1: Guard-Zweig `_sichere_meldung` ist ungetestet.
-* N2: Fail-Closed-Reihenfolge (403) ist ungetestet.
-* N3: Ungültiges YAML → 200 mit `frontmatter: {}` ist undokumentiert.
-* N4: Assertions auf exakte 400 prüfen.
-* N5: Cache-Fixture schreibt ins Definitions-Repo (kosmetisch).
-* N6: `MAX_KANDIDATEN`-Range 999.
-* N7: Doppelte T7-Nummerierung.
-* N8: T7 verschärft sich mit neuen Testdateien automatisch (Betriebshinweis).
-
-Zusätzlich: optionales Hardening — DOM-Test für den Fehlertext „Bitte einen Nachtrag eingeben." (Batch B).
+* [A12-1] Status-Mapping-Spiegel (Mapping-Drift langfristig lösen).
+* [A13-3] Linktext-Kosmetik (bräuchte Wellen-Titel-Lookup) — bewusst ausgelassen.
+* [A4-1] `ziel`-Zeilen mit `#`-Beginn maskieren erwägen; [A4-2] `welle`-Feld in [Phasenmodell](/projekt/phasen.md)/Spec als optionales Feld ergänzen.
+* [A5-B3] `description`-Feld bei Wellen; [A5-B4] Slug-Logik-Duplikat zu `neu_aufgabe`.
+* [A6-1/A6-2] H1/H5/H7-Belege je H-Punkt mit Testnamen (H-Definitionen fehlen im Bundle); T2 Body-Hash optional.
+* [A7-2] Startfehler-Meldung nennt absoluten Pfad.
+* [A9-K3] 403-Notiz präzisieren (im Ergebnisprotokoll erfolgt; Spec-Abgleich offen); [A9-K4] TOCTOU als R8-Einschränkung (bekanntes Risiko).
+* [A14-5] `istDatei`/Meldungen nach `api.js` ziehen; [A14-6] DOM-Harness-Fork `MINI_DOM` in `tests/harness_dom.py` konsolidieren; [A14-7] Request-Sequenz-Guard gegen Races (geerbt von A12); [A14-9] Anker je Log-Eintrag (UX).
+* [A16-1] R11-Zitat korrigieren oder Ausweichport vormerken; [A16-4] Env-Weitergabe.
+* [N5] Cache-Fixture schreibt ins Definitions-Repo (kosmetisch); [N8] T7 verschärft sich mit neuen Testdateien automatisch (Betriebshinweis).
+* [A20] Pin-Pflege: URL + SHA256 bei Moli-Updates zusammen ändern.
+* [A12] Grenze: Schreib-UI auf reservierten Dateien bleibt sichtbar (fail-loud 403, Datei unverändert) — Ausblendung erst mit `schreibgeschuetzt`-Signal der API (post-MVP).
+* [A21] Desktop-Modus/Lokal-Betrieb (vorgemerkt, nach MVP).
 
 ## Umgebung / Projekt
 

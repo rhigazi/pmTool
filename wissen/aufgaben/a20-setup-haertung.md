@@ -2,8 +2,8 @@
 type: Task
 title: "A20: setup.sh-Härtung (Moli/Skill-Installation)"
 description: Die --global-Sektion der setup.sh (Projektleitungs-Änderung 2026-11-14) wird gegen ungeprüften Remote-Code abgesichert und idempotent gemacht.
-task_status: in Umsetzung
-phase: 4 Umsetzung
+task_status: in Doku
+phase: 7 Dokumentation
 priority: mittel
 assigned_to: coder
 user_story: /projekt/user-stories/us-6.md
@@ -56,3 +56,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** Idempotenz-Guard `command -v moli` („übersprungen (vorhanden)"), **Pin v1.1.24** mit **SHA256-Prüfung** gegen den offiziellen GitHub-Release-Digest (Fallback „nur Pinning" war nicht nötig), Download in `mktemp` statt `curl | sh`, npx-Kommentar (Repo, Zweck, Fremdcode-Hinweis). T9–T11 als Quelltext-Marker-Tests.
 - **Befunde:** PM-Entscheidung zur Semantik (läuft als Korrektur): Checksummen-Abweichung = hart abbrechen; Download-/Netzfehler = Warnung + Setup läuft weiter (moli optional).
 - **Offene Punkte:** Semantik-Korrektur läuft; **Pin-Pflege** — URL und SHA256 müssen bei Moli-Updates zusammen geändert werden (offener Punkt, Folgeaufgabe vormerken — ggf. Teil von A21 oder eigene Kleinigkeit).
+
+## 2026-11-14 — coder (Abschluss Kleinbefunde-Takt)
+
+- **Ergebnis:** A20 vollständig umgesetzt — Teil 1 (setup.sh-Härtung), Teil 2 (verify-Hinweistext) und die Semantik-Entscheidung; alles grün und gepusht.
+- **Belege:** Commits `c1a1a23`, `4d1f335`, `f0a37c8`, `cd91b78`; Gesamtsuite 761 grün.
+- **Offene Punkte:** Doku/Abschluss; Pin-Pflege (URL+SHA256) bleibt Post-MVP-Notiz.

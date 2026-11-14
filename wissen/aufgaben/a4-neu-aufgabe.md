@@ -69,3 +69,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** **Freigegeben** — keine kritischen Befunde. 2 Kleinbefunde als offene Punkte.
 - **Befunde:** [A4-1] klein: `ziel`-Zeilen mit `#`-Beginn können Abschnittsstruktur vortäuschen — Maskierung erwägen. [A4-2] klein: Frontmatter-Feld `welle` ist Spec-Erweiterung — in [Phasenmodell](/projekt/phasen.md)/Spec als optionales Feld ergänzen (Doku-Punkt).
 - **Offene Punkte:** A4-1/A4-2 (Aufräum-Takt, siehe [features.md](/features.md)); Doku.
+
+## 2026-11-14 — coder (Kleinbefunde-Takt, Batch A)
+
+- **Ergebnis:** [N6] `MAX_KANDIDATEN`-Off-by-One korrigiert (`range(1, MAX_KANDIDATEN + 1)`), Grenzfall-Tests ergänzt.
+- **Belege:** Kleinbefunde-Takt Batch A (+12 Tests); Gesamtsuite 761 grün.
+- **Offene Punkte:** [A4-2] (Spec-Erweiterung `welle`, Aufräum-Takt); Doku/Abschluss.

@@ -2,8 +2,8 @@
 type: Task
 title: "A13: Formulare Aufgabe und Welle anlegen"
 description: Formulare zum Anlegen von Aufgaben und Wellen mit Inline-Validierung, Erfolgsanzeige inklusive kopierbarem Kurzkontext und Doppelklickschutz.
-task_status: im Review
-phase: 5 Review
+task_status: in Doku
+phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-3.md
@@ -67,3 +67,15 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** **Testphase 2 BESTANDEN** — A13 T1–T8 komplett belegt (81 Tests). **Moli-Smoke erfolgreich** (headless `moli fetch` + Screenshot).
 - **Befunde:** Moli-Harness-Nuancen für A17 (siehe [Projekt-Log](/log.md)); der A14-Testbeleg wird vom `tester` nachgereicht.
 - **Offene Punkte:** Review läuft noch; Doku nach Review.
+
+## 2026-11-14 — reviewer (Review)
+
+- **Ergebnis:** **Freigegeben** — keine kritischen/wesentlichen Befunde; Sicherheit sauber (keine HTML-Senken, strikte Payloads), A10-Vertrag eingehalten (Commit `cbca9a2` berührt nur die vier deklarierten Dateien), 81 Tests decken AK 1–8 ab.
+- **Befunde:** 3 Kleinbefunde → **Batch B:** (1) Wellen-Auswahl-Label bei Titel-Duplikaten; (2) Testlücke Auswahl-Erhalt; (3) Linktext-Kosmetik (optional).
+- **Offene Punkte:** Doku/Abschluss; Kleinbefunde 1–3 in Batch B (siehe [features.md](/features.md)).
+
+## 2026-11-14 — coder (Kleinbefunde-Takt, Batch B)
+
+- **Ergebnis:** [A13-1] Wellen-Auswahl-Label `Titel (Pfad)`; [A13-2] Testlücke „Auswahl-Erhalt" geschlossen (Verhalten war korrekt). [A13-3] Linktext-Kosmetik **bewusst ausgelassen** — bräuchte einen Wellen-Titel-Lookup, nicht trivial → Post-MVP/offener Punkt.
+- **Belege:** Kleinbefunde-Takt Batch B (+7 Tests); Gesamtsuite 761 grün.
+- **Offene Punkte:** [A13-3] (Post-MVP); Doku/Abschluss.

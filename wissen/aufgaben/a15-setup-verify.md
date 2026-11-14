@@ -84,3 +84,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** **Review-frei** — [A15-1], [A15-2] und [A15-3] sind behoben und durch echte, nicht abgeschwächte Tests belegt; die Testphase liegt als Beleg vor (13/13 serialisiert grün).
 - **Befunde:** keine kritischen/wesentlichen Befunde offen.
 - **Offene Punkte:** `tools/`-Abschnitt `__pycache__` (Batch C); Doku/Abschluss.
+
+## 2026-11-14 — coder (Kleinbefunde-Takt, Batch C, R12)
+
+- **Ergebnis:** [R12] Der `tools/`-Abschnitt in `setup.sh` nutzt jetzt `copy_tree` mit Cache-Filter (`test_t1c_keine_cache_artefakte_in_tools`) — der letzte offene Nebenbefund aus A15 ist geschlossen.
+- **Belege:** Kleinbefunde-Takt Batch C (+2 Tests); Gesamtsuite 761 grün.
+- **Offene Punkte:** Doku/Abschluss.

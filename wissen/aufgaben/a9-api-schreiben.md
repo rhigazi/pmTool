@@ -89,3 +89,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** **Review-frei** — [K1] Pfad-Leak dreifach abgesichert, [W1] Schreibziel-Validierung vor dem Schreiben, [K2] 400 bei leerer Payload und [A8-1] `_zeitstempel`-Guard sind behoben und durch echte, nicht abgeschwächte Tests belegt.
 - **Befunde:** keine kritischen/wesentlichen Befunde offen.
 - **Offene Punkte:** [K3]-Doku/[K4] dokumentiert; Doku/Abschluss.
+
+## 2026-11-14 — coder (Kleinbefunde-Takt, Batch A)
+
+- **Ergebnis:** [N2] Regressionssicherung: Fail-Closed-Reihenfolge (403 vor 404) ist jetzt durch Tests belegt. [N4] Assertions auf exakte 400 präzisiert.
+- **Belege:** Kleinbefunde-Takt Batch A (+12 Tests); Gesamtsuite 761 grün.
+- **Offene Punkte:** Doku/Abschluss.

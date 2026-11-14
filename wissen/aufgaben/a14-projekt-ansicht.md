@@ -67,3 +67,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Befunde:** Die Interpretationsfrage ist ausdrücklich **bestätigt**: T2 über `#/detail/entscheidungen/log.md`, T4 inline über `#/projekt/<x>` passt zur A10-Routen-Intention (Routen-Vertrag, Navigationsmodell, fachliche Zuordnung — im Review begründet). Befunde 2/3/4/8 → Batch D (Kleintests + Leer-Hinweis); 5/6/7/9 → Aufräum/Post-MVP (siehe [features.md](/features.md)).
 - **Hinweis:** Der Reviewer hat „731 grün" nicht nachvollzogen (kein Testlauf im Review); die Zahlen sind durch den `tester` separat bestätigt (55/55 A14, 52/81 A12/A13).
 - **Offene Punkte:** Doku/Abschluss; offene Befunde 2–9 in der Kleinbefunde-Liste.
+
+## 2026-11-14 — coder (Kleinbefunde-Takt, Batch D)
+
+- **Ergebnis:** [Befund 2] Container-Vertragstest (`index.html`-IDs) + `meldeFehlendenContainer` statt Silent-Return; [Befund 3] XSS-Laufzeitnachweis (HTML-Payload bleibt Text); [Befund 4] T2 rendert echt (browser-naher `app_lauf`-Harness, echter `GET /api/file`); [Befund 8] Leer-Hinweis „Keine Inhalte." für leere Unterpunkt-Dateien.
+- **Belege:** Kleinbefunde-Takt Batch D (+8 Tests); Gesamtsuite 761 grün.
+- **Offene Punkte:** Befunde 5/6/7/9 (Aufräum/Post-MVP); Doku/Abschluss.

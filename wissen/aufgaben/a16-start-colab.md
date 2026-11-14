@@ -67,3 +67,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** **Freigegeben** — keine kritischen Befunde. 4 Kleinbefunde.
 - **Befunde:** [A16-1] klein: R11-Zitat im Code veraltet. [A16-2] klein: `pip`-Rückgabe wird ignoriert. [A16-3] klein: `_port_belegt` prüft 127.0.0.1 statt 0.0.0.0. [A16-4] klein: Env-Weitergabe an den Subprozess.
 - **Offene Punkte:** A16-1 bis A16-4 (Aufräum-Takt, siehe [features.md](/features.md)); Doku/Abschluss.
+
+## 2026-11-14 — coder (Kleinbefunde-Takt, Batch A)
+
+- **Ergebnis:** [A16-2] `start_colab.py::_installiere` liefert `bool`, `main` prüft Returncode + Re-Import → Exit 1 mit klarer Meldung. [A16-3] `_port_belegt` bindet jetzt `0.0.0.0` (statt nur 127.0.0.1).
+- **Belege:** Kleinbefunde-Takt Batch A (+12 Tests); Gesamtsuite 761 grün.
+- **Offene Punkte:** [A16-1] R11-Zitat, [A16-4] Env-Weitergabe (Aufräum-Takt); Doku/Abschluss.

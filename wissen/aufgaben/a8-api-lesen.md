@@ -72,3 +72,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** **Freigegeben** — keine kritischen Befunde. 1 Kleinbefund.
 - **Befunde:** [A8-1] klein: `_zeitstempel`-Guard in `overview._eintrag` (in der Sicherheits-Nachbesserung mit erledigt, siehe Eintrag coder 2026-11-14).
 - **Offene Punkte:** Doku/Abschluss.
+
+## 2026-11-14 — coder (Kleinbefunde-Takt, Batch A)
+
+- **Ergebnis:** [N3] Regressionssicherung: Ungültiges YAML → 200 mit `frontmatter: {}` ist jetzt durch Tests belegt und damit dokumentiert.
+- **Belege:** Kleinbefunde-Takt Batch A (+12 Tests); Gesamtsuite 761 grün.
+- **Offene Punkte:** Doku/Abschluss.

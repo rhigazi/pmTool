@@ -62,3 +62,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** **Freigegeben** — keine kritischen Befunde. 3 Kleinbefunde. Das Review-Ergebnis liegt damit vor; der Status wechselt von „im Review" in die Doku-Phase.
 - **Befunde:** [A18-1] klein: `hilfe()` `sed` off-by-one. [A18-2] klein: 2 Zusatztests. [A18-3] klein: Colab-Trap.
 - **Offene Punkte:** A18-1 bis A18-3 (Aufräum-Takt, siehe [features.md](/features.md)); Doku/Abschluss.
+
+## 2026-11-14 — coder (Kleinbefunde-Takt, Batch C)
+
+- **Ergebnis:** [A18-1] `hilfe()` nutzt `sed '2,12p'` (Off-by-one behoben); [A18-2] zwei Tests ergänzt (`--help` ohne Shelloptionen, Dry-Run installiert keine Pakete); [A18-3] Kommentar zum bewusst fehlenden Colab-Trap ergänzt.
+- **Belege:** Kleinbefunde-Takt Batch C (+2 Tests); Gesamtsuite 761 grün.
+- **Offene Punkte:** Doku/Abschluss.

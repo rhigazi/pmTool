@@ -73,3 +73,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** [A3-1] behoben: Bei einer reservierten, aber nicht existierenden Datei greift der Guard jetzt vor dem Dateizugriff → **403** statt vorher 500 (`FileNotFoundError`).
 - **Belege:** Teil des Sicherheits-Blocks (29 neue Tests, Gesamtsuite 676 grün).
 - **Offene Punkte:** [A3-2] Testlücke (Aufräum-Takt); Doku/Abschluss.
+
+## 2026-11-14 — coder (Kleinbefunde-Takt, Batch A)
+
+- **Ergebnis:** [A3-2] geschlossen: Testfall für einen `# Nachträge`-Abschnitt in der Dateimitte ergänzt (Nachtrag wird korrekt am Abschnittsende ergänzt, Struktur unverändert).
+- **Belege:** Kleinbefunde-Takt Batch A (+12 Tests); Gesamtsuite 761 grün.
+- **Offene Punkte:** Doku/Abschluss.

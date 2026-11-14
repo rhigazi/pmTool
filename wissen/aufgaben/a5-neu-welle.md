@@ -73,3 +73,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** **Review-frei** — [B1] (reservierte Kürzel erhalten Suffix statt 403, Commit `d651ec6`) ist behoben und durch echte, nicht abgeschwächte Regressionstests belegt.
 - **Befunde:** **PM-Entscheidung A5-2:** Das `FALLBACK_KUERZEL`-Verhalten bleibt bewusst bestehen — es ist ein robuster Fallback für die Kürzelbildung; die Abweichung zu A4 (`EingabeFehler`) ist damit begründet und kein Fehler. (Wie beauftragt im Ergebnisprotokoll dokumentiert.)
 - **Offene Punkte:** [B3] `description`-Feld bei Wellen, [B4] Slug-Logik-Duplikat (Aufräum-Takt); Doku/Abschluss.
+
+## 2026-11-14 — coder (Kleinbefunde-Takt, Batch A)
+
+- **Ergebnis:** [N6] `MAX_KANDIDATEN`-Off-by-One korrigiert (`range(1, MAX_KANDIDATEN + 1)`), Grenzfall-Tests ergänzt.
+- **Belege:** Kleinbefunde-Takt Batch A (+12 Tests); Gesamtsuite 761 grün.
+- **Offene Punkte:** [B3]/[B4] (Aufräum-Takt); Doku/Abschluss.

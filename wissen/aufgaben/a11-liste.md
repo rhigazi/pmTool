@@ -72,3 +72,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** **Freigegeben** — keine kritischen Befunde. 1 Kleinbefund.
 - **Befunde:** [A11-1] klein: `className`-Initialisierungen (Rest nach Umstellung auf `classList`).
 - **Offene Punkte:** A11-1 (Aufräum-Takt, siehe [features.md](/features.md)); Doku/Abschluss.
+
+## 2026-11-14 — coder (Kleinbefunde-Takt, Batch B)
+
+- **Ergebnis:** [A11-1] `classList.add` durchgängig in `liste.js` umgesetzt (+ Wächtertest gegen `className`-Reste).
+- **Belege:** Kleinbefunde-Takt Batch B (+7 Tests); Gesamtsuite 761 grün.
+- **Offene Punkte:** Doku/Abschluss.
