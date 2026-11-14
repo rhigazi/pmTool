@@ -27,7 +27,7 @@ ok()   { printf '  ✓ %s\n' "$*"; }
 warn() { printf '  ! %s\n' "$*"; }
 
 hilfe() {
-  sed -n '2,13p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 for arg in "$@"; do
@@ -173,6 +173,8 @@ starte_colab() {
     return 0
   fi
   info "→ Colab-Start: python3 definitions/app/start_colab.py (gibt Port $PORT im Browser frei)"
+  # Kein eigener Trap: Strg+C erreicht die Prozessgruppe; start_colab.py beendet
+  # sich per KeyboardInterrupt und der Server-Subprozess erhält das Signal ebenfalls.
   PORT="$PORT" python3 "$start"
 }
 

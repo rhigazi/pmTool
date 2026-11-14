@@ -59,6 +59,8 @@ def installation(tmp_path_factory):
     # Cache-Artefakte der lokalen Testläufe sicherstellen (dürfen nicht mitverteilt werden).
     (DEFINITIONS / "app" / "__pycache__").mkdir(exist_ok=True)
     (DEFINITIONS / "app" / "tests" / ".pytest_cache").mkdir(exist_ok=True)
+    (DEFINITIONS / "tools" / "__pycache__").mkdir(exist_ok=True)
+    (DEFINITIONS / "tools" / "tests" / ".pytest_cache").mkdir(parents=True, exist_ok=True)
     ziel = tmp_path_factory.mktemp("vorlage") / "projekt"
     ergebnis = _setup(ziel, "--wissen")
     assert ergebnis.returncode == 0, ergebnis.stderr
@@ -108,6 +110,16 @@ def test_t1b_keine_cache_artefakte(installation):
     assert not list(app.rglob("__pycache__"))
     assert not list(app.rglob("*.pyc"))
     assert not list(app.rglob(".pytest_cache"))
+
+
+def test_t1c_keine_cache_artefakte_in_tools(installation):
+    ziel, _ = installation
+    tools = ziel / "tools"
+
+    assert (tools / "telegram_send.py").is_file()
+    assert not list(tools.rglob("__pycache__"))
+    assert not list(tools.rglob("*.pyc"))
+    assert not list(tools.rglob(".pytest_cache"))
 
 
 # --- T2: Idempotenz -------------------------------------------------------

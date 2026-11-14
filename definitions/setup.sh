@@ -72,16 +72,19 @@ echo "4) Werkzeuge (tools/)"
 if [ -d "$SRC/tools" ]; then
   for f in "$SRC"/tools/*; do
     [ -e "$f" ] || continue
+    name="$(basename "$f")"
+    case "$name" in
+      __pycache__|.pytest_cache) continue ;;
+    esac
     if [ -d "$f" ]; then
-      if [ -e "$TARGET/tools/$(basename "$f")" ] && [ "$FORCE" -eq 0 ]; then
-        echo "  übersprungen (vorhanden): tools/$(basename "$f")"
+      if [ -e "$TARGET/tools/$name" ] && [ "$FORCE" -eq 0 ]; then
+        echo "  übersprungen (vorhanden): tools/$name"
       else
-        mkdir -p "$TARGET/tools"
-        cp -r "$f" "$TARGET/tools/$(basename "$f")"
-        echo "  installiert: tools/$(basename "$f")"
+        copy_tree "$f" "$TARGET/tools/$name"
+        echo "  installiert: tools/$name"
       fi
     else
-      install_file "$f" "$TARGET/tools/$(basename "$f")"
+      install_file "$f" "$TARGET/tools/$name"
     fi
   done
   if ! grep -q '^config\.json$' "$TARGET/.gitignore" 2>/dev/null; then
