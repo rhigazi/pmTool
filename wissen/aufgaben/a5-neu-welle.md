@@ -1,0 +1,51 @@
+---
+type: Task
+title: "A5: Welle anlegen neu_welle.py"
+description: Neue Wellen-Datei in wellen/ mit type Welle, validiertem Status/owner, Ziel-Abschnitt und leerer Aufgaben-Linkliste anlegen.
+task_status: offen
+phase: 2 Planung
+priority: hoch
+assigned_to: coder
+user_story: /projekt/user-stories/us-4.md
+owner: ai
+---
+
+# Ziel
+
+`definitions/app/neu_welle.py` implementiert `anlegen({titel, ziel, status, owner})` → `wellen/<kuerzel>.md` mit `type: Welle`, `title`, `status` (nur die 6 UI-Werte), `owner` und dem Body `# Ziel` + `# Aufgaben` (Linkliste, leer startend). Der Ordner `wellen/` wird bei Erstanlage erzeugt.
+
+# Akzeptanzkriterien
+
+- Der Ordner `wellen/` wird bei Erstanlage angelegt.
+- Status und owner werden validiert; bei Verstoß `EingabeFehler` ohne Datei.
+- Bei Namenskollision entsteht ein Suffix, die bestehende Datei bleibt unverändert.
+- Die neue Welle erscheint in `GET /api/wellen` (Integrationstest).
+
+# Testfälle (TDD)
+
+- **T1 Happy Path:** `wellen/<kuerzel>.md` existiert.
+- **T2 Frontmatter:** `type: Welle`, `title`, `status`, `owner`.
+- **T3 Ordner-Erstanlage:** Ordner und Datei entstehen.
+- **T4 Ungültiger Status:** `EingabeFehler`, keine Datei.
+- **T5 Ungültiger owner:** `EingabeFehler`.
+- **T6 Leerer Titel:** `EingabeFehler`.
+- **T7 Kollision:** `…-2.md`, erste Datei unverändert.
+- **T8 Body:** `# Ziel` und `# Aufgaben` vorhanden.
+- **T9 Kürzel:** `Wave 1 — MVP` → `wave-1-mvp.md`.
+
+# Kontext
+
+- **Abhängigkeiten:** A1 — **parallel zu A4**.
+- **Konfliktgruppe G5:** `neu_welle.py` exklusiv.
+- **Nachfolger:** A9 (`POST /api/welle`) und A13 (Formular) nutzen dieses Modul.
+- **Entscheidungen:** R2 (Slug-Konvention analog Aufgaben), R5 (Wellen-Struktur: `wissen/wellen/index.md` existiert bereits und ist im Root-Index verlinkt).
+- **Verweise:** Struktur neuer Punkte in [Technischer Spec](/projekt/technische-spec.md); Statuswerte in [Phasenmodell](/projekt/phasen.md).
+
+# Betroffene Dateien
+
+- `definitions/app/neu_welle.py`
+- `definitions/app/tests/test_neu_welle.py`
+
+# Ergebnisse
+
+Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.

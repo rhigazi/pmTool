@@ -1,0 +1,145 @@
+# Entscheidungslog
+
+Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
+
+## 2026-11-14: Projekt vollständig ins GitHub-Repository umgezogen
+
+**Entscheidung:** Das Projekt liegt vollständig in `/content/pmTool` (Repository `github.com/rhigazi/pmTool`, Branch `main`): `definitions/` (Single Source of Truth), `wissen/` (OKF-Bundle), `docs/prd.md`, dazu die installierte Projekt-Wurzel (`AGENTS.md`, `.opencode/agents/`, `opencode.jsonc`, `tools/`). Alle Pfade wurden von `/content/wissen` auf `/content/pmTool/wissen` umgestellt (Spec, User Stories, Planung, Aufgaben, PRD). Bestehende Einträge in diesem Log bleiben unverändert (Historie). Ausschlüsse: `sample_data/`, `.config/`, `config.json` (Secret), Cruft-Dateien (`.gitignore`).
+
+**Begründung:** Projektdateien sollen nicht lose in `/content` liegen; Git ist der gemeinsame Stand (Commit nach jedem Meilenstein, Push nach `origin/main`).
+
+**Auswirkung:** `BUNDLE_ROOT` ist `/content/pmTool/wissen`; `verify.sh` läuft gegen `/content/pmTool`; Commits erfolgen aus `/content/pmTool`.
+
+## 2026-11-14: Schreibrecht für task_status konkretisiert (Klarung/Geschlossen)
+
+**Entscheidung:** Die Schreibrechte-Matrix der Spec wird wie folgt ausgelegt: Die App darf `task_status` ausschließlich auf die Werte `in Klärung` (Klarung) und `abgeschlossen` (Geschlossen) setzen — genau diese Teilmenge. Jeder andere Statuswechsel (`in Planung`, `in Umsetzung`, `im Review`, `im Test`, `in Doku`, `zur Abnahme`, …) wird serverseitig mit 403 abgewiesen.
+
+**Begründung:** Die beiden erlaubten Status sind fachlich der Projektleitung zugeordnet (Rückfrage stellen, Abnahme); die Pipeline-Steuerung bleibt wie bisher ausschließlich der KI vorbehalten.
+
+**Auswirkung:** `meta.py`/Schreib-API implementieren die Whitelist; Testfälle prüfen 403 bei allem anderen.
+
+## 2026-11-14: Slug-Konvention für neue Aufgaben und Wellen
+
+**Entscheidung:** IDs neuer Punkte sind lesbare ASCII-Slugs aus dem Titel (Umlaute → ASCII, Sonderzeichen → `-`, max. 60 Zeichen), Kollisionen bekommen ein Suffix (`-2`, `-3`). Dateien werden nie überschrieben.
+
+**Begründung:** Lesbare Pfade (auch ohne App nachvollziehbar), robust gegen Sonderzeichen, kein separates Nummernregister nötig.
+
+**Auswirkung:** `neu_aufgabe.py`/`neu_welle.py` setzen die Regel um; Aufgaben liegen als `wissen/aufgaben/<slug>.md`, Wellen als `wissen/wellen/<slug>.md`.
+
+## 2026-11-14: Wellen-Struktur im Bundle nachgepflegt (R5)
+
+**Entscheidung:** Der Ordner `wissen/wellen/` wird mit `index.md` angelegt und unter „Struktur“ in `wissen/index.md` verlinkt. Die Pflege der `index.md`-Dateien übernimmt der Projektmanager/documenter wie bisher — nicht die App.
+
+**Begründung:** US-4 verlangt, dass Wellen auch ohne App im Bundle auffindbar sind; die App darf `index.md` laut Schreibrechten nicht pflegen.
+
+**Auswirkung:** Vorlage und Projekt-Bundle enthalten die Wellen-Struktur; `setup.sh --wissen` verteilt sie künftig.
+
+## 2026-11-14: feature-Feld bleibt optional; Testisolation verbindlich
+
+**Entscheidung:** Das Frontmatter-Feld `feature:` in Aufgaben ist im MVP optional (Feature-Dateien werden erst mit dem Beginn der Feature-Arbeit angelegt). Verbindlich für alle Tests: Szenarien laufen ausschließlich gegen Test-Bundle unter `/tmp/opencode/moli-bundle` — `/content/wissen` wird von pytest/Moli nie beschrieben.
+
+**Begründung:** Verhindert inkonsistente Pflichtverweise und Datenverlust beim Testen.
+
+**Auswirkung:** Aufgabenformat behält `feature:` als optionales Feld; A17 prüft zusätzlich die Unversehrtheit des echten Bundles per Hash.
+
+**Entscheidung:** Die App ist primär ein Tracker zur Projektsteuerung. Das Mitpflegen von `index.md`, `features.md` und `log.md` übernimmt die **KI** (Projektmanager/documenter), nicht die Person. Ziel: Die KI bleibt jederzeit in der Lage, das Projekt im OpenCode-CLI-Dialog fortzusetzen, Probleme zu klären, Nachträge zu dokumentieren und offene Fragen/Aufgaben zu behalten, bis sie gelöst sind. Priorisierung der Aufgabenpakete obliegt dem Projektmanager, nicht der Person.
+
+**Begründung:** Autonome Arbeitsweise der KI soll gewahrt bleiben; das Tool steuert, ergänzt und verfeinert, bearbeitet aber nicht selbst.
+
+**Auswirkung:** Schreibrechte der App sind in der Technischen Spec als Matrix festgelegt (Nachtrag, Anlegen, owner, `Klarung`/`Geschlossen` — alles andere KI-Sache).
+
+## 2026-11-14: Sechs UI-Status sind eine Sicht auf das bestehende task_status
+
+**Entscheidung:** Die sechs PRD-Status (Klarung, Offen, In Arbeit, Testing, Dokumentation, Geschlossen) werden **nicht** als zweites Statusmodell in den Dateien geführt, sondern leiten sich als Anzeige-/Filterebene aus `task_status`/`phase` ab (Mapping siehe Technische Spec). Wellen und andere Punkte ohne `task_status` tragen `status` direkt.
+
+**Begründung:** Der festgelegte Workflow (Phasenmodell) bleibt unverändert; es entsteht keine parallele Statuslogik.
+
+**Auswirkung:** Listenansicht filtert über die sechs UI-Status; Aufgaben-Dateien behalten ihr bisheriges Frontmatter-Schema.
+
+## 2026-11-14: Zuständigkeit als Frontmatter-Feld owner (mensch | ai)
+
+**Entscheidung:** Jeder Punkt trägt `owner: mensch | ai` im YAML-Frontmatter. Die Person darf `owner` jederzeit umschalten; zusätzlich darf sie nur die Status `Klarung` (Rückfrage) und `Geschlossen` (Abnahme) setzen. Pipeline-Statuswechsel bleiben KI-Sache.
+
+**Begründung:** Status + owner beantworten gemeinsam „Wo steht es“ und „Wer ist als Nächstes dran“, ohne in die Steuerung der KI einzugreifen.
+
+**Auswirkung:** `owner` ist Pflichtfeld für neue Aufgaben/Wellen; Spalte in der Listenansicht.
+
+## 2026-11-14: Colab-Start ohne externen Tunnel (Port-Freigabe nativ)
+
+**Entscheidung:** Die App wird über einen schlanken Python-Server (Flask) gestartet; der Zugang erfolgt über die eingebaute Colab-Port-Freigabe (`google.colab.output.serve_kernel_port_as_window/iframe`). pyngrok/ngrok/Gradio/Streamlit werden nicht verwendet.
+
+**Begründung:** Einfachster sicherer Weg ohne externen Dienst, ohne Token und ohne Account — Port-Freigabe ist in Colab integriert.
+
+**Auswirkung:** Technische Spec und US-6 halten Start-Befehle fest; `definitions/app/` wird um `server.py` + statisches Frontend ergänzt.
+
+## 2026-11-14: MVP-Umfang — Nachtrag + Aufgabe + Welle anlegen
+
+**Entscheidung:** Der MVP kann: Nachtrag einfügen, neue Aufgabe anlegen, neue Welle anlegen (jeweils OKF-konform) — dazu Übersicht/Listen mit Status/owner. Alle OKF-Typen anlegen und KI-Übergabe-Helfer als Ausbau.
+
+**Begründung:** Deckt den Kernablauf ab („Punkte anlegen, die die KI bearbeitet“), hält den Start klein und testbar.
+
+**Auswirkung:** US-2, US-3, US-4 sind MVP-Scope; weitere Typen kommen in einer späteren Welle.
+
+## 2026-11-14: Navigation mit fünf Hauptpunkten
+
+**Entscheidung:** Fünf Navigationspunkte: Übersicht, Wellen, Aufgaben, Entscheidungen, Projekt (mit Unterpunkten Konzept, Spec, User Stories, Phasen, Log).
+
+**Begründung:** Niedrigste mögliche Komplexität, ausreichend für die Projektsteuerung; Kern ist die Listenansicht.
+
+**Auswirkung:** Frontend-Routing und `GET /api/overview` richten sich danach (US-1).
+
+## 2026-11-14: Statusmodell einheitlich für Wellen, Aufgaben und Punkte
+
+**Entscheidung:** Ein einziges Statusmodell für alle Elemente: `Klarung`, `Offen`, `In Arbeit`, `Testing`, `Dokumentation`, `Geschlossen`.
+
+**Begründung:** Gleiche Spalten und gleiche Lesart überall, geringstmögliche Komplexität in Oberfläche und Pflege.
+
+**Auswirkung:** App-Liste, Wissensdatenbank und Kommunikation verwenden dieselben Statuswerte; keine getrennten Statuslogiken.
+
+## 2026-11-14: Zuständigkeit als eigenes Feld (owner: mensch | ai)
+
+**Entscheidung:** Zusätzlich zum Status gibt es `owner` mit den Werten `mensch` oder `ai`. Status + Zuständigkeit steuern gemeinsam, wer als Nächstes dran ist (z. B. `Klarung` + `owner: mensch` = Projektmanager wartet auf Antwort der Projektleitung).
+
+**Begründung:** Der Status allein sagt nicht, wer antworten muss; durch die Trennung ist jederzeit sichtbar, in welcher Phase eine Sache steht und wer als Nächstes handelt.
+
+**Auswirkung:** Listenansicht der App zeigt Status und owner; beide Seiten (Mensch und Projektmanager) orientieren sich daran.
+
+## 2026-11-14: Nachträge als sichtbarer Block im Dateitext
+
+**Entscheidung:** Nachträge der Projektleitung werden als hervorgehobener Block in die jeweilige Datei eingefügt, z. B. `> **Nachtrag (Mensch, 2026-11-14):** …`.
+
+**Begründung:** So ist in der Datei eindeutig erkennbar, was vom Menschen stammt und geändert werden soll — auch ohne App, rein über den OKF-Text für die KI lesbar.
+
+**Auswirkung:** App bietet Feld zum Einfügen solcher Blöcke; OKF-Struktur und -Lesbarkeit bleiben erhalten.
+
+## 2026-11-14: Umsetzung in Colab, App aus Colab gestartet, Bundle unter /content
+
+**Entscheidung:** Umsetzung primär in Colab. Die SPA wird über einen lokalen Python-Server in Colab plus Browser-Tunnel gestartet. Die Wissensdatenbank liegt in Colab unter `/content/wissen/`.
+
+**Begründung:** App und OpenCode-CLI arbeiten auf denselben Dateien (eine Quelle, kein Synchronisationsaufwand), Umsetzung bleibt in einer Umgebung.
+
+**Auswirkung:** `definitions/` wird um Server-/App-Funktionalität erweitert; Start erfolgt über eine Colab-Zelle.
+
+## 2026-11-14: Kommunikation Mensch/KI über Dateien + Status im Bundle
+
+**Entscheidung:** Der OpenCode-CLI-Chat läuft unabhängig von der App; gemeinsamer Kanal sind Dateien und Status im OKF-Bundle (Session-Start liest wie definiert `wissen/index.md`).
+
+**Begründung:** Nutzt den bereits definierten Workflow, kein zusätzliches Protokoll, klare Single Source of Truth.
+
+**Auswirkung:** Keine direkte KI-Anbindung aus der App im MVP; Status-/Nachtrag-Pflege im Bundle genügt.
+
+## 2026-11-14: Wellen als eigener OKF-Punkt je Welle
+
+**Entscheidung:** Jede Welle wird als eigener Punkt angelegt (z. B. `wissen/wellen/wave-1.md` mit `type: Welle`, Status, owner, Ziel, verlinkte Aufgaben).
+
+**Begründung:** Strukturiert, maschinenlesbar, OKF-konform und für App wie KI gleichermassen zugänglich; gleiche Statuswerte wie überall.
+
+**Auswirkung:** Neuer Ordner `wissen/wellen/` plus Navigationspunkt in der App.
+
+## 2026-11-14: Bestehender Arbeitsablauf bleibt unverändert
+
+**Entscheidung:** Der in `AGENTS.md` festgelegte Arbeitsablauf (Projektmanager + Subagenten `planner`, `coder`, `reviewer`, `tester`, `documenter`) wird durch die App nicht verändert.
+
+**Begründung:** Die App unterstützt die Kommunikation, definiert den Workflow nicht neu.
+
+**Auswirkung:** `definitions/AGENTS.md` bleibt Maßstab; App-Erweiterungen kommen als zusätzliche Funktionalitäten in `definitions/` dazu.

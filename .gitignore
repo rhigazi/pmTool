@@ -1,0 +1,18 @@
+# Cruft / Systemdateien
+.DS_Store
+__MACOSX/
+.pytest_cache/
+*.pyc
+__pycache__/
+
+# Geheimnisse — niemals committen
+config.json
+.env
+*.token
+
+# Lokale Archiv-/Arbeitsdateien
+*.zip
+
+# Nicht in das Repository gehörige Arbeitsbereiche
+sample_data/
+.config/
