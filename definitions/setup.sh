@@ -41,13 +41,13 @@ install_file() {  # $1 = Quelle, $2 = Ziel
   echo "  installiert: $2"
 }
 
-copy_tree() {  # $1 = Quellverzeichnis, $2 = Zielverzeichnis (ohne __pycache__/*.pyc)
+copy_tree() {  # $1 = Quellverzeichnis, $2 = Zielverzeichnis (ohne __pycache__/.pytest_cache/*.pyc)
   mkdir -p "$2"
-  find "$1" -type d ! -name '__pycache__' -print0 |
+  find "$1" -type d ! -name '__pycache__' ! -name '.pytest_cache' ! -path '*/.pytest_cache/*' -print0 |
     while IFS= read -r -d '' verzeichnis; do
       mkdir -p "$2${verzeichnis#"$1"}"
     done
-  find "$1" -type f ! -path '*/__pycache__/*' ! -name '*.pyc' -print0 |
+  find "$1" -type f ! -path '*/__pycache__/*' ! -path '*/.pytest_cache/*' ! -name '*.pyc' -print0 |
     while IFS= read -r -d '' datei; do
       ziel="$2${datei#"$1"}"
       mkdir -p "$(dirname "$ziel")"
@@ -120,6 +120,8 @@ if [ "$GLOBAL" -eq 1 ]; then
   done
 
   echo "8) Global: Wichtige Skills & Browser (npx/curl)"
+  # Fremdcode: OKF-Skill okf-knowledge-base aus dem Repo inkeep/open-knowledge-skills
+  # (npx-CLI „skills"). Zweck: fehlende globale Skills nachrüsten; Security-Check siehe skills.sh.
   if command -v npx >/dev/null 2>&1; then
     ( cd "$HOME" && npx skills add https://github.com/inkeep/open-knowledge-skills --skill okf-knowledge-base ) \
       || echo "  Warnung: okf-knowledge-base konnte nicht installiert werden"
@@ -127,19 +129,42 @@ if [ "$GLOBAL" -eq 1 ]; then
     echo "  Warnung: npx nicht gefunden – okf-knowledge-base übersprungen"
   fi
 
-  curl --proto '=https' --tlsv1.2 -fsSL \
-    https://github.com/lexmount/moli/releases/latest/download/moli-installer.sh | sh \
-    || echo "  Warnung: moli-Installer fehlgeschlagen"
+  if command -v moli >/dev/null 2>&1; then
+    echo "  übersprungen (vorhanden): moli"
+  else
+    # Moli-Installer nur geprüft ausführen: feste Version v1.1.24, SHA256 gegen
+    # den Release-Digest (Quelle: GitHub lexmount/moli, Release v1.1.24).
+    MOLI_INSTALLER_URL="https://github.com/lexmount/moli/releases/download/v1.1.24/moli-installer.sh"
+    MOLI_INSTALLER_SHA256="37fdd1d9c3e15ca5780c30a5792afd94c8cf26dc6d71c9274231bdc2fc062969"
+    installer="$(mktemp)"
+    if ! curl --proto '=https' --tlsv1.2 -fsSL -o "$installer" "$MOLI_INSTALLER_URL"; then
+      rm -f "$installer"
+      echo "  Warnung: moli-Installer fehlgeschlagen (Download)" >&2
+      exit 1
+    fi
+    checksumme_ist="$(sha256sum "$installer" | awk '{print $1}')"
+    if [ "$checksumme_ist" != "$MOLI_INSTALLER_SHA256" ]; then
+      rm -f "$installer"
+      echo "  Fehler: Checksumme des moli-Installers weicht ab (erwartet $MOLI_INSTALLER_SHA256, ist $checksumme_ist)" >&2
+      exit 1
+    fi
+    if ! sh "$installer"; then
+      rm -f "$installer"
+      echo "  Warnung: moli-Installer fehlgeschlagen" >&2
+      exit 1
+    fi
+    rm -f "$installer"
+  fi
 fi
 
-echo "8) Dev-Abhängigkeiten (pytest)"
+echo "9) Dev-Abhängigkeiten (pytest)"
 if python3 -m pytest --version >/dev/null 2>&1; then
   echo "  übersprungen (vorhanden): pytest"
 else
   python3 -m pip install --quiet pytest && echo "  installiert: pytest" || echo "  Warnung: pytest konnte nicht installiert werden"
 fi
 
-echo "9) App (app/)"
+echo "10) App (app/)"
 if [ -d "$SRC/app" ]; then
   for f in "$SRC"/app/*; do
     [ -e "$f" ] || continue

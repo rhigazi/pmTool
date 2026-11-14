@@ -14,6 +14,7 @@ fehlt ``setup.sh`` im Projektwurzelverzeichnis, weshalb das Modul sich selbst
 """
 
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -55,8 +56,9 @@ def _pytest(tests: Path) -> subprocess.CompletedProcess:
 @pytest.fixture(scope="module")
 def installation(tmp_path_factory):
     """Einmalige Installation mit ``--wissen`` als Vorlage für alle Tests."""
-    # Cache-Artefakt der lokalen Testläufe sicherstellen (darf nicht mitverteilt werden).
+    # Cache-Artefakte der lokalen Testläufe sicherstellen (dürfen nicht mitverteilt werden).
     (DEFINITIONS / "app" / "__pycache__").mkdir(exist_ok=True)
+    (DEFINITIONS / "app" / "tests" / ".pytest_cache").mkdir(exist_ok=True)
     ziel = tmp_path_factory.mktemp("vorlage") / "projekt"
     ergebnis = _setup(ziel, "--wissen")
     assert ergebnis.returncode == 0, ergebnis.stderr
@@ -170,8 +172,6 @@ def test_t5_verify_app_abschnitt(verify_lauf):
 
 def test_t5b_verify_gruen(verify_lauf):
     _, ergebnis = verify_lauf
-    if "✗ App-Test-Suite" in ergebnis.stdout:
-        pytest.skip("App-Suite im verteilten Ziel derzeit rot (parallele Aufgaben)")
 
     assert ergebnis.returncode == 0, ergebnis.stdout + ergebnis.stderr
 
@@ -192,7 +192,7 @@ def test_t6_verify_nennt_fehlende_app_datei(ziel):
 
 
 def test_t7_tests_mitverteilt(ziel):
-    ergebnis = _pytest(ziel / "app/tests/test_static.py")
+    ergebnis = _pytest(ziel / "app/tests")
 
     assert ergebnis.returncode == 0, ergebnis.stdout + ergebnis.stderr
     assert "passed" in ergebnis.stdout
@@ -204,8 +204,44 @@ def test_t7_tests_mitverteilt(ziel):
 def test_t8_bestehende_abschnitte(installation):
     _, ausgabe = installation
 
-    for nummer in ("1)", "2)", "3)", "4)", "5)", "8)", "9)"):
+    for nummer in ("1)", "2)", "3)", "4)", "5)", "9)", "10)"):
         assert f"{nummer} " in ausgabe, f"Abschnitt {nummer} fehlt"
     quelle = SETUP.read_text(encoding="utf-8")
     assert "6) Global: Subagenten" in quelle
     assert "7) Global: Skill-Snapshots" in quelle
+    assert "8) Global: Wichtige Skills & Browser" in quelle
+
+
+# --- T9–T11: Härtung Moli in der --global-Sektion (A20) --------------------
+# --global läuft in den Tests nicht echt (kein Netz, kein Download); das
+# Verhalten wird über Quelltext-Marker abgesichert (wie T8).
+
+
+def test_t9_moli_guard_kein_download_bei_vorhanden():
+    quelle = SETUP.read_text(encoding="utf-8")
+
+    assert "command -v moli" in quelle
+    assert "übersprungen (vorhanden): moli" in quelle
+    # Der Guard steht vor dem Download des Installers
+    assert quelle.index("command -v moli") < quelle.index("moli-installer.sh")
+
+
+def test_t10_moli_installer_fehler_abbruch_mit_warnung():
+    quelle = SETUP.read_text(encoding="utf-8")
+
+    assert "Warnung: moli-Installer fehlgeschlagen" in quelle
+    # Auf den Fehlerhinweis folgt der Abbruch
+    position = quelle.index("Warnung: moli-Installer fehlgeschlagen")
+    assert "exit 1" in quelle[position:]
+
+
+def test_t11_moli_installer_nur_geprueft_ausfuehren():
+    quelle = SETUP.read_text(encoding="utf-8")
+
+    # Feste Version statt "latest" (Herkunft: GitHub-Release lexmount/moli)
+    assert "releases/download/v" in quelle
+    assert "releases/latest" not in quelle
+    # Checksummen-Prüfung vor der Ausführung, kein Pipe-in-sh
+    assert "sha256sum" in quelle
+    assert quelle.index("sha256sum") < quelle.index('sh "$installer"')
+    assert not re.search(r"\|\s*sh\b", quelle)
