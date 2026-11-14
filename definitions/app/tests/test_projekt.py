@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import server
 
 STATIC_DIR = Path(__file__).resolve().parents[1] / "static"
+INDEX_HTML = STATIC_DIR / "index.html"
 PROJEKT_JS = STATIC_DIR / "js" / "projekt.js"
 APP_JS = STATIC_DIR / "js" / "app.js"
 API_JS = STATIC_DIR / "js" / "api.js"
@@ -63,6 +64,10 @@ LOG_ERWARTET = [
     {"datum": "2026-11-14", "titel": "Moli-Frage — Standardentscheidung Harness"},
     {"datum": "2026-11-13", "titel": "Navigation mit fünf Hauptpunkten"},
 ]
+
+# A14-Befund 3: HTML im Titel muss Literal bleiben (kein Knoten, keine Ausführung).
+HTML_TITEL = '<img src=x onerror=alert(1)>'
+LOG_HTML = f"# Entscheidungslog\n\n## 2026-11-14: {HTML_TITEL}\n"
 
 SPEC_MD = "# Technische Spec\n\nSpec-Absatz zur Prüfung.\n\n- Erster Punkt\n"
 
@@ -174,6 +179,12 @@ def test_projekt_js_nutzt_classlist_statt_classname():
 @pytest.mark.parametrize("container_id", ["liste-entscheidungen", "liste-projekt"])
 def test_projekt_js_verwendet_container_id(container_id):
     assert f'"{container_id}"' in lies(PROJEKT_JS)
+
+
+@pytest.mark.parametrize("container_id", ["liste-entscheidungen", "liste-projekt"])
+def test_index_html_hat_container(container_id):
+    # A14-Befund 2: der Vertrag aus A10 muss im Markup stehen (nur lesen).
+    assert re.search(rf'id="{container_id}"', lies(INDEX_HTML))
 
 
 @pytest.mark.parametrize(
@@ -431,6 +442,64 @@ def ui_lauf(basis: str, ablauf: str) -> dict:
     return _harness(ablauf, FETCH_PROXY.replace("__BASIS__", json.dumps(basis)))
 
 
+APP_UMGEBUNG = (
+    MINI_DOM
+    + r"""
+// Router-Umgebung (A14-Befund 4): Fenster-Hash, DOM-Ereignisse, Detail-Bereich.
+const dokumentHoerer = {};
+document.querySelectorAll = () => [];
+document.addEventListener = (art, hoerer) => {
+  if (!dokumentHoerer[art]) dokumentHoerer[art] = [];
+  dokumentHoerer[art].push(hoerer);
+};
+document.readyState = "loading";
+
+const fensterHoerer = {};
+globalThis.window = {
+  location: { hash: "" },
+  addEventListener: (art, hoerer) => {
+    if (!fensterHoerer[art]) fensterHoerer[art] = [];
+    fensterHoerer[art].push(hoerer);
+  },
+};
+
+const detailBereich = document.createElement("div");
+detailBereich.id = "detail";
+
+const warte = () => new Promise((fertig) => setTimeout(fertig, 5));
+const warteAuf = async (bedingung) => {
+  for (let versuch = 0; versuch < 100; versuch += 1) {
+    if (bedingung()) return true;
+    await warte();
+  }
+  return false;
+};
+"""
+)
+
+
+def app_lauf(ablauf: str, antworten: dict | None = None) -> dict:
+    """Führt einen Ablauf über den echten Router (``app.js``) im DOM-Stab aus.
+
+    Der Klick auf einen Link wird wie im Browser nachgestellt: der Hash wird
+    gesetzt und ``hashchange`` ausgelöst — danach entscheidet ``app.js``, welche
+    Ansicht lädt.
+    """
+    fetch_skript = (
+        FETCH_STAB.replace("__ANTWORTEN__", json.dumps(antworten or {}, ensure_ascii=False))
+        .replace("__BASIS__", json.dumps("http://lokal"))
+    )
+    skript = (
+        APP_UMGEBUNG
+        + fetch_skript
+        + "\nconst ergebnis = await (async () => {\n"
+        + ablauf
+        + "\n})();\n"
+        + "console.log(JSON.stringify(ergebnis));\n"
+    )
+    return node_ausfuehren(skript)
+
+
 SZENARIO_T1 = r"""
 await projekt.ladeEntscheidungenAnsicht();
 return {
@@ -475,6 +544,60 @@ def szenario_fehler(aufruf: str, container: str) -> str:
     return SZENARIO_FEHLER.replace("__AUFRUF__", aufruf).replace("__CONTAINER__", container)
 
 
+SZENARIO_HTML_TITEL = r"""
+const ausfuehrungen = [];
+globalThis.alert = (wert) => ausfuehrungen.push(String(wert));
+await projekt.ladeEntscheidungenAnsicht();
+const alle = bei("liste-entscheidungen").alleKnoten();
+return {
+  texte: links("liste-entscheidungen").map((eintrag) => eintrag.text),
+  marken: alle.map((knoten) => knoten.marke),
+  ausfuehrungen,
+  abgerufen: aufrufe.map((a) => a.endpunkt + " " + a.datei),
+};
+"""
+
+SZENARIO_LEERER_UNTERPUNKT = r"""
+await projekt.ladeProjektAnsicht({ unterpunkt: "phasen" });
+const alle = bei("liste-projekt").alleKnoten();
+return {
+  hinweise: alle.filter((knoten) => knoten.classList.contains("leer")).map((knoten) => knoten.textContent),
+  absaetze: alle.filter((knoten) => knoten.marke === "p").map((knoten) => knoten.textContent),
+  ueberschriften: alle.filter((knoten) => knoten.marke === "h3").map((knoten) => knoten.textContent),
+  links: links("liste-projekt"),
+  abgerufen: aufrufe.map((a) => a.endpunkt + " " + a.datei),
+};
+"""
+
+SZENARIO_T2_KLICK = r"""
+window.location.hash = __START__;
+await import(__APP__);
+for (const hoerer of dokumentHoerer.DOMContentLoaded || []) await hoerer();
+await warteAuf(() => links("liste-entscheidungen").length > 0);
+
+const eintrag = links("liste-entscheidungen")[0];
+// Klick wie im Browser: Hash setzen, dann meldet sich der Router per hashchange.
+window.location.hash = eintrag.href;
+for (const hoerer of fensterHoerer.hashchange || []) await hoerer();
+await warteAuf(() => bei("detail").textContent.includes(__TITEL__));
+
+return {
+  href: eintrag.href,
+  abgerufen: aufrufe.map((a) => a.endpunkt + " " + a.datei),
+  detailText: bei("detail").textContent,
+  fehler: { sichtbar: sichtbar("fehler"), text: bei("fehler").textContent },
+};
+"""
+
+
+def szenario_klick(start: str, titel: str) -> str:
+    return (
+        SZENARIO_T2_KLICK.replace("__START__", json.dumps(start))
+        .replace("__APP__", json.dumps(APP_JS.as_uri()))
+        .replace("__TITEL__", json.dumps(titel))
+    )
+
+
 @ohne_node
 def test_t1_entscheidungen_zeigen_datum_und_titel():
     ergebnis = dom(
@@ -500,6 +623,34 @@ def test_t2_eintrag_oeffnet_detail_der_log_datei():
         assert eintrag["href"].startswith(DETAIL_VORSCHLAG)
         ziel = unquote(eintrag["href"][len(DETAIL_VORSCHLAG):])
         assert ziel == ENTSCHEIDUNGEN_PFAD
+
+    # A14-Befund 4: der Klick lädt die Datei wirklich über die A12-Ansicht —
+    # nicht nur ein gesetztes `href`. Geprüft wird der dekodierte Zielpfad.
+    klick = app_lauf(
+        szenario_klick("#/entscheidungen", LOG_ERWARTET[0]["titel"]),
+        antworten={ENTSCHEIDUNGEN_PFAD: {"status": 200, "koerper": {"frontmatter": {}, "markdown": LOG_MD}}},
+    )
+    assert unquote(klick["href"][len(DETAIL_VORSCHLAG):]) == ENTSCHEIDUNGEN_PFAD
+    assert klick["abgerufen"] == [
+        f"/api/file {ENTSCHEIDUNGEN_PFAD}",
+        f"/api/file {ENTSCHEIDUNGEN_PFAD}",
+    ]
+    assert LOG_ERWARTET[0]["titel"] in klick["detailText"]
+    assert klick["fehler"]["sichtbar"] is False
+
+
+@ohne_node
+def test_t1_html_im_titel_bleibt_text():
+    # A14-Befund 3: HTML-Payload im Log-Titel wird Literal gerendert.
+    ergebnis = dom(
+        SZENARIO_HTML_TITEL,
+        antworten={ENTSCHEIDUNGEN_PFAD: {"status": 200, "koerper": {"frontmatter": {}, "markdown": LOG_HTML}}},
+    )
+    assert ergebnis["texte"] == [f"2026-11-14: {HTML_TITEL}"]
+    assert "img" not in ergebnis["marken"]
+    assert "script" not in ergebnis["marken"]
+    assert ergebnis["ausfuehrungen"] == []
+    assert ergebnis["abgerufen"] == [f"/api/file {ENTSCHEIDUNGEN_PFAD}"]
 
 
 @ohne_node
@@ -581,16 +732,59 @@ def test_unbekannter_unterpunkt_ist_fail_loud():
 
 
 @ohne_node
-def test_ohne_container_ist_robust():
-    # Robustheit: ohne Container aus index.html passiert nichts und nichts crasht.
+@pytest.mark.parametrize(
+    "container,aufruf",
+    [
+        ("liste-entscheidungen", "await projekt.ladeEntscheidungenAnsicht();"),
+        ("liste-projekt", 'await projekt.ladeProjektAnsicht({ unterpunkt: "konzept" });'),
+    ],
+)
+def test_ohne_container_zeigt_fehlermeldung(container, aufruf):
+    # A14-Befund 2: fehlt der Container, wird das gemeldet statt still beendet.
+    ablauf = (
+        f'REGISTRIERT.delete("{container}");\n'
+        + aufruf
+        + "\nreturn {"
+        + ' fehler: { sichtbar: sichtbar("fehler"), text: bei("fehler").textContent },'
+        + " abgerufen: aufrufe.map((a) => a.endpunkt),"
+        + " };"
+    )
     ergebnis = dom(
-        "for (const id of [\"liste-entscheidungen\", \"liste-projekt\"]) REGISTRIERT.delete(id);\n"
+        ablauf,
+        antworten={"projekt/konzept.md": {"status": 200, "koerper": {"markdown": "# Konzept"}}},
+    )
+    assert ergebnis["fehler"]["sichtbar"] is True
+    assert container in ergebnis["fehler"]["text"]
+    # Ohne Ziel Container wird auch nichts geladen.
+    assert ergebnis["abgerufen"] == []
+
+
+@ohne_node
+def test_ohne_container_und_ohne_fehlerbereich_ist_robust():
+    # Doppelter Ausfall (Container und Fehlerbereich fehlen) darf nicht crashen.
+    ergebnis = dom(
+        'for (const id of ["fehler", "liste-entscheidungen", "liste-projekt"]) REGISTRIERT.delete(id);\n'
         "await projekt.ladeEntscheidungenAnsicht();\n"
-        "await projekt.ladeProjektAnsicht({ unterpunkt: \"konzept\" });\n"
+        'await projekt.ladeProjektAnsicht({ unterpunkt: "konzept" });\n'
         "return { ok: true };",
         antworten={"projekt/konzept.md": {"status": 200, "koerper": {"markdown": "# Konzept"}}},
     )
     assert ergebnis == {"ok": True}
+
+
+@ohne_node
+@pytest.mark.parametrize("markdown", ["", "   ", "\n \n"])
+def test_leerer_unterpunkt_zeigt_hinweis(markdown):
+    # A14-Befund 8: leere Datei zeigt einen Hinweis statt leerer Fläche.
+    ergebnis = dom(
+        SZENARIO_LEERER_UNTERPUNKT,
+        antworten={"projekt/phasen.md": {"status": 200, "koerper": {"frontmatter": {}, "markdown": markdown}}},
+    )
+    assert ergebnis["hinweise"] == ["Keine Inhalte."]
+    assert ergebnis["absaetze"] == ["Keine Inhalte."]
+    assert ergebnis["ueberschriften"] == ["Phasen"]
+    assert ergebnis["links"] == [{"text": "← Zurück zum Projekt", "href": "#/projekt"}]
+    assert ergebnis["abgerufen"] == ["/api/file projekt/phasen.md"]
 
 
 # --- HTTP-Läufe gegen ein Test-Bundle unter tmp_path -----------------------

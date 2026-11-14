@@ -10,6 +10,7 @@ const PROJEKT_VORSCHLAG = "#/projekt/";
 const PROJEKT_ROUTE = "#/projekt";
 
 const LEER_ENTSCHEIDUNGEN = "Keine Einträge.";
+const LEER_UNTERPUNKT = "Keine Inhalte.";
 const LADE_FEHLER = "Datei konnte nicht geladen werden.";
 const FORMAT_FEHLER = "Datei hat ein unerwartetes Format.";
 const ZURUECK = "← Zurück zum Projekt";
@@ -60,6 +61,11 @@ function erstelleHinweis(text) {
   return hinweis;
 }
 
+/** Meldet einen fehlenden Container (index.html), statt still zurückzukehren. */
+function meldeFehlendenContainer(id) {
+  zeigeFehler(`Ansicht nicht verfügbar: Container #${id} fehlt in index.html.`);
+}
+
 function istDatei(daten) {
   return (
     daten !== null &&
@@ -104,7 +110,10 @@ function erstelleEntscheidungsListe(eintraege) {
 /** Ansichts-Loader „Entscheidungen": Einträge aus `entscheidungen/log.md`. */
 export async function ladeEntscheidungenAnsicht() {
   const ziel = document.getElementById(CONTAINER_ENTSCHEIDUNGEN_ID);
-  if (!ziel) return;
+  if (!ziel) {
+    meldeFehlendenContainer(CONTAINER_ENTSCHEIDUNGEN_ID);
+    return;
+  }
 
   const daten = await ladeDatei(ENTSCHEIDUNGEN_PFAD, ziel);
   if (daten === null) return;
@@ -143,7 +152,9 @@ function erstelleProjektDetail(punkt, markdown) {
 
   const inhalt = document.createElement("div");
   inhalt.classList.add("detail-inhalt");
-  inhalt.append(rendereMarkdown(markdown));
+  // Befund 8: leere Datei zeigt einen Hinweis statt leerer Fläche.
+  const markdownText = typeof markdown === "string" ? markdown.trim() : "";
+  inhalt.append(markdownText ? rendereMarkdown(markdown) : erstelleHinweis(LEER_UNTERPUNKT));
 
   const zurueck = document.createElement("a");
   zurueck.classList.add("knopf");
@@ -160,7 +171,10 @@ function erstelleProjektDetail(punkt, markdown) {
  */
 export async function ladeProjektAnsicht({ unterpunkt } = {}) {
   const ziel = document.getElementById(CONTAINER_PROJEKT_ID);
-  if (!ziel) return;
+  if (!ziel) {
+    meldeFehlendenContainer(CONTAINER_PROJEKT_ID);
+    return;
+  }
 
   const name = typeof unterpunkt === "string" ? unterpunkt.trim() : "";
   if (!name) {
