@@ -2,16 +2,26 @@
 
 Die UI-Szenarien T1–T10 spielt der ``tester`` mit dem Moli-Browser durch; hier
 werden ``detail.js`` und seine Verdrahtung ohne Browser geprüft. Die reine
-Markdown-/Metadaten-Logik läuft über Node (keine neue Abhängigkeit).
+Markdown-/Metadaten-Logik läuft über Node (keine neue Abhängigkeit). T10
+(403-Pfad) ist zusätzlich hier direkt belegt: Mini-DOM in Node, der
+``fetch``-Proxy erzwingt die 403 am echten Server.
 """
 
+import hashlib
 import json
 import re
 import shutil
 import subprocess
+import sys
+import threading
 from pathlib import Path
 
 import pytest
+from werkzeug.serving import make_server
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+import server
 
 STATIC_DIR = Path(__file__).resolve().parents[1] / "static"
 DETAIL_JS = STATIC_DIR / "js" / "detail.js"
@@ -24,20 +34,19 @@ ohne_node = pytest.mark.skipif(NODE is None, reason="node nicht verfügbar")
 # Nur diese beiden UI-Status darf die App setzen (R1); Pipeline-Status fehlen.
 ERLAUBTE_STATUS_KNOEPFE = ["Klarung", "Geschlossen"]
 
+# T10: Die UI zeigt "In Arbeit" an, darf ihn aber nie setzen (R1).
+T10_DATEI = "aufgaben/a1.md"
+T10_VERBOTENER_STATUS = "In Arbeit"
+
 
 def lies(pfad: Path) -> str:
     assert pfad.is_file(), f"{pfad} fehlt"
     return pfad.read_text(encoding="utf-8")
 
 
-def js(ausdruck: str, daten=None):
-    """Wertet einen Ausdruck im Kontext von ``detail.js`` über Node aus."""
+def node_ausfuehren(skript: str) -> dict:
+    """Führt ein Node-Skript aus und liest das JSON-Ergebnis aus stdout."""
     assert NODE is not None
-    skript = (
-        f"import * as detail from {json.dumps(DETAIL_JS.as_uri())};\n"
-        f"const daten = {json.dumps(daten, ensure_ascii=False)};\n"
-        f"console.log(JSON.stringify({ausdruck}));"
-    )
     ergebnis = subprocess.run(
         [NODE, "--input-type=module", "-e", skript],
         capture_output=True,
@@ -46,6 +55,16 @@ def js(ausdruck: str, daten=None):
     )
     assert ergebnis.returncode == 0, ergebnis.stderr
     return json.loads(ergebnis.stdout)
+
+
+def js(ausdruck: str, daten=None):
+    """Wertet einen Ausdruck im Kontext von ``detail.js`` über Node aus."""
+    skript = (
+        f"import * as detail from {json.dumps(DETAIL_JS.as_uri())};\n"
+        f"const daten = {json.dumps(daten, ensure_ascii=False)};\n"
+        f"console.log(JSON.stringify({ausdruck}));"
+    )
+    return node_ausfuehren(skript)
 
 
 # --- Statische Prüfungen ---------------------------------------------------
@@ -329,3 +348,317 @@ def test_owner_default_aus_status():
 @ohne_node
 def test_owner_ohne_angabe_ist_null():
     assert js("detail.ermittleOwner({})") is None
+
+
+# --- UI-Läufe in Node (Mini-DOM + fetch-Proxy) ----------------------------
+
+MINI_DOM = r"""
+// Mini-DOM für Node: nur so viel, wie detail.js und api.js benutzen.
+const REGISTRIERT = new Map();
+
+class Knoten {
+  constructor(marke, art) {
+    this.marke = marke;
+    this.art = art;
+    this.kinder = [];
+    this.attribute = {};
+    this.dataset = {};
+    this.hoerer = {};
+    this.textContent = "";
+    this.hidden = false;
+    this.disabled = false;
+    this.value = "";
+    const knoten = this;
+    this.classList = {
+      add: (...namen) => {
+        const vorhanden = new Set(knoten.klassen());
+        for (const name of namen) vorhanden.add(name);
+        knoten.attribute.class = [...vorhanden].join(" ");
+      },
+      contains: (name) => knoten.klassen().includes(name),
+    };
+  }
+
+  klassen() {
+    return (this.attribute.class || "").split(/\s+/).filter(Boolean);
+  }
+
+  get className() {
+    return this.attribute.class || "";
+  }
+
+  set className(wert) {
+    this.attribute.class = wert;
+  }
+
+  get id() {
+    return this.attribute.id || "";
+  }
+
+  set id(wert) {
+    this.attribute.id = wert;
+    REGISTRIERT.set(wert, this);
+  }
+
+  setAttribute(name, wert) {
+    this.attribute[name] = wert;
+  }
+
+  getAttribute(name) {
+    return this.attribute[name] ?? null;
+  }
+
+  addEventListener(art, hoerer) {
+    if (!this.hoerer[art]) this.hoerer[art] = [];
+    this.hoerer[art].push(hoerer);
+  }
+
+  async ausloesen(art, ereignis = { preventDefault() {} }) {
+    const rueckgaben = (this.hoerer[art] || []).map((hoerer) => hoerer(ereignis));
+    await Promise.all(rueckgaben);
+  }
+
+  append(...kinder) {
+    for (const kind of kinder) {
+      if (kind.art === "fragment") this.kinder.push(...kind.kinder);
+      else this.kinder.push(kind);
+    }
+  }
+
+  replaceChildren(...kinder) {
+    this.kinder = [];
+    this.append(...kinder);
+  }
+
+  focus() {}
+
+  alleKnoten() {
+    const liste = [this];
+    for (const kind of this.kinder) liste.push(...kind.alleKnoten());
+    return liste;
+  }
+}
+
+globalThis.document = {
+  createElement: (marke) => new Knoten(marke, "element"),
+  createDocumentFragment: () => new Knoten("#fragment", "fragment"),
+  getElementById: (id) => REGISTRIERT.get(id) || null,
+};
+"""
+
+UI_UMGEBUNG = r"""
+// Fehler-/Erfolgsbereich und Detail-Container wie in index.html.
+const fehler = document.createElement("div");
+fehler.id = "fehler";
+fehler.hidden = true;
+const meldung = document.createElement("div");
+meldung.id = "meldung";
+meldung.hidden = true;
+const ziel = document.createElement("div");
+ziel.id = "detail";
+
+// Sperrzustand der Bedienelemente (A12-2): sichtbar während laufender Requests.
+function gesperrtZustand() {
+  const alle = ziel.alleKnoten();
+  const absenden = alle.find((knoten) => knoten.type === "submit");
+  return {
+    absenden: Boolean(absenden && absenden.disabled),
+    status: alle
+      .filter((knoten) => knoten.dataset.status)
+      .map((knoten) => Boolean(knoten.disabled)),
+  };
+}
+
+function zustand() {
+  const alle = ziel.alleKnoten();
+  const marke = alle.find((knoten) => knoten.classList.contains("status"));
+  return {
+    statusMarke: marke ? marke.textContent : null,
+    aktiv: alle
+      .filter((knoten) => knoten.dataset.status && knoten.classList.contains("knopf--primaer"))
+      .map((knoten) => knoten.dataset.status),
+    gesperrt: gesperrtZustand(),
+  };
+}
+
+// fetch-Proxy an den echten Server; mit VERBOTENER_STATUS wird der Status im
+// POST /api/meta ersetzt und so die 403 erzwungen (T10).
+const echtesFetch = globalThis.fetch;
+const anfragen = [];
+
+globalThis.fetch = async (pfad, optionen = {}) => {
+  const anfrageZiel = new URL(String(pfad), BASIS);
+  const methode = optionen.method || "GET";
+  const aufzeichnung = {
+    methode,
+    pfad: anfrageZiel.pathname,
+    status: null,
+    payload: null,
+    gesperrt: methode === "GET" ? null : gesperrtZustand(),
+  };
+  let koerper = optionen.body;
+  if (methode !== "GET" && koerper !== undefined) {
+    aufzeichnung.payload = JSON.parse(koerper);
+    if (VERBOTENER_STATUS && anfrageZiel.pathname === "/api/meta") {
+      aufzeichnung.payload.status = VERBOTENER_STATUS;
+      koerper = JSON.stringify(aufzeichnung.payload);
+    }
+  }
+  const antwort = await echtesFetch(anfrageZiel, { ...optionen, body: koerper });
+  aufzeichnung.status = antwort.status;
+  anfragen.push(aufzeichnung);
+  return antwort;
+};
+"""
+
+SZENARIO_403 = r"""
+await detail.ladeDetail({ unterpunkt: DATEI });
+const klarung = ziel.alleKnoten().find((knoten) => knoten.dataset.status === "Klarung");
+const vorher = zustand();
+
+await klarung.ausloesen("click");
+
+console.log(JSON.stringify({
+  anfragen,
+  fehler: { sichtbar: !fehler.hidden, text: fehler.textContent },
+  meldung: { sichtbar: !meldung.hidden, text: meldung.textContent },
+  vorher,
+  nachher: zustand(),
+  dateiLadungen: anfragen.filter((a) => a.methode === "GET" && a.pfad === "/api/file").length,
+}));
+"""
+
+SZENARIO_DOPPELT_ABSENDEN = r"""
+await detail.ladeDetail({ unterpunkt: DATEI });
+document.getElementById("nachtrag-text").value = "Bitte prüfen.";
+const formular = document.getElementById("nachtrag-formular");
+
+// Zweimal schnell hintereinander — wie ein Doppelklick, nur ohne die
+// browserseitige Klick-Unterdrückung (strengerer Fall).
+const erstes = formular.ausloesen("submit");
+const zweites = formular.ausloesen("submit");
+await Promise.all([erstes, zweites]);
+
+console.log(JSON.stringify({
+  anfragen,
+  nachher: zustand(),
+}));
+"""
+
+SZENARIO_DOPPELKLICK_STATUS = r"""
+await detail.ladeDetail({ unterpunkt: DATEI });
+const klarung = ziel.alleKnoten().find((knoten) => knoten.dataset.status === "Klarung");
+
+const erstes = klarung.ausloesen("click");
+const zweites = klarung.ausloesen("click");
+await Promise.all([erstes, zweites]);
+
+console.log(JSON.stringify({
+  anfragen,
+  nachher: zustand(),
+}));
+"""
+
+
+def ui_lauf(basis: str, szenario: str, verbotener_status: str | None = None) -> dict:
+    """Spielt ein UI-Szenario in Node gegen den echten Server unter ``basis`` aus."""
+    skript = (
+        f"import * as detail from {json.dumps(DETAIL_JS.as_uri())};\n"
+        + MINI_DOM
+        + f"const BASIS = {json.dumps(basis)};\n"
+        + f"const DATEI = {json.dumps(T10_DATEI)};\n"
+        + f"const VERBOTENER_STATUS = {json.dumps(verbotener_status)};\n"
+        + UI_UMGEBUNG
+        + szenario
+    )
+    return node_ausfuehren(skript)
+
+
+@pytest.fixture()
+def app_server(bundle):
+    """Echter HTTP-Server auf einem freien Port für die UI-Läufe."""
+    httpd = make_server("127.0.0.1", 0, server.create_app(bundle), threaded=True)
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    try:
+        yield f"http://127.0.0.1:{httpd.server_port}"
+    finally:
+        httpd.shutdown()
+        thread.join(timeout=5)
+
+
+# --- T10: 403-Pfad (verbotener Status) -----------------------------------
+
+
+def _sha256(pfad: Path) -> str:
+    return hashlib.sha256(pfad.read_bytes()).hexdigest()
+
+
+def _bestand(wurzel: Path) -> list[str]:
+    return sorted(pfad.relative_to(wurzel).as_posix() for pfad in wurzel.rglob("*"))
+
+
+@ohne_node
+def test_t10_verbotener_status_403_zeigt_fehler_ohne_zustandswechsel(bundle, app_server):
+    datei = bundle / T10_DATEI
+    inhalt_vorher = _sha256(datei)
+    bestand_vorher = _bestand(bundle)
+
+    ergebnis = ui_lauf(app_server, SZENARIO_403, T10_VERBOTENER_STATUS)
+
+    # Der Proxy hat den verbotenen Status wirklich geschickt und 403 erzwungen.
+    meta = [
+        eintrag
+        for eintrag in ergebnis["anfragen"]
+        if eintrag["methode"] == "POST" and eintrag["pfad"] == "/api/meta"
+    ]
+    assert meta, "UI hat /api/meta nicht aufgerufen"
+    assert meta[0]["payload"]["status"] == T10_VERBOTENER_STATUS
+    assert meta[0]["status"] == 403
+
+    # Fail-loud wie im Fehlerzustand-Design (A11/A12): sichtbar und verständlich.
+    assert ergebnis["fehler"]["sichtbar"] is True
+    assert "Status" in ergebnis["fehler"]["text"]
+
+    # Kein falscher Zustand: kein Erfolg, Ansicht ohne Zustandswechsel, Datei unverändert.
+    assert ergebnis["meldung"] == {"sichtbar": False, "text": ""}
+    assert ergebnis["nachher"] == ergebnis["vorher"]
+    assert ergebnis["nachher"]["statusMarke"] == "Offen"
+    assert ergebnis["nachher"]["aktiv"] == []
+    assert ergebnis["dateiLadungen"] == 1
+    assert _sha256(datei) == inhalt_vorher
+    assert _bestand(bundle) == bestand_vorher
+
+
+# --- A12-2: Sperren bei laufenden Requests -------------------------------
+
+
+@ohne_node
+def test_a12_2_doppeltes_absenden_erzeugt_genau_einen_eintrag(bundle, app_server):
+    datei = bundle / T10_DATEI
+
+    ergebnis = ui_lauf(app_server, SZENARIO_DOPPELT_ABSENDEN)
+
+    schreibungen = [
+        eintrag
+        for eintrag in ergebnis["anfragen"]
+        if eintrag["methode"] == "POST" and eintrag["pfad"] == "/api/nachtrag"
+    ]
+    assert len(schreibungen) == 1
+    assert schreibungen[0]["gesperrt"]["absenden"] is True
+    assert ergebnis["nachher"]["gesperrt"]["absenden"] is False
+    assert datei.read_text(encoding="utf-8").count("**Nachtrag (") == 1
+
+
+@ohne_node
+def test_a12_2_doppelklick_status_schreibt_nur_einmal(bundle, app_server):
+    ergebnis = ui_lauf(app_server, SZENARIO_DOPPELKLICK_STATUS)
+
+    schreibungen = [
+        eintrag
+        for eintrag in ergebnis["anfragen"]
+        if eintrag["methode"] == "POST" and eintrag["pfad"] == "/api/meta"
+    ]
+    assert len(schreibungen) == 1
+    assert schreibungen[0]["gesperrt"]["status"] == [True, True]
+    assert ergebnis["nachher"]["gesperrt"]["status"] == [False, False]

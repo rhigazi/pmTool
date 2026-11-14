@@ -371,11 +371,20 @@ function erstelleAktionen(pfad, status) {
   const aktionen = document.createElement("div");
   aktionen.className = "detail-aktionen";
 
+  const statusKnoepfe = [];
   for (const wert of STATUS_KNOEPFE) {
     const knopf = erstelleStatusKnopf(wert, wert === status);
     knopf.addEventListener("click", async () => {
-      await speichereMeta(pfad, { status: wert }, STATUS_ERFOLG);
+      // Parallelklicks sperren: genau eine Schreibaktion je Auslöser (A12-2).
+      if (statusKnoepfe.some((kandidat) => kandidat.disabled)) return;
+      for (const kandidat of statusKnoepfe) kandidat.disabled = true;
+      try {
+        await speichereMeta(pfad, { status: wert }, STATUS_ERFOLG);
+      } finally {
+        for (const kandidat of statusKnoepfe) kandidat.disabled = false;
+      }
     });
+    statusKnoepfe.push(knopf);
     aktionen.append(knopf);
   }
 
@@ -453,6 +462,8 @@ function erstelleNachtragFormular(pfad) {
 
   formular.addEventListener("submit", async (ereignis) => {
     ereignis.preventDefault();
+    // Doppeltes Absenden sperren: genau ein Eintrag je Klick (A12-2).
+    if (knopf.disabled) return;
 
     const daten = erstelleNachtragPayload(pfad, eingabe.value);
     if (daten === null) {
@@ -467,11 +478,16 @@ function erstelleNachtragFormular(pfad) {
     loescheFehler();
     loescheMeldung();
 
-    const ergebnis = await postJson("/api/nachtrag", daten);
-    if (ergebnis === null) return;
+    knopf.disabled = true;
+    try {
+      const ergebnis = await postJson("/api/nachtrag", daten);
+      if (ergebnis === null) return;
 
-    zeigeMeldung(NACHRAG_ERFOLG);
-    await ladeDetail({ unterpunkt: pfad });
+      zeigeMeldung(NACHRAG_ERFOLG);
+      await ladeDetail({ unterpunkt: pfad });
+    } finally {
+      knopf.disabled = false;
+    }
   });
 
   return formular;
