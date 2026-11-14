@@ -42,6 +42,7 @@ Diese Regeln gelten für alle OpenCode-Sessions in diesem Projekt.
 - Keine erfundenen Fakten: bei Unsicherheit nachschauen, testen oder nachfragen.
 - Keine sensiblen Daten (API-Keys, Passwörter, Tokens) in Dateien schreiben oder in Ausgaben zeigen.
 - Nach abgeschlossener Arbeit kurze Zusammenfassung der Änderungen geben.
+- **Sicherungs-Push nach grünen Tests:** Sobald der Tester einen Stand positiv getestet hat (alle Tests grün), werden die geänderten Dateien sofort committed und nach GitHub gepusht — damit bei einem Container-/Sitzungs-Reset kein nachweislich funktionierender Stand verloren geht.
 
 ## Code-Stil & Technik
 
