@@ -118,6 +118,18 @@ if [ "$GLOBAL" -eq 1 ]; then
       echo "  installiert: $name"
     fi
   done
+
+  echo "8) Global: Wichtige Skills & Browser (npx/curl)"
+  if command -v npx >/dev/null 2>&1; then
+    ( cd "$HOME" && npx skills add https://github.com/inkeep/open-knowledge-skills --skill okf-knowledge-base ) \
+      || echo "  Warnung: okf-knowledge-base konnte nicht installiert werden"
+  else
+    echo "  Warnung: npx nicht gefunden – okf-knowledge-base übersprungen"
+  fi
+
+  curl --proto '=https' --tlsv1.2 -fsSL \
+    https://github.com/lexmount/moli/releases/latest/download/moli-installer.sh | sh \
+    || echo "  Warnung: moli-Installer fehlgeschlagen"
 fi
 
 echo "8) Dev-Abhängigkeiten (pytest)"
