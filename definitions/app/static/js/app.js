@@ -2,6 +2,7 @@ import { loescheFehler, loescheMeldung, zeigeFehler } from "./api.js";
 import { ladeDetail } from "./detail.js";
 import { initialisiereFormulare, ladeAufgabenAnsicht, ladeWellenAnsicht } from "./formulare.js";
 import { ladeUebersicht } from "./liste.js";
+import { ladeEntscheidungenAnsicht, ladeProjektAnsicht } from "./projekt.js";
 
 const STANDARD_ANSICHT = "uebersicht";
 
@@ -113,6 +114,10 @@ registriereAnsicht("aufgaben", ladeAufgabenAnsicht);
 
 // Detailansicht (A12): Klick auf eine Listenzeile öffnet den Punkt.
 registriereAnsicht("detail", ladeDetail);
+
+// Projekt-Ansicht (A14): Entscheidungslog und die fünf Projekt-Unterpunkte.
+registriereAnsicht("entscheidungen", ladeEntscheidungenAnsicht);
+registriereAnsicht("projekt", ladeProjektAnsicht);
 
 function oeffneDetail(event) {
   const zeile = event.target.closest?.("tr[data-path]");
