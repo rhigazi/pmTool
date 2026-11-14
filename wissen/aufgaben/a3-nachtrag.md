@@ -2,8 +2,8 @@
 type: Task
 title: "A3: Nachtrag anfügen nachtrag.py"
 description: Nachträge als Blockquote-Marker am Dateiende anfügen, ohne bestehende Inhalte oder Frontmatter zu verändern.
-task_status: offen
-phase: 2 Planung
+task_status: im Review
+phase: 5 Review
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-2.md
@@ -49,4 +49,10 @@ owner: ai
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-14 — coder (Zwischenstand zum Halt, inkl. Sammel-Nachbesserung)
+
+- **Ergebnis:** Umsetzung abgeschlossen (19 Tests). Sammel-Nachbesserung „zentrale Exceptions": T9-Test parametrisiert über alle reservierten Dateien (`index.md`/`log.md`/`features.md` → jeweils abgewiesen), `EingabeFehler` zentral aus `okf_bundle` (lokale Definition entfernt). (Quelle: Übergabeprotokoll, Abschnitte „Aufgabenstatus" und „Session-Rückmeldungen zum Halt".)
+- **Belege:** 102 Tests im Sammel-Lauf; Gesamtsuite 549 grün (Endstand zum Halt).
+- **Offene Punkte:** Review, Testphase, Doku.

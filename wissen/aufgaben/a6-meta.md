@@ -2,8 +2,8 @@
 type: Task
 title: "A6: Meta-Update meta.py (owner/Status mit Rechteprüfung)"
 description: Serverseitige Rechteprüfung für owner- und Status-Änderungen mit atomarem Schreiben in einem Vorgang.
-task_status: offen
-phase: 2 Planung
+task_status: im Test
+phase: 6 Test
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-5.md
@@ -55,4 +55,10 @@ owner: ai
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-14 — coder (Zwischenstand zum Halt)
+
+- **Ergebnis:** Umsetzung abgeschlossen; Review ohne kritische Befunde; Testhärtung H1/H5/H7. (Quelle: Übergabeprotokoll, Abschnitt „Aufgabenstatus".)
+- **Belege:** 30 Tests.
+- **Offene Punkte:** formale Testphase (gebündelt vorgesehen) und Doku.

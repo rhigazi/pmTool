@@ -2,8 +2,8 @@
 type: Task
 title: "A15: setup.sh/verify.sh um App-Verteilung erweitern"
 description: Setup verteilt app/ nach bestehendem Muster in Zielprojekte, verify.sh prüft zusätzlich App-Dateien und App-Tests; README-Tabelle ergänzt.
-task_status: offen
-phase: 2 Planung
+task_status: im Review
+phase: 5 Review
 priority: mittel
 assigned_to: coder
 user_story: /projekt/user-stories/us-6.md
@@ -53,4 +53,11 @@ pytest-Tests, die `setup.sh`/`verify.sh` per `subprocess` gegen `tmp_path` ausf�
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-14 — coder (Umsetzung, Stand zum Halt)
+
+- **Ergebnis:** `setup.sh`-Abschnitt „9) App" (`copy_tree` ohne `__pycache__`), `verify.sh`-Abschnitt „7) App", README mit Colab-Start-Zellen, `definitions/app/tests/test_setup_verteilung.py` (9+1 Tests). (Quelle: Session-Rückmeldung „A15 setup/verify/README" im Übergabeprotokoll.)
+- **Belege:** Gesamtsuite 549 grün, Exit 0.
+- **Befunde:** (a) `tools/`-Abschnitt in `setup.sh` kopiert weiterhin `__pycache__` (Abschnitt 4 ohne `copy_tree`-Filter; R12: bestehende Abschnitte unverändert gelassen) — vom `tester` bestätigt, kleine eigene Aufgabe. (b) `verify.sh` Abschnitt 7 akzeptiert nur `app/` und schlägt im Dev-Repo (`definitions/app/`) fehl — als [A19](a19-verify-app-fallback.md) vorgemerkt (Entscheidung 2026-11-14).
+- **Offene Punkte:** Review, Testphase, Doku.

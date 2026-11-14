@@ -53,4 +53,10 @@ Statische Prüfungen (T1–T4) laufen ohne Browser; T5–T8 sind UI-Szenarien f�
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-14 — tester (Testphase)
+
+- **Ergebnis:** **Testphase BESTANDEN** — 66 Tests; UI-Szenarien T5–T8 via HTTP + Node-DOM-Harness (Moli in der Umgebung nicht verfügbar; Abweichung dokumentiert, Entscheidung 2026-11-14). Umsetzung und Review waren zuvor abgeschlossen. (Quelle: Übergabeprotokoll, Abschnitt „Aufgabenstatus".)
+- **Befunde:** DoD-Beleg aus Test-Sicht erbracht (analog A2).
+- **Offene Punkte:** Doku und Abschluss.

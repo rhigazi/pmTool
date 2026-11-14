@@ -2,6 +2,22 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-14: Moli-Frage — Standardentscheidung Harness bleibt vorerst
+
+**Entscheidung:** Bis zu abweichender Weisung der Projektleitung bleibt der Node-DOM-Harness (HTTP-Requests gegen den laufenden Server + DOM-Harness auf Basis des vorhandenen Node) der Standardweg für UI-Tests; Moli wird nicht nachinstalliert. **Hinweis:** Die Moli-Skills sind in der Umgebung jetzt verfügbar (u. a. `moli-cdp-server`); die Rückfrage an die Projektleitung (Moli installieren oder Harness-Weg beibehalten?) läuft weiter. Bei abweichender Weisung wird umgestellt und dies hier korrigiert.
+
+**Begründung:** `moli` fehlt im PATH; die UI-Tests laufen per HTTP + Node-DOM-Harness ohne neue Abhängigkeit (Projektregel: keine neuen Abhängigkeiten ohne Bescheid). Gemäß Projektregel wird mit der dokumentierten Standardentscheidung weitergearbeitet und später korrigiert, falls die Projektleitung abweicht.
+
+**Auswirkung:** Die Testberichte weisen die Abweichung (Harness statt Moli) weiterhin aus; die offene Klärungsfrage bleibt im Übergabeprotokoll unter „Offene Punkte" geführt.
+
+## 2026-11-14: verify.sh akzeptiert definitions/app als Fallback (A19)
+
+**Entscheidung:** `verify.sh` Abschnitt „7) App" akzeptiert künftig beide Ablageorte: `app/` im verteilten Ziel und `definitions/app/` als Fallback im Dev-Repo — analog zum Fallback in `start.sh`. Die Umsetzung erfolgt als neue Kleinaufgabe [A19](/aufgaben/a19-verify-app-fallback.md) inklusive passender Tests; fehlen beide Orte, schlägt die Prüfung weiterhin fehl.
+
+**Begründung:** Das Dev-Repo führt die App aus `definitions/app/` (Single Source of Truth); `start.sh` hat denselben Fallback (prüft `app/`, sonst `definitions/app/`). Allein deshalb schlug `verify.sh` Abschnitt 7 im Dev-Repo fehl.
+
+**Auswirkung:** `definitions/verify.sh` und ggf. `definitions/app/tests/test_setup_verteilung.py` werden geändert (A19); die Prüfung bleibt im verteilten Ziel unverändert gültig (R12: bestehende Abschnitte unverändert).
+
 ## 2026-11-14: API-Auslegungen Schreib-Endpunkte bestätigt (A9)
 
 **Entscheidung:** (a) `/api/task` und `/api/welle` lehnen ein mitgesendetes `path`-Feld mit 400 ab (fail-closed gegen Pfadausbruch) — bestätigt. (b) `/api/meta` ohne `owner`/`status` ist ein No-op (200, nichts geschrieben); `{"owner": null}` gilt wie „nicht gesetzt" (das Frontend übermittelt nur gesetzte Felder); Leerstrings/Whitespace → 403 (strikte Whitelist) — bestätigt, kein zusätzlicher Guard. (c) Beim **Anlegen** einer Welle sind alle 6 UI-Status gültig (Initialwert); die Einschränkung auf `Klarung`/`Geschlossen` gilt nur für **Änderungen** über `/api/meta` — bestätigt, entsprechender Test angepasst.

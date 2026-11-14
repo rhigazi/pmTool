@@ -2,8 +2,8 @@
 type: Task
 title: "A16: Colab-Startzelle start_colab.py"
 description: Ausführbare Startzelle, die Abhängigkeiten prüft, server.py als Subprozess startet und den Port über die eingebaute Colab-Funktion freigibt.
-task_status: offen
-phase: 2 Planung
+task_status: im Review
+phase: 5 Review
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-6.md
@@ -49,4 +49,10 @@ Alle Testfälle laufen mit gemockten Abhängigkeiten (Colab-Output, `Popen`, `pi
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-14 — coder (Zwischenstand zum Halt)
+
+- **Ergebnis:** Umsetzung abgeschlossen: `start_colab.py` prüft Pakete, startet `server.py` als Subprozess, gibt den Port über die Colab-Funktion frei und liefert eine Fallback-URL; Tests gemockt. (Quelle: Übergabeprotokoll, Abschnitt „Aufgabenstatus".)
+- **Belege:** 8 Tests.
+- **Offene Punkte:** Review, Testphase, Doku.

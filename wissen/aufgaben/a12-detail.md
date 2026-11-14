@@ -2,8 +2,8 @@
 type: Task
 title: "A12: Detailansicht Markdown, Nachtrag, owner/Status-Bedienung"
 description: Detailansicht mit Frontmatter-Kopf, sicherem Markdown-Rendering, Nachtragsformular sowie owner-Umschalter und den Status-Buttons Klarung/Geschlossen.
-task_status: in Umsetzung
-phase: 4 Umsetzung
+task_status: im Review
+phase: 5 Review
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-2.md
@@ -53,4 +53,10 @@ Alle Szenarien sind UI-Szenarien für den `tester` (Moli-Browser).
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-14 — coder (Umsetzung, Stand zum Halt)
+
+- **Ergebnis:** `detail.js` mit XSS-sicherem Minimal-Renderer, Nachtrag-Formular, owner-Umschalter, ausschließlich `Klarung`/`Geschlossen`-Buttons, strikte Payload ohne leere Felder. (Quelle: Session-Rückmeldung „A12 Detailansicht" im Übergabeprotokoll.)
+- **Belege:** 49 Tests + E2E-Smoke; Gesamtsuite 539+ grün (Stand zum Halt).
+- **Offene Punkte:** Review, Testphase (Moli/Harness), Doku.

@@ -53,4 +53,11 @@ Lese-Endpunkte gemäß Spec: `GET /api/overview` (Liste mit `path, typ, titel, s
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-14 — coder (Kleinnachtrag, Stand zum Halt)
+
+- **Ergebnis:** Kleinnachtrag sauber abgeschlossen: pfadfreie Fehlermeldungen, Per-Datei-Guard (Overview bricht bei unlesbaren Dateien nicht mehr ab), `.md`-Allowlist, Nachtrag-Parser mit Absatzumbruch. (Quelle: Session-Rückmeldung „A8-Kleinnachtrag" im Übergabeprotokoll.)
+- **Belege:** 33 Tests.
+- **Befunde:** (a) Offener Kleinpunkt: Detail-Endpunkt liefert bei unlesbarer Datei noch 500 statt einer neutralen Meldung (pfad-leak-frei) — für A9-Review/A17 vormerken. (b) Widerspruch im Übergabeprotokoll: Statusspalte nennt „Umsetzung + Review fertig", die Fehlt-Spalte „Offen: Review/Testphase/Doku". Hier als **Review offen** geführt, da der Kleinnachtrag nach dem Review lief.
+- **Offene Punkte:** Review, Testphase, Doku.

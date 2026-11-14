@@ -2,8 +2,8 @@
 type: Task
 title: "A7: Server-Gerüst und Start server.py"
 description: Flask-App-Factory mit statischer Auslieferung, einheitlichem JSON-Fehlerformat und CLI-Start über BUNDLE_ROOT/PORT.
-task_status: offen
-phase: 2 Planung
+task_status: im Test
+phase: 6 Test
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-6.md
@@ -51,4 +51,10 @@ Die statischen Inhalte (`static/index.html`, `static/style.css`) werden von A7 n
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-14 — coder (Zwischenstand zum Halt)
+
+- **Ergebnis:** Umsetzung abgeschlossen; Review ohne kritische Befunde; Smoke-Test durchgeführt. (Quelle: Übergabeprotokoll, Abschnitt „Aufgabenstatus".)
+- **Belege:** 12 Tests + Smoke.
+- **Offene Punkte:** formale Testphase (gebündelt vorgesehen) und Doku.

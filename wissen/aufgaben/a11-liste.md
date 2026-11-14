@@ -2,8 +2,8 @@
 type: Task
 title: "A11: Listenansicht mit Filtern und Klarung-Hervorhebung"
 description: Tabellenrendering aus der Overview-API mit Status- und owner-Filter, Hervorhebung offener Klärungen sowie Leer- und Fehlerzustand.
-task_status: im Review
-phase: 5 Review
+task_status: im Test
+phase: 6 Test
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-1.md
@@ -54,4 +54,10 @@ Alle Szenarien werden vom `tester` mit dem Moli-Browser gegen die laufende App d
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-14 — coder (Nachbesserung, Stand zum Halt)
+
+- **Ergebnis:** Nachbesserung sauber abgeschlossen: Fehlerzustand bleibt sichtbar (auch bei Filterwechsel), fail-loud bei Nicht-Array, `classList` statt `className` (A13-tauglich), toter Code entfernt, XSS-Verbot erweitert. (Quelle: Session-Rückmeldung „A11-Nachbesserung" im Übergabeprotokoll.)
+- **Belege:** 54 Tests.
+- **Offene Punkte:** Testphase und Doku (Review laut Übergabeprotokoll abgeschlossen).

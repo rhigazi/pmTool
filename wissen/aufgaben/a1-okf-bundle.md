@@ -2,8 +2,8 @@
 type: Task
 title: "A1: Fundament okf_bundle.py (Pfadschutz, Frontmatter-I/O, Scan)"
 description: Zentrale, framework-freie Zugriffsschicht für Pfadschutz, Frontmatter-/Datei-I/O mit atomarem Schreiben und Bundle-Scan.
-task_status: in Umsetzung
-phase: 4 Umsetzung
+task_status: im Test
+phase: 6 Test
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-7.md
@@ -56,4 +56,10 @@ owner: ai
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-14 — coder (Zwischenstand zum Halt, inkl. Sammel-Nachbesserung)
+
+- **Ergebnis:** Umsetzung abgeschlossen; Review-Nachbesserung erledigt (u. a. Guard reservierter Dateien `ReservierteDateiFehler`, zentrale Exceptions). Sammel-Nachbesserung „zentrale Exceptions": `EingabeFehler` wird zentral aus `okf_bundle` geführt, lokale Definitionen in den Nutzer-Modulen entfernt. (Quelle: Übergabeprotokoll, Abschnitte „Aufgabenstatus" und „Session-Rückmeldungen zum Halt".)
+- **Belege:** 45 Tests (A1), 102 Tests im Sammel-Lauf; Gesamtsuite 549 grün (Endstand zum Halt).
+- **Offene Punkte:** formale Testphase (gebündelt vorgesehen) und Doku.

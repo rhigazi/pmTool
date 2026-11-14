@@ -2,8 +2,8 @@
 type: Task
 title: "A2: Status-Mapping status.py"
 description: Reine Funktionen für die Abbildung von task_status/status auf die 6 UI-Status und den owner-Default, ohne Dateizugriffe.
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-1.md
@@ -76,3 +76,8 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Befunde:** Abdeckungsabgleich T1–T8 vollständig — alle acht TDD-Fälle durch konkrete Tests gedeckt. Ad-hoc-Prüfungen: keine Dateizugriffe, Trimming/Fallback robust, Fixture-Isolation gegeben.
 - **DoD-Beleg aus Test-Sicht:** alle Akzeptanzkriterien erfüllt und nachgewiesen.
 - **Offene Punkte:** keine.
+
+## 2026-11-14 — documenter (Abschluss)
+
+- **Ergebnis:** Aufgabe als **abgeschlossen** dokumentiert: Umsetzung, Review ohne kritische Befunde, Test bestanden und Doku liegen vor (siehe obige Einträge); Verschiebung unter „Abgeschlossene Aufgaben" im [Aufgaben-Index](index.md). (Quelle: Übergabeprotokoll, Aufgabenstatus A2.)
+- **Offene Punkte:** Commit des Stands durch den Projektmanager (DoD-Punkt „Stand ist in Git committed").

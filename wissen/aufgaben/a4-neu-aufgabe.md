@@ -2,8 +2,8 @@
 type: Task
 title: "A4: Aufgabe anlegen neu_aufgabe.py"
 description: Neue Aufgaben-Datei im Phasen-Format inklusive Frontmatter, Body-Abschnitten, Slug-Normalisierung und Kollisionsbehandlung anlegen.
-task_status: offen
-phase: 2 Planung
+task_status: im Review
+phase: 5 Review
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-3.md
@@ -51,4 +51,10 @@ owner: ai
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-14 — coder (Zwischenstand zum Halt, inkl. Sammel-Nachbesserung)
+
+- **Ergebnis:** Umsetzung abgeschlossen (32 Tests). Sammel-Nachbesserung „zentrale Exceptions": `EingabeFehler`-Import-Umstellung auf die zentrale Exception aus `okf_bundle` (lokale Definition entfernt). (Quelle: Übergabeprotokoll, Abschnitte „Aufgabenstatus" und „Session-Rückmeldungen zum Halt".)
+- **Belege:** 102 Tests im Sammel-Lauf; Gesamtsuite 549 grün (Endstand zum Halt).
+- **Offene Punkte:** Review, Testphase, Doku.

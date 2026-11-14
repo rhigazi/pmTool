@@ -2,8 +2,8 @@
 type: Task
 title: "A9: Schreib-API nachtrag / task / welle / meta"
 description: POST-Endpunkte mit vollständiger Validierung vor dem Schreiben, korrekten 4xx-Codes und Pfadschutz.
-task_status: in Umsetzung
-phase: 4 Umsetzung
+task_status: im Review
+phase: 5 Review
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-2.md
@@ -53,4 +53,10 @@ POST-Endpunkte gemäß Spec: `/api/nachtrag`, `/api/task`, `/api/welle`, `/api/m
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-14 — coder (Umsetzung, Stand zum Halt)
+
+- **Ergebnis:** 4 POST-Routen (`/api/nachtrag`, `/api/task`, `/api/welle`, `/api/meta`) inkl. Helfer (`_json_nutzdaten`, `_pflicht_pfad`, `_ohne_pfadfeld`); Fail-Closed-Regeln bestätigt (PM-Entscheidung 2026-11-14: `path`-Verbot in Anlege-Endpunkten, `null` = nicht gesetzt, Anlegen-Welle mit allen 6 UI-Status — siehe [Entscheidungslog](/entscheidungen/log.md)). (Quelle: Session-Rückmeldung „A9 Schreib-API" im Übergabeprotokoll.)
+- **Belege:** 78 Tests; Gesamtsuite 549 grün (Endstand zum Halt).
+- **Offene Punkte:** Review, Testphase, Doku.

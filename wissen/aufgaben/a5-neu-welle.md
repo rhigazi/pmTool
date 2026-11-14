@@ -2,8 +2,8 @@
 type: Task
 title: "A5: Welle anlegen neu_welle.py"
 description: Neue Wellen-Datei in wellen/ mit type Welle, validiertem Status/owner, Ziel-Abschnitt und leerer Aufgaben-Linkliste anlegen.
-task_status: offen
-phase: 2 Planung
+task_status: im Review
+phase: 5 Review
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-4.md
@@ -49,4 +49,10 @@ owner: ai
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-14 — coder (Zwischenstand zum Halt, inkl. Sammel-Nachbesserung)
+
+- **Ergebnis:** Umsetzung abgeschlossen (48 Tests); `ziel` ist Pflicht (PM-Entscheidung, siehe Testfall T6b). Sammel-Nachbesserung „zentrale Exceptions": Import-Umstellung auf den zentralen `EingabeFehler` aus `okf_bundle`, Geschwister-Import in `neu_welle.py` aufgelöst. (Quelle: Übergabeprotokoll, Abschnitte „Aufgabenstatus" und „Session-Rückmeldungen zum Halt".)
+- **Belege:** 102 Tests im Sammel-Lauf; Gesamtsuite 549 grün (Endstand zum Halt).
+- **Offene Punkte:** Review, Testphase, Doku.
