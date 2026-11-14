@@ -1,11 +1,13 @@
 import { getJson } from "./api.js";
 
 const SPALTEN = ["Titel", "Status", "owner", "zuletzt geändert"];
+// Top 5 zuletzt geänderte Punkte gemäß US-1-AC4.
 const ZULETZT_ANZAHL = 5;
 const KEINE_ANGABE = "—";
 const LEER_TABELLE = "Keine Einträge.";
 const LEER_KLARUNG = "Keine offenen Rückfragen.";
 const LADE_FEHLER = "Einträge konnten nicht geladen werden.";
+const FORMAT_FEHLER = "Einträge haben ein unerwartetes Format.";
 
 // Übersicht, Wellen und Aufgaben teilen sich dieselbe Listendarstellung.
 const ANSICHTEN = {
@@ -51,6 +53,21 @@ export function filtereEintraege(eintraege, { status = "", owner = "" } = {}) {
     if (owner === "ohne") return !eintrag?.owner;
     return eintrag?.owner === owner;
   });
+}
+
+/**
+ * Entscheidet, was die Tabelle zeigt: Fehlerzustand hat Vorrang vor Filter- und
+ * Leerzustand. Eine Antwort, die kein Array ist, wird als Formatfehler gemeldet
+ * statt als leere Liste getarnt.
+ */
+export function waehleAnzeige(daten, { status = "", owner = "" } = {}) {
+  if (daten === null) return { art: "fehler", text: LADE_FEHLER, eintraege: [] };
+  if (!Array.isArray(daten)) return { art: "fehler", text: FORMAT_FEHLER, eintraege: [] };
+
+  const eintraege = filtereEintraege(daten, { status, owner });
+  if (eintraege.length === 0) return { art: "leer", text: LEER_TABELLE, eintraege };
+
+  return { art: "tabelle", text: "", eintraege };
 }
 
 /** Formatiert einen ISO-Zeitstempel lokal; fehlende/ungültige Werte als „—". */
@@ -147,7 +164,7 @@ export function erstelleTabelle(eintraege) {
   for (const eintrag of eintraege) {
     const zeile = koerper.insertRow();
     if (eintrag?.path) zeile.dataset.path = eintrag.path;
-    if (eintrag?.status === "Klarung") zeile.className = "klarung";
+    if (eintrag?.status === "Klarung") zeile.classList.add("klarung");
     zeile.append(
       erstelleZelle(eintrag?.titel || KEINE_ANGABE),
       erstelleStatusZelle(eintrag),
@@ -158,7 +175,7 @@ export function erstelleTabelle(eintraege) {
   return tabelle;
 }
 
-function erstelleLeerhinweis(text) {
+function erstelleHinweis(text) {
   const hinweis = document.createElement("p");
   hinweis.className = "leer";
   hinweis.textContent = text;
@@ -170,7 +187,7 @@ function zeichneTabelle(bereich, eintraege) {
 
   bereich.replaceChildren();
   if (eintraege.length === 0) {
-    bereich.append(erstelleLeerhinweis(LEER_TABELLE));
+    bereich.append(erstelleHinweis(LEER_TABELLE));
     return;
   }
   bereich.append(erstelleTabelle(eintraege));
@@ -181,7 +198,7 @@ function zeichneRueckfragen(bereich, eintraege) {
 
   bereich.replaceChildren();
   if (eintraege.length === 0) {
-    bereich.append(erstelleLeerhinweis(LEER_KLARUNG));
+    bereich.append(erstelleHinweis(LEER_KLARUNG));
     return;
   }
 
@@ -203,27 +220,44 @@ function zeichneRueckfragen(bereich, eintraege) {
   bereich.append(liste);
 }
 
-function zeichneUebersichtZusatz(eintraege) {
+function zeichneUebersichtZusatz(daten) {
+  const anzeige = waehleAnzeige(daten);
+  if (anzeige.art === "fehler") {
+    for (const id of ["uebersicht-zuletzt", "uebersicht-klarung"]) {
+      const bereich = document.getElementById(id);
+      if (bereich) bereich.replaceChildren(erstelleHinweis(anzeige.text));
+    }
+    return;
+  }
+
   zeichneTabelle(
     document.getElementById("uebersicht-zuletzt"),
-    sortiereNachAenderung(eintraege).slice(0, ZULETZT_ANZAHL),
+    sortiereNachAenderung(anzeige.eintraege).slice(0, ZULETZT_ANZAHL),
   );
   zeichneRueckfragen(
     document.getElementById("uebersicht-klarung"),
-    eintraege.filter((eintrag) => eintrag?.status === "Klarung"),
+    anzeige.eintraege.filter((eintrag) => eintrag?.status === "Klarung"),
   );
 }
 
 function wendeFilterAn(basis) {
+  if (!datenProAnsicht.has(basis)) return;
+
   const konfiguration = ANSICHTEN[basis];
+  const daten = datenProAnsicht.get(basis);
   const status = document.getElementById(konfiguration.status)?.value ?? "";
   const owner = document.getElementById(konfiguration.owner)?.value ?? "";
-  const eintraege = datenProAnsicht.get(basis) ?? [];
+  const anzeige = waehleAnzeige(daten, { status, owner });
 
-  zeichneTabelle(
-    document.getElementById(konfiguration.tabelle),
-    filtereEintraege(eintraege, { status, owner }),
-  );
+  const bereich = document.getElementById(konfiguration.tabelle);
+  if (!bereich) return;
+
+  bereich.replaceChildren();
+  if (anzeige.art === "tabelle") {
+    bereich.append(erstelleTabelle(anzeige.eintraege));
+  } else {
+    bereich.append(erstelleHinweis(anzeige.text));
+  }
 }
 
 function initialisiereFilter(basis) {
@@ -237,10 +271,6 @@ function initialisiereFilter(basis) {
   if (!formular || !status || !owner || !zuruecksetzen) return;
 
   const neuZeichnen = () => wendeFilterAn(basis);
-  formular.addEventListener("submit", (ereignis) => {
-    ereignis.preventDefault();
-    neuZeichnen();
-  });
   status.addEventListener("change", neuZeichnen);
   owner.addEventListener("change", neuZeichnen);
   zuruecksetzen.addEventListener("click", () => {
@@ -257,19 +287,12 @@ async function ladeListe(basis) {
   initialisiereFilter(basis);
 
   const daten = await getJson(konfiguration.pfad);
-  const bereich = document.getElementById(konfiguration.tabelle);
-  if (daten === null) {
-    if (bereich) {
-      bereich.replaceChildren(erstelleLeerhinweis(LADE_FEHLER));
-    }
-    return;
-  }
-
-  const eintraege = Array.isArray(daten) ? daten : [];
-  datenProAnsicht.set(basis, eintraege);
+  // Rohe Antwort pro Ansicht merken: Fehler-/Formatzustand bleibt so auch bei
+  // Filteränderungen erhalten, bis neu geladen wird.
+  datenProAnsicht.set(basis, daten ?? null);
   wendeFilterAn(basis);
 
-  if (basis === "uebersicht") zeichneUebersichtZusatz(eintraege);
+  if (basis === "uebersicht") zeichneUebersichtZusatz(daten ?? null);
 }
 
 export function ladeUebersicht() {

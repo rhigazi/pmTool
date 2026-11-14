@@ -104,6 +104,25 @@ def test_liste_js_rendert_ohne_innerhtml():
     assert "innerHTML" not in js_quelle
 
 
+@pytest.mark.parametrize(
+    "senke",
+    ["outerHTML", "insertAdjacentHTML", "document.write(", "eval("],
+)
+def test_liste_js_vermeidet_weitere_html_senken(senke):
+    assert senke not in lies(LISTE_JS)
+
+
+def test_liste_js_hebt_klarung_per_klassenliste_hervor():
+    js_quelle = lies(LISTE_JS)
+    assert 'classList.add("klarung")' in js_quelle
+    assert 'className = "klarung"' not in js_quelle
+
+
+def test_liste_js_ohne_submit_handler():
+    # Formulare filtern über `change`/`click`; ein Submit-Pfad existiert nicht.
+    assert 'addEventListener("submit"' not in lies(LISTE_JS)
+
+
 def test_liste_js_formatiert_zeitstempel_lokal():
     assert "Intl.DateTimeFormat" in lies(LISTE_JS)
 
@@ -197,6 +216,39 @@ def test_filter_behaelt_geschlossene_eintraege():
 def test_filter_vertraegt_fehlende_liste():
     assert js("liste.filtereEintraege(null, {})", None) == []
     assert js("liste.filtereEintraege(undefined, {})", None) == []
+
+
+@ohne_node
+def test_anzeige_bei_antwort_array():
+    anzeige = js("liste.waehleAnzeige(daten)", EINTRAEGE)
+    assert anzeige["art"] == "tabelle"
+    assert len(anzeige["eintraege"]) == len(EINTRAEGE)
+    assert not anzeige["text"]
+
+
+@ohne_node
+def test_anzeige_bei_leerer_liste_ist_leerzustand():
+    anzeige = js("liste.waehleAnzeige([])", None)
+    assert anzeige["art"] == "leer"
+    assert "Keine Einträge" in anzeige["text"]
+
+
+@ohne_node
+def test_anzeige_bei_ladefehler_bleibt_bei_filterwechsel_fehler():
+    ladefehler = js("liste.waehleAnzeige(null).text", None)
+    anzeige = js("liste.waehleAnzeige(null, { status: 'Klarung', owner: 'mensch' })", None)
+    assert anzeige["art"] == "fehler"
+    assert anzeige["text"] == ladefehler
+    assert anzeige["text"]
+
+
+@pytest.mark.parametrize("antwort", ["{}", '{"error": "kaputt"}', '"text"', "42", "undefined"])
+@ohne_node
+def test_anzeige_bei_nicht_array_meldet_formatfehler(antwort):
+    anzeige = js(f"liste.waehleAnzeige({antwort})", None)
+    assert anzeige["art"] == "fehler"
+    assert anzeige["text"]
+    assert "Keine Einträge" not in anzeige["text"]
 
 
 @ohne_node

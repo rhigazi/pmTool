@@ -2,8 +2,8 @@
 type: Task
 title: "A12: Detailansicht Markdown, Nachtrag, owner/Status-Bedienung"
 description: Detailansicht mit Frontmatter-Kopf, sicherem Markdown-Rendering, Nachtragsformular sowie owner-Umschalter und den Status-Buttons Klarung/Geschlossen.
-task_status: offen
-phase: 2 Planung
+task_status: in Umsetzung
+phase: 4 Umsetzung
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-2.md

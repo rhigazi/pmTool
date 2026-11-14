@@ -2,8 +2,8 @@
 type: Task
 title: "A9: Schreib-API nachtrag / task / welle / meta"
 description: POST-Endpunkte mit vollständiger Validierung vor dem Schreiben, korrekten 4xx-Codes und Pfadschutz.
-task_status: offen
-phase: 2 Planung
+task_status: in Umsetzung
+phase: 4 Umsetzung
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-2.md

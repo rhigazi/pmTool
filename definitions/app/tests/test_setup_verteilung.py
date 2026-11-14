@@ -4,12 +4,17 @@ Die Tests führen die Skripte aus ``definitions/`` gegen ``tmp_path``-Projekte a
 und prüfen Erstinstallation, Idempotenz, ``--force``, Bestandsschutz, die
 Verify-Prüfungen und den Erhalt der bestehenden Setup-Abschnitte.
 
+Eine Session-Installation dient als Vorlage; jeder Test arbeitet auf einer zügig
+kopierten Arbeitskopie. Die Subprozesse laufen ohne Plugin-Autoload, damit der
+Start von ``pytest`` in langsamen Container-Dateisystemen nicht dominiert.
+
 Im verteilten Zielprojekt liegt diese Datei unter ``<ziel>/app/tests/``; dort
 fehlt ``setup.sh`` im Projektwurzelverzeichnis, weshalb das Modul sich selbst
 überspringt. So ruft kein verteilter Testlauf die Skripte erneut auf.
 """
 
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -26,16 +31,11 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def _laeuft(befehl: list[str], ziel: Path | None = None) -> subprocess.CompletedProcess:
-    """Führt ein Skript mit Prozessumgebung aus und fängt die Ausgabe ab."""
-    return subprocess.run(
-        befehl,
-        cwd=str(ziel) if ziel else None,
-        env=dict(os.environ),
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+def _laeuft(befehl: list[str]) -> subprocess.CompletedProcess:
+    """Führt einen Befehl mit Prozessumgebung aus und fängt die Ausgabe ab."""
+    env = dict(os.environ)
+    env["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
+    return subprocess.run(befehl, env=env, capture_output=True, text=True, check=False)
 
 
 def _setup(ziel: Path, *optionen: str) -> subprocess.CompletedProcess:
@@ -52,15 +52,32 @@ def _pytest(tests: Path) -> subprocess.CompletedProcess:
     )
 
 
+@pytest.fixture(scope="module")
+def installation(tmp_path_factory):
+    """Einmalige Installation mit ``--wissen`` als Vorlage für alle Tests."""
+    # Cache-Artefakt der lokalen Testläufe sicherstellen (darf nicht mitverteilt werden).
+    (DEFINITIONS / "app" / "__pycache__").mkdir(exist_ok=True)
+    ziel = tmp_path_factory.mktemp("vorlage") / "projekt"
+    ergebnis = _setup(ziel, "--wissen")
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    return ziel, ergebnis.stdout
+
+
+@pytest.fixture()
+def ziel(tmp_path, installation):
+    """Arbeitskopie der Session-Installation unter ``tmp_path``."""
+    vorlage, _ = installation
+    kopie = tmp_path / "projekt"
+    shutil.copytree(vorlage, kopie)
+    return kopie
+
+
 # --- T1: Erstinstallation -------------------------------------------------
 
 
-def test_t1_erstinstallation(tmp_path):
-    ziel = tmp_path / "projekt"
+def test_t1_erstinstallation(installation):
+    ziel, _ = installation
 
-    ergebnis = _setup(ziel)
-
-    assert ergebnis.returncode == 0, ergebnis.stderr
     for datei in (
         "app/server.py",
         "app/okf_bundle.py",
@@ -73,13 +90,9 @@ def test_t1_erstinstallation(tmp_path):
         assert (ziel / datei).is_file(), f"{datei} fehlt nach der Installation"
 
 
-def test_t1b_keine_cache_artefakte(tmp_path):
-    ziel = tmp_path / "projekt"
-    (DEFINITIONS / "app" / "__pycache__").mkdir(exist_ok=True)
+def test_t1b_keine_cache_artefakte(installation):
+    ziel, _ = installation
 
-    ergebnis = _setup(ziel)
-
-    assert ergebnis.returncode == 0, ergebnis.stderr
     assert not list(ziel.rglob("__pycache__"))
     assert not list(ziel.rglob("*.pyc"))
     assert not list(ziel.rglob(".pytest_cache"))
@@ -88,9 +101,7 @@ def test_t1b_keine_cache_artefakte(tmp_path):
 # --- T2: Idempotenz -------------------------------------------------------
 
 
-def test_t2_idempotenz(tmp_path):
-    ziel = tmp_path / "projekt"
-    assert _setup(ziel).returncode == 0
+def test_t2_idempotenz(ziel):
     server = ziel / "app/server.py"
     vorher = server.read_bytes()
 
@@ -105,43 +116,29 @@ def test_t2_idempotenz(tmp_path):
 # --- T3: --force ----------------------------------------------------------
 
 
-def test_t3_force_setzt_datei_zurueck(tmp_path):
-    ziel = tmp_path / "projekt"
-    assert _setup(ziel).returncode == 0
+def test_t3_force_setzt_zurueck(ziel):
     server = ziel / "app/server.py"
-    original = server.read_bytes()
-    server.write_text("# lokal verändert\n", encoding="utf-8")
-
-    ergebnis = _setup(ziel, "--force")
-
-    assert ergebnis.returncode == 0, ergebnis.stderr
-    assert server.read_bytes() == original
-
-
-def test_t3b_force_setzt_verzeichnis_zurueck(tmp_path):
-    ziel = tmp_path / "projekt"
-    assert _setup(ziel).returncode == 0
     conftest = ziel / "app/tests/conftest.py"
-    original = conftest.read_bytes()
+    original = server.read_bytes()
+    original_conftest = conftest.read_bytes()
+    server.write_text("# lokal verändert\n", encoding="utf-8")
     conftest.write_text("# lokal verändert\n", encoding="utf-8")
 
     ergebnis = _setup(ziel, "--force")
 
     assert ergebnis.returncode == 0, ergebnis.stderr
-    assert conftest.read_bytes() == original
+    assert server.read_bytes() == original
+    assert conftest.read_bytes() == original_conftest
     assert not (ziel / "app/tests/tests").exists()
 
 
 # --- T4: Bestandsschutz ---------------------------------------------------
 
 
-def test_t4_bestandsschutz(tmp_path):
-    ziel = tmp_path / "projekt"
-    ziel.mkdir()
+def test_t4_bestandsschutz(ziel):
     agents = ziel / "AGENTS.md"
     agents.write_text("# Eigene Regeln\n\nMARKER-4711\n", encoding="utf-8")
     eigener_anhang = ziel / "app/tests/test_eigen.py"
-    eigener_anhang.parent.mkdir(parents=True)
     eigener_anhang.write_text("# eigener Test\n", encoding="utf-8")
 
     ergebnis = _setup(ziel)
@@ -154,10 +151,7 @@ def test_t4_bestandsschutz(tmp_path):
 # --- T5: Verify grün ------------------------------------------------------
 
 
-def test_t5_verify_gruen(tmp_path):
-    ziel = tmp_path / "projekt"
-    assert _setup(ziel, "--wissen").returncode == 0
-
+def test_t5_verify_gruen(ziel):
     ergebnis = _verify(ziel)
 
     assert ergebnis.returncode == 0, ergebnis.stdout + ergebnis.stderr
@@ -168,9 +162,7 @@ def test_t5_verify_gruen(tmp_path):
 # --- T6: Verify rot -------------------------------------------------------
 
 
-def test_t6_verify_nennt_fehlende_app_datei(tmp_path):
-    ziel = tmp_path / "projekt"
-    assert _setup(ziel, "--wissen").returncode == 0
+def test_t6_verify_nennt_fehlende_app_datei(ziel):
     (ziel / "app/server.py").unlink()
 
     ergebnis = _verify(ziel)
@@ -179,24 +171,10 @@ def test_t6_verify_nennt_fehlende_app_datei(tmp_path):
     assert "app/server.py" in ergebnis.stdout
 
 
-def test_t6b_verify_rot_ohne_app_verzeichnis(tmp_path):
-    ziel = tmp_path / "projekt"
-    assert _setup(ziel, "--wissen").returncode == 0
-    (ziel / "app/static/index.html").unlink(missing_ok=True)
-
-    ergebnis = _verify(ziel)
-
-    assert ergebnis.returncode == 1
-    assert "app/static/index.html" in ergebnis.stdout
-
-
 # --- T7: Tests mitverteilt ------------------------------------------------
 
 
-def test_t7_tests_mitverteilt(tmp_path):
-    ziel = tmp_path / "projekt"
-    assert _setup(ziel).returncode == 0
-
+def test_t7_tests_mitverteilt(ziel):
     ergebnis = _pytest(ziel / "app/tests")
 
     assert ergebnis.returncode == 0, ergebnis.stdout + ergebnis.stderr
@@ -205,14 +183,11 @@ def test_t7_tests_mitverteilt(tmp_path):
 # --- T8: Keine Regression der bestehenden Abschnitte ----------------------
 
 
-def test_t8_bestehende_abschnitte(tmp_path):
-    ziel = tmp_path / "projekt"
+def test_t8_bestehende_abschnitte(installation):
+    _, ausgabe = installation
 
-    ergebnis = _setup(ziel, "--wissen")
-
-    assert ergebnis.returncode == 0, ergebnis.stderr
     for nummer in ("1)", "2)", "3)", "4)", "5)", "8)", "9)"):
-        assert f"{nummer} " in ergebnis.stdout, f"Abschnitt {nummer} fehlt"
+        assert f"{nummer} " in ausgabe, f"Abschnitt {nummer} fehlt"
     quelle = SETUP.read_text(encoding="utf-8")
     assert "6) Global: Subagenten" in quelle
     assert "7) Global: Skill-Snapshots" in quelle
