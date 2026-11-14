@@ -2,8 +2,8 @@
 type: Task
 title: "A10: Frontend-Gerüst Navigation, Layout, Router, API-Client"
 description: index.html mit fünf Navigationspunkten, style.css, fetch-Wrapper api.js und Hash-Router app.js als Startpunkt der Frontend-Kette.
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-1.md

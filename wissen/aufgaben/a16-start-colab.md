@@ -2,8 +2,8 @@
 type: Task
 title: "A16: Colab-Startzelle start_colab.py"
 description: Ausführbare Startzelle, die Abhängigkeiten prüft, server.py als Subprozess startet und den Port über die eingebaute Colab-Funktion freigibt.
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-6.md

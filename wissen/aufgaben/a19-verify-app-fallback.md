@@ -2,8 +2,8 @@
 type: Task
 title: "A19: verify.sh akzeptiert definitions/app als Fallback"
 description: Verify-Abschnitt 7 prüft die App unter app/ oder definitions/app/ (Fallback analog zu start.sh) inklusive passender Tests.
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: mittel
 assigned_to: coder
 user_story: /projekt/user-stories/us-6.md

@@ -2,8 +2,8 @@
 type: Task
 title: "A14: Entscheidungen- und Projekt-Ansicht"
 description: Entscheidungsliste aus entscheidungen/log.md und Projekt-Ansicht mit den fünf Unterpunkten, beide über GET /api/file ohne neuen Server-Endpunkt.
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: mittel
 assigned_to: coder
 user_story: /projekt/user-stories/us-1.md

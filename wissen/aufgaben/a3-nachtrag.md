@@ -2,8 +2,8 @@
 type: Task
 title: "A3: Nachtrag anfügen nachtrag.py"
 description: Nachträge als Blockquote-Marker am Dateiende anfügen, ohne bestehende Inhalte oder Frontmatter zu verändern.
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-2.md

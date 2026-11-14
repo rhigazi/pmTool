@@ -2,8 +2,8 @@
 type: Task
 title: "A8: Lese-API overview / file / aufgaben / wellen"
 description: GET-Endpunkte für Übersichtsliste, Dateidetail inklusive Nachträgen sowie getrennte Aufgaben- und Wellenlisten.
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-1.md

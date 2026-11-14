@@ -2,8 +2,8 @@
 type: Task
 title: "A4: Aufgabe anlegen neu_aufgabe.py"
 description: Neue Aufgaben-Datei im Phasen-Format inklusive Frontmatter, Body-Abschnitten, Slug-Normalisierung und Kollisionsbehandlung anlegen.
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-3.md

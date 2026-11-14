@@ -2,8 +2,8 @@
 type: Task
 title: "A13: Formulare Aufgabe und Welle anlegen"
 description: Formulare zum Anlegen von Aufgaben und Wellen mit Inline-Validierung, Erfolgsanzeige inklusive kopierbarem Kurzkontext und Doppelklickschutz.
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-3.md

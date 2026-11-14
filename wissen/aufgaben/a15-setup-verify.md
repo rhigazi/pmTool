@@ -2,8 +2,8 @@
 type: Task
 title: "A15: setup.sh/verify.sh um App-Verteilung erweitern"
 description: Setup verteilt app/ nach bestehendem Muster in Zielprojekte, verify.sh prüft zusätzlich App-Dateien und App-Tests; README-Tabelle ergänzt.
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: mittel
 assigned_to: coder
 user_story: /projekt/user-stories/us-6.md

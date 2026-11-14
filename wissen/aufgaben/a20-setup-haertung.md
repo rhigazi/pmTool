@@ -2,8 +2,8 @@
 type: Task
 title: "A20: setup.sh-Härtung (Moli/Skill-Installation)"
 description: Die --global-Sektion der setup.sh (Projektleitungs-Änderung 2026-11-14) wird gegen ungeprüften Remote-Code abgesichert und idempotent gemacht.
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: mittel
 assigned_to: coder
 user_story: /projekt/user-stories/us-6.md

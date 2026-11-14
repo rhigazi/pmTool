@@ -2,8 +2,8 @@
 type: Task
 title: "A6: Meta-Update meta.py (owner/Status mit Rechteprüfung)"
 description: Serverseitige Rechteprüfung für owner- und Status-Änderungen mit atomarem Schreiben in einem Vorgang.
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-5.md

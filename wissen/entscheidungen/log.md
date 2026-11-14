@@ -2,6 +2,22 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-14: MVP-Abnahme mit Einmal-Nachweis; E2E-Regression als A22 (post-MVP)
+
+**Entscheidung:** Die MVP-Abnahme erfolgt auf Basis des dokumentierten **Einmal-Nachweises** aus dem A17-Abnahmelauf (T1/T2/T7-Kette, 23/23, 761 passed, verify.sh Exit 0, Moli 0 Konsolenfehler, Hash-Nachweis). Ein eingechecktes `test_e2e.py` existiert noch nicht; die dauerhafte E2E-Regression wird als **A22 „E2E-Regressionstest (test_e2e.py)"** post-MVP nachgezogen (Aufgaben-Datei angelegt, Priorität mittel).
+
+**Begründung:** Der Abnahmelauf ist vollständig belegt und reproduzierbar (T7 Reset), ein eingecheckter Dauer-Test wäre für die Abnahme nice-to-have, aber kein Abnahmekriterium; keine Abhängigkeit für die Projektleitung.
+
+**Auswirkung:** MVP ist abnahmefähig; A22 bleibt offen (Post-MVP) und überführt die Ad-hoc-Skripte `/tmp/opencode/a17_*.py` in einen dauerhaften Test.
+
+## 2026-11-14: Nachtrag-Marker wird literal gerendert — R6-konform akzeptiert
+
+**Entscheidung:** Dass der Marker `**Nachtrag …:**` in der Detailansicht literal (ohne Fett-Rendering) erscheint, wird akzeptiert — R6-konform (minimaler Renderer, keine Inline-Auszeichnung). Eine optionale Fett-Rendering-Erweiterung wird nur als Post-MVP-Punkt geführt.
+
+**Begründung:** Der minimale Renderer ist eine bewusste Entscheidung (XSS-sicher, kein CDN, kein Markdown-Parser); der Nachträge-Block bleibt als Blockquote lesbar, die Funktion ist nicht beeinträchtigt.
+
+**Auswirkung:** Kein Code-Change; Punkt steht in der Offen-Liste (Post-MVP).
+
 ## 2026-11-14: K1-Schutz zweischichtig (Modulgrenze + zentraler Handler-Schutz)
 
 **Entscheidung:** Der Schutz vor Pfad-Leaks ist zweischichtig: (1) an der Modulgrenze — neutrale Meldungskonstanten `MELDUNG_NICHT_GEFUNDEN`/`MELDUNG_NICHT_LESBAR` in `okf_bundle`, Übersetzung in `nachtrag._lies`/`okf_bundle._lies_text`; (2) zentral im `server._domaenen_handler` über `_sichere_meldung`, der nur echte OS-Fehler mit `errno` ersetzt, Domänenmeldungen aber lesbar lässt.

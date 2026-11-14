@@ -2,8 +2,8 @@
 type: Task
 title: "A5: Welle anlegen neu_welle.py"
 description: Neue Wellen-Datei in wellen/ mit type Welle, validiertem Status/owner, Ziel-Abschnitt und leerer Aufgaben-Linkliste anlegen.
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-4.md

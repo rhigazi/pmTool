@@ -2,8 +2,8 @@
 type: Task
 title: "A1: Fundament okf_bundle.py (Pfadschutz, Frontmatter-I/O, Scan)"
 description: Zentrale, framework-freie Zugriffsschicht für Pfadschutz, Frontmatter-/Datei-I/O mit atomarem Schreiben und Bundle-Scan.
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-7.md

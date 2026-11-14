@@ -2,8 +2,8 @@
 type: Task
 title: "A7: Server-Gerüst und Start server.py"
 description: Flask-App-Factory mit statischer Auslieferung, einheitlichem JSON-Fehlerformat und CLI-Start über BUNDLE_ROOT/PORT.
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-6.md
