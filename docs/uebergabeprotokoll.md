@@ -99,7 +99,7 @@ Statuswerte laut Phasenmodell. „Review/Test/Doku offen" heißt: Umsetzung lieg
    bash start.sh --colab   # in Colab: startet Server + öffnet Browser-Fenster
    # alternativ lokal: bash start.sh   (Server auf http://localhost:5000)
    ```
-   Das Skript installiert fehlende Pakete (`flask`, `pyyaml`, `pytest`), prüft die Projektstruktur und startet die App mit `BUNDLE_ROOT=./wissen`.
+   Das Skript installiert fehlende Pakete (`flask`, `pyyaml`, `pytest`), prüft die Projektstruktur und startet die App mit `BUNDLE_ROOT=$PROJEKT/wissen` (absolut gesetzt, `PROJEKT` = Projektroot).
 3. **Telegram-Konfiguration neu erzeugen** (`config.json` ist gitignored und wird **nicht** mitgeklont!): Colab-Secrets `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` setzen und die Zelle aus `docs/colab-start.md` ausführen.
 4. **OpenCode-CLI im Projektverzeichnis starten** — Projektregeln (`AGENTS.md`) und Subagenten (`.opencode/agents/`) werden automatisch gefunden. Session-Start-Regel: zuerst `wissen/index.md` lesen.
 5. **Kontrolle:** `bash definitions/verify.sh .` → Exit 0 = Umgebung vollständig.
@@ -119,6 +119,8 @@ Alle laufenden Sessions wurden auf einen sicheren Stand gesetzt und haben gemeld
 | **A18 Startskript** | Sauber abgeschlossen: `start.sh` (lokal + `--colab`, `--dry-run`, sauberes Ctrl+C), `docs/colab-start.md` (inkl. Telegram-Secrets-Zelle), `test_start_skript.py` (7 Tests, skipif im verteilten Ziel). PM-Klarstellung umgesetzt: `start.sh` bleibt Repo-Root-Werkzeug, wird nicht von `setup.sh` verteilt |
 
 **Endstand Gesamtsuite:** `python3 -m pytest definitions/app/tests -q` → **549 passed, Exit 0**. Separate Läufe: `tools/` → 37 passed.
+
+**A18-Doku-Kosmetik (2026-11-14, erledigt):** Die drei Kosmetikpunkte aus der A18-Testverifikation sind behoben — (1) `--dry-run`-Hinweis („`verify.sh` wird dabei still übersprungen") in `docs/colab-start.md` und im `start.sh`-Kommentar; (2) `BUNDLE_ROOT`-Wortlaut an den tatsächlichen `start.sh`-Wert angeglichen (`$PROJEKT/wissen`, absolut); (3) Reihenfolge der Telegram-Secrets-Zelle vereinheitlicht: einheitlich **nach** `bash start.sh --colab` (Schritt 3) — Kurzfassung in `docs/colab-start.md` angeglichen.
 
 # Offene Punkte (für die Weiterführung)
 
