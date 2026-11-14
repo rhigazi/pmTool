@@ -327,6 +327,40 @@ tbody tr.klickbar:hover {
   font-size: 0.85rem;
 }
 
+.formular-ueberschrift {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: var(--farbe-text-schwach);
+}
+
+.formular-erfolg {
+  max-width: 640px;
+  padding: var(--abstand);
+  border: 1px solid var(--farbe-erfolg);
+  border-radius: var(--radius);
+  background: var(--farbe-erfolg-hell);
+  color: var(--farbe-erfolg);
+}
+
+.formular-erfolg dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem var(--abstand);
+  margin: 0.5rem 0;
+}
+
+.formular-erfolg dt {
+  font-weight: 600;
+}
+
+.formular-erfolg dd {
+  margin: 0;
+}
+
+.formular-erfolg a {
+  color: inherit;
+}
+
 .detail-kopf {
   margin-bottom: var(--abstand);
   padding: var(--abstand);

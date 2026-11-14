@@ -1,6 +1,7 @@
 import { loescheFehler, loescheMeldung, zeigeFehler } from "./api.js";
 import { ladeDetail } from "./detail.js";
-import { ladeAufgaben, ladeUebersicht, ladeWellen } from "./liste.js";
+import { initialisiereFormulare, ladeAufgabenAnsicht, ladeWellenAnsicht } from "./formulare.js";
+import { ladeUebersicht } from "./liste.js";
 
 const STANDARD_ANSICHT = "uebersicht";
 
@@ -105,9 +106,10 @@ export function navigiere() {
 }
 
 // Listenansicht (A11): Übersicht, Wellen und Aufgaben teilen sich liste.js.
+// Formulare (A13): Wellen-/Aufgabenansicht laden zusätzlich ihren Formularzustand.
 registriereAnsicht("uebersicht", ladeUebersicht);
-registriereAnsicht("wellen", ladeWellen);
-registriereAnsicht("aufgaben", ladeAufgaben);
+registriereAnsicht("wellen", ladeWellenAnsicht);
+registriereAnsicht("aufgaben", ladeAufgabenAnsicht);
 
 // Detailansicht (A12): Klick auf eine Listenzeile öffnet den Punkt.
 registriereAnsicht("detail", ladeDetail);
@@ -122,6 +124,7 @@ function oeffneDetail(event) {
 function starte() {
   document.addEventListener("click", oeffneDetail);
   window.addEventListener("hashchange", navigiere);
+  initialisiereFormulare();
   navigiere();
 }
 
