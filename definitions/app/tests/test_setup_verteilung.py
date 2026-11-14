@@ -226,13 +226,17 @@ def test_t9_moli_guard_kein_download_bei_vorhanden():
     assert quelle.index("command -v moli") < quelle.index("moli-installer.sh")
 
 
-def test_t10_moli_installer_fehler_abbruch_mit_warnung():
+def test_t10_moli_fehler_semantik_weich_und_hart():
     quelle = SETUP.read_text(encoding="utf-8")
 
-    assert "Warnung: moli-Installer fehlgeschlagen" in quelle
-    # Auf den Fehlerhinweis folgt der Abbruch
-    position = quelle.index("Warnung: moli-Installer fehlgeschlagen")
-    assert "exit 1" in quelle[position:]
+    # Verfügbarkeitsfehler (Download/Installer): Warnung, Setup läuft weiter
+    assert "Warnung: moli konnte nicht installiert werden" in quelle
+    # Sicherheitsfehler (Checksummen-Abweichung): hart abbrechen
+    assert "Fehler: Checksumme" in quelle
+    abschnitt = quelle[quelle.index("command -v moli"):quelle.index('echo "9) Dev-Abhängigkeiten')]
+    # Genau ein Abbruch im Moli-Block, und zwar auf die Checksummen-Meldung
+    assert abschnitt.count("exit 1") == 1
+    assert abschnitt.index("Fehler: Checksumme") < abschnitt.index("exit 1")
 
 
 def test_t11_moli_installer_nur_geprueft_ausfuehren():

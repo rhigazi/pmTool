@@ -139,21 +139,19 @@ if [ "$GLOBAL" -eq 1 ]; then
     installer="$(mktemp)"
     if ! curl --proto '=https' --tlsv1.2 -fsSL -o "$installer" "$MOLI_INSTALLER_URL"; then
       rm -f "$installer"
-      echo "  Warnung: moli-Installer fehlgeschlagen (Download)" >&2
-      exit 1
-    fi
-    checksumme_ist="$(sha256sum "$installer" | awk '{print $1}')"
-    if [ "$checksumme_ist" != "$MOLI_INSTALLER_SHA256" ]; then
+      echo "  Warnung: moli konnte nicht installiert werden"
+    else
+      checksumme_ist="$(sha256sum "$installer" | awk '{print $1}')"
+      if [ "$checksumme_ist" != "$MOLI_INSTALLER_SHA256" ]; then
+        rm -f "$installer"
+        echo "  Fehler: Checksumme des moli-Installers weicht ab (erwartet $MOLI_INSTALLER_SHA256, ist $checksumme_ist)" >&2
+        exit 1
+      fi
+      if ! sh "$installer"; then
+        echo "  Warnung: moli konnte nicht installiert werden"
+      fi
       rm -f "$installer"
-      echo "  Fehler: Checksumme des moli-Installers weicht ab (erwartet $MOLI_INSTALLER_SHA256, ist $checksumme_ist)" >&2
-      exit 1
     fi
-    if ! sh "$installer"; then
-      rm -f "$installer"
-      echo "  Warnung: moli-Installer fehlgeschlagen" >&2
-      exit 1
-    fi
-    rm -f "$installer"
   fi
 fi
 
