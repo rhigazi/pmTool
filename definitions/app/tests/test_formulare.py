@@ -686,11 +686,66 @@ def test_wellen_auswahl_wird_aus_api_befuellt():
         },
     )
     assert ergebnis["optionen"][0] == {"wert": "", "text": "—"}
+    # A13-Klein 1: Label ist „Titel (Pfad)", damit Titel-Duplikate trennbar sind.
     assert ergebnis["optionen"][1:] == [
-        {"wert": "wellen/w1.md", "text": "Welle 1: Fixture"},
-        {"wert": "wellen/w2.md", "text": "Welle 2"},
+        {"wert": "wellen/w1.md", "text": "Welle 1: Fixture (wellen/w1.md)"},
+        {"wert": "wellen/w2.md", "text": "Welle 2 (wellen/w2.md)"},
     ]
     assert ergebnis["auswahl"] == ""
+
+
+@ohne_node
+def test_wellen_auswahl_bleibt_nach_neuladen_erhalten():
+    ergebnis = dom(
+        "formulare.initialisiereFormulare();\n"
+        "await formulare.ladeAufgabenAnsicht();\n"
+        'bei("aufgabe-welle").value = "wellen/w2.md";\n'
+        "await formulare.ladeAufgabenAnsicht();\n"
+        "return {\n"
+        '  auswahl: bei("aufgabe-welle").value,\n'
+        '  optionen: bei("aufgabe-welle").childNodes.length,\n'
+        "};",
+        antworten={
+            "/api/wellen": {
+                "status": 200,
+                "koerper": [
+                    {"path": "wellen/w1.md", "titel": "Welle 1: Fixture"},
+                    {"path": "wellen/w2.md", "titel": "Welle 2"},
+                ],
+            }
+        },
+    )
+    assert ergebnis["auswahl"] == "wellen/w2.md"
+    assert ergebnis["optionen"] == 3
+
+
+@ohne_node
+def test_wellen_auswahl_reset_wenn_welle_verschwindet():
+    ergebnis = dom(
+        "formulare.initialisiereFormulare();\n"
+        "await formulare.ladeAufgabenAnsicht();\n"
+        'bei("aufgabe-welle").value = "wellen/w2.md";\n'
+        'antworten["/api/wellen"] = {\n'
+        "  status: 200,\n"
+        '  koerper: [{ path: "wellen/w1.md", titel: "Welle 1: Fixture" }],\n'
+        "};\n"
+        "await formulare.ladeAufgabenAnsicht();\n"
+        "return {\n"
+        '  auswahl: bei("aufgabe-welle").value,\n'
+        '  optionen: bei("aufgabe-welle").childNodes.map((o) => o.value),\n'
+        "};",
+        antworten={
+            "/api/wellen": {
+                "status": 200,
+                "koerper": [
+                    {"path": "wellen/w1.md", "titel": "Welle 1: Fixture"},
+                    {"path": "wellen/w2.md", "titel": "Welle 2"},
+                ],
+            }
+        },
+    )
+    assert ergebnis["auswahl"] == ""
+    assert ergebnis["optionen"] == ["", "wellen/w1.md"]
 
 
 @ohne_node

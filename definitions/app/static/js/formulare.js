@@ -445,8 +445,9 @@ async function ladeWellenAuswahl() {
   for (const eintrag of daten) {
     const pfad = text(eintrag?.path);
     if (!pfad) continue;
-    const titel = text(eintrag?.titel) || pfad;
-    optionen.push([pfad, titel]);
+    const titel = text(eintrag?.titel);
+    // A13-Klein 1: Pfad im Label, damit Titel-Duplikate unterscheidbar bleiben.
+    optionen.push([pfad, titel ? `${titel} (${pfad})` : pfad]);
   }
   fuelleAuswahl(auswahl, optionen);
   auswahl.value = optionen.some(([wert]) => wert === vorher) ? vorher : "";

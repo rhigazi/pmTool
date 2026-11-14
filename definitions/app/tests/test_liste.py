@@ -118,6 +118,14 @@ def test_liste_js_hebt_klarung_per_klassenliste_hervor():
     assert 'className = "klarung"' not in js_quelle
 
 
+def test_liste_js_setzt_klassen_nur_per_klassenliste():
+    # A11-1: Einheitlichkeit — auch Initialklassen laufen über `classList.add`.
+    js_quelle = lies(LISTE_JS)
+    assert "classList.add(" in js_quelle
+    assert "className =" not in js_quelle
+    assert "className=" not in js_quelle
+
+
 def test_liste_js_ohne_submit_handler():
     # Formulare filtern über `change`/`click`; ein Submit-Pfad existiert nicht.
     assert 'addEventListener("submit"' not in lies(LISTE_JS)

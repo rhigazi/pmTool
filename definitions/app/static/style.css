@@ -327,6 +327,12 @@ tbody tr.klickbar:hover {
   font-size: 0.85rem;
 }
 
+.hinweis {
+  display: block;
+  color: var(--farbe-fehler);
+  font-size: 0.85rem;
+}
+
 .formular-ueberschrift {
   margin: 0 0 0.5rem;
   font-size: 1rem;

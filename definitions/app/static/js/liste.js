@@ -115,7 +115,7 @@ function erstelleStatusZelle(eintrag) {
   }
 
   const marke = document.createElement("span");
-  marke.className = "status";
+  marke.classList.add("status");
   if (status === "Klarung") marke.classList.add("status--klarung");
   if (status === "Geschlossen") marke.classList.add("status--geschlossen");
   marke.textContent = status;
@@ -136,7 +136,7 @@ function erstelleOwnerZelle(eintrag) {
   }
 
   const marke = document.createElement("span");
-  marke.className = "owner";
+  marke.classList.add("owner");
   marke.textContent = owner;
   zelle.append(marke);
   return zelle;
@@ -151,7 +151,7 @@ function erstelleZeitZelle(eintrag) {
 /** Baut die Tabelle (Titel, Status, owner, zuletzt geändert) aus API-Einträgen. */
 export function erstelleTabelle(eintraege) {
   const tabelle = document.createElement("table");
-  tabelle.className = "tabelle";
+  tabelle.classList.add("tabelle");
 
   const kopf = tabelle.createTHead().insertRow();
   for (const spalte of SPALTEN) {
@@ -177,7 +177,7 @@ export function erstelleTabelle(eintraege) {
 
 function erstelleHinweis(text) {
   const hinweis = document.createElement("p");
-  hinweis.className = "leer";
+  hinweis.classList.add("leer");
   hinweis.textContent = text;
   return hinweis;
 }
@@ -203,7 +203,7 @@ function zeichneRueckfragen(bereich, eintraege) {
   }
 
   const liste = document.createElement("ul");
-  liste.className = "liste";
+  liste.classList.add("liste");
   for (const eintrag of eintraege) {
     const punkt = document.createElement("li");
     const titel = eintrag?.titel || KEINE_ANGABE;

@@ -9,6 +9,7 @@ import {
 
 const CONTAINER_ID = "detail";
 const OWNER_AUSWAHL_ID = "detail-owner";
+const OWNER_HINWEIS_ID = "detail-owner-hinweis";
 const FORMULAR_ID = "nachtrag-formular";
 const TEXT_ID = "nachtrag-text";
 const FEHLER_ID = "nachtrag-fehler";
@@ -22,6 +23,7 @@ const FELD_LEER = "Bitte einen Nachtrag eingeben.";
 const NACHRAG_ERFOLG = "Nachtrag gespeichert.";
 const OWNER_ERFOLG = "owner gespeichert.";
 const STATUS_ERFOLG = "Status gespeichert.";
+const OWNER_UNBEKANNT = "unbekannt";
 const ZURUECK_ZIEL = "#/uebersicht";
 
 // R1: Nur diese beiden Status sind über die UI setzbar; Pipeline-Status nicht.
@@ -339,21 +341,40 @@ function erstelleOwnerAuswahl(pfad, owner) {
     auswahl.append(option);
   }
 
-  const aktuell = OWNER_WERTE.includes(owner) ? owner : "";
-  auswahl.value = aktuell;
+  // A12-3: unbekannte Werte nicht still verschlucken — eigener Eintrag plus Hinweis.
+  const bekannt = OWNER_WERTE.includes(owner);
+  const unbekannt = Boolean(owner) && !bekannt;
+  if (unbekannt) {
+    const option = document.createElement("option");
+    option.value = owner;
+    option.textContent = `${owner} (${OWNER_UNBEKANNT})`;
+    auswahl.append(option);
+  }
+
+  auswahl.value = owner ?? "";
+  const anzeigewert = auswahl.value;
 
   auswahl.addEventListener("change", async () => {
     const wert = auswahl.value;
     if (!OWNER_WERTE.includes(wert)) {
-      auswahl.value = aktuell;
+      auswahl.value = anzeigewert;
       return;
     }
     if (!(await speichereMeta(pfad, { owner: wert }, OWNER_ERFOLG))) {
-      auswahl.value = aktuell;
+      auswahl.value = anzeigewert;
     }
   });
 
-  return auswahl;
+  if (!unbekannt) return auswahl;
+
+  const hinweis = document.createElement("span");
+  hinweis.id = OWNER_HINWEIS_ID;
+  hinweis.classList.add("hinweis");
+  hinweis.textContent = `owner „${owner}" ist ${OWNER_UNBEKANNT}; bitte mensch oder ai wählen.`;
+
+  const bereich = document.createDocumentFragment();
+  bereich.append(auswahl, hinweis);
+  return bereich;
 }
 
 function erstelleStatusKnopf(status, aktiv) {

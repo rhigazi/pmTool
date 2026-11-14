@@ -559,6 +559,22 @@ console.log(JSON.stringify({
 }));
 """
 
+SZENARIO_LEERER_NACHTRAG = r"""
+await detail.ladeDetail({ unterpunkt: DATEI });
+const eingabe = document.getElementById("nachtrag-text");
+eingabe.value = "   ";
+const formular = document.getElementById("nachtrag-formular");
+
+await formular.ausloesen("submit");
+
+const fehlerFeld = document.getElementById("nachtrag-fehler");
+console.log(JSON.stringify({
+  anfragen,
+  feld: { sichtbar: !fehlerFeld.hidden, text: fehlerFeld.textContent },
+  eingabe: eingabe.value,
+}));
+"""
+
 
 def ui_lauf(basis: str, szenario: str, verbotener_status: str | None = None) -> dict:
     """Spielt ein UI-Szenario in Node gegen den echten Server unter ``basis`` aus."""
@@ -572,6 +588,114 @@ def ui_lauf(basis: str, szenario: str, verbotener_status: str | None = None) -> 
         + szenario
     )
     return node_ausfuehren(skript)
+
+
+# --- A12-3: unbekannter owner --------------------------------------------
+
+# Feste Dateiantwort ohne Server: hier zählt nur, was die Detailansicht zeigt.
+UI_STAB_OHNE_SERVER = r"""
+// Fehler-/Erfolgsbereich und Detail-Container wie in index.html.
+const fehler = document.createElement("div");
+fehler.id = "fehler";
+fehler.hidden = true;
+const meldung = document.createElement("div");
+meldung.id = "meldung";
+meldung.hidden = true;
+const ziel = document.createElement("div");
+ziel.id = "detail";
+
+const anfragen = [];
+globalThis.fetch = async (pfad, optionen = {}) => {
+  anfragen.push({
+    methode: optionen.method || "GET",
+    pfad: String(pfad),
+    payload: typeof optionen.body === "string" ? JSON.parse(optionen.body) : null,
+  });
+  return {
+    ok: true,
+    status: 200,
+    headers: { get: () => "application/json" },
+    text: async () => JSON.stringify(ANTWORT),
+  };
+};
+"""
+
+UNBEKANNTER_OWNER_DATEI = {
+    "markdown": "# Datei\n",
+    "frontmatter": {"title": "A1", "type": "aufgabe", "owner": "bot"},
+}
+
+
+def ui_lauf_ohne_server(datei: dict, ablauf: str) -> dict:
+    """Spielt einen Ablauf im Mini-DOM mit fester Dateiantwort aus (kein Server)."""
+    skript = (
+        f"import * as detail from {json.dumps(DETAIL_JS.as_uri())};\n"
+        + MINI_DOM
+        + f"const ANTWORT = {json.dumps(datei, ensure_ascii=False)};\n"
+        + UI_STAB_OHNE_SERVER
+        + "const ergebnis = await (async () => {\n"
+        + ablauf
+        + "\n})();\n"
+        + "console.log(JSON.stringify(ergebnis));\n"
+    )
+    return node_ausfuehren(skript)
+
+
+@ohne_node
+def test_a12_3_unbekannter_owner_wird_als_unbekannt_angezeigt_und_gemeldet():
+    ergebnis = ui_lauf_ohne_server(
+        UNBEKANNTER_OWNER_DATEI,
+        "await detail.ladeDetail({ unterpunkt: 'aufgaben/a1.md' });\n"
+        "const auswahl = document.getElementById('detail-owner');\n"
+        "const hinweis = document.getElementById('detail-owner-hinweis');\n"
+        "return {\n"
+        "  wert: auswahl.value,\n"
+        "  optionen: auswahl.kinder.map((o) => ({ wert: o.value, text: o.textContent })),\n"
+        "  hinweis: hinweis ? hinweis.textContent : null,\n"
+        "};",
+    )
+    # Fail-loud: der unbekannte Wert wird benannt statt still auf „—" zu fallen.
+    assert ergebnis["wert"] == "bot"
+    assert {"wert": "bot", "text": "bot (unbekannt)"} in ergebnis["optionen"]
+    assert any(option["text"] == "—" for option in ergebnis["optionen"])
+    assert ergebnis["hinweis"] is not None
+    assert "bot" in ergebnis["hinweis"]
+    assert "unbekannt" in ergebnis["hinweis"]
+
+
+@ohne_node
+def test_a12_3_unbekannter_owner_loest_keinen_schreibzugriff_aus():
+    ergebnis = ui_lauf_ohne_server(
+        UNBEKANNTER_OWNER_DATEI,
+        "await detail.ladeDetail({ unterpunkt: 'aufgaben/a1.md' });\n"
+        "const auswahl = document.getElementById('detail-owner');\n"
+        "auswahl.value = 'kaputt';\n"
+        "await auswahl.ausloesen('change');\n"
+        "return {\n"
+        "  posts: anfragen.filter((a) => a.methode === 'POST').length,\n"
+        "  wert: auswahl.value,\n"
+        "};",
+    )
+    assert ergebnis["posts"] == 0
+    assert ergebnis["wert"] == "bot"  # Rückfall auf den Anzeigewert
+
+
+@ohne_node
+def test_a12_3_bekannter_owner_ohne_unbekannt_hinweis():
+    datei = {"markdown": "# Datei\n", "frontmatter": {"title": "A1", "owner": "mensch"}}
+    ergebnis = ui_lauf_ohne_server(
+        datei,
+        "await detail.ladeDetail({ unterpunkt: 'aufgaben/a1.md' });\n"
+        "const auswahl = document.getElementById('detail-owner');\n"
+        "return {\n"
+        "  wert: auswahl.value,\n"
+        "  optionen: auswahl.kinder.map((o) => o.value),\n"
+        "  hinweis: document.getElementById('detail-owner-hinweis') !== null,\n"
+        "};",
+    )
+    assert ergebnis["wert"] == "mensch"
+    assert ergebnis["optionen"] == ["", "mensch", "ai"]
+    assert ergebnis["hinweis"] is False
 
 
 @pytest.fixture()
@@ -662,3 +786,26 @@ def test_a12_2_doppelklick_status_schreibt_nur_einmal(bundle, app_server):
     assert len(schreibungen) == 1
     assert schreibungen[0]["gesperrt"]["status"] == [True, True]
     assert ergebnis["nachher"]["gesperrt"]["status"] == [False, False]
+
+
+# --- A12-T4-Hardening: Fehlertext bei leerem Nachtrag --------------------
+
+
+@ohne_node
+def test_a12_t4_leerer_nachtrag_zeigt_fehlertext_ohne_schreibzugriff(bundle, app_server):
+    datei = bundle / T10_DATEI
+    vorher = _sha256(datei)
+
+    ergebnis = ui_lauf(app_server, SZENARIO_LEERER_NACHTRAG)
+
+    # DOM-Regression: der sichtbare Fehlertext hängt am Feld, nicht nur die Payload-Logik.
+    assert ergebnis["feld"] == {"sichtbar": True, "text": "Bitte einen Nachtrag eingeben."}
+    assert ergebnis["eingabe"] == "   "  # Eingabe bleibt für die Korrektur stehen
+
+    schreibungen = [
+        eintrag
+        for eintrag in ergebnis["anfragen"]
+        if eintrag["methode"] == "POST" and eintrag["pfad"] == "/api/nachtrag"
+    ]
+    assert schreibungen == []
+    assert _sha256(datei) == vorher
