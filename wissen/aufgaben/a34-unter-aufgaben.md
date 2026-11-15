@@ -10,7 +10,7 @@ priority: mittel
 assigned_to: coder
 welle: wellen/w3.md
 owner: ai
-aktuell: "coder: Paket 3 (UI) + A29-K1–K3 beauftragt — Welle 2, 2026-11-15"
+aktuell: "PM: PAUSE 2026-11-15 — Paket 3 umgesetzt (WIP 4e98f42), Review offen (Mutanten + Urteil)"
 ---
 
 # Ziel
