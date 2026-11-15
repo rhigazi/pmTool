@@ -9,7 +9,7 @@ priority: mittel
 assigned_to: coder
 welle: wellen/w3.md
 owner: ai
-aktuell: "planner: Planung abgeschlossen"
+aktuell: "PM: Planung fertig (10 AK, 50 Tests + 5 Szenarien, 4 Pakete) — Umsetzung nach A29-P1 (UI-Paket nach A29-P2/A33-B8)"
 ---
 
 # Ziel
