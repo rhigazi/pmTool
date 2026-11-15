@@ -380,3 +380,36 @@ def test_a28_freigabe_ueber_meta_ist_verboten(bundle, monkeypatch, wert):
 
     assert aufrufe == []
     assert _datei_hash(bundle, AUFGABE) == hash_vorher
+
+
+# --- A27-K1: kodierte Wellen-Pfade ----------------------------------------
+
+
+@pytest.mark.parametrize("welle", ["wellen/%77%31.md", "wellen/w%31.md"])
+def test_a27_k1_kodierter_wellenpfad_ist_eingabefehler(bundle, welle):
+    hash_vorher = _datei_hash(bundle, AUFGABE)
+
+    with pytest.raises(okf_bundle.EingabeFehler) as fehler:
+        meta.setzen(AUFGABE, welle=welle)
+
+    assert not isinstance(fehler.value, meta.RechteFehler)
+    assert str(fehler.value).strip()
+    assert _datei_hash(bundle, AUFGABE) == hash_vorher
+    assert "welle" not in okf_bundle.lesen(AUFGABE)[0]
+    assert "welle" not in (bundle / AUFGABE).read_text(encoding="utf-8")
+
+
+def test_a27_k1_normaler_pfad_bleibt_erlaubt(bundle):
+    frontmatter = meta.setzen(AUFGABE, welle=WELLE)
+
+    assert frontmatter["welle"] == WELLE
+    assert okf_bundle.lesen(AUFGABE)[0]["welle"] == WELLE
+
+
+def test_a27_k1_welle_null_entfernt_weiterhin(bundle):
+    _aufgabe_mit_welle(bundle)
+
+    frontmatter = meta.setzen(AUFGABE, welle=None)
+
+    assert "welle" not in frontmatter
+    assert "welle" not in (bundle / AUFGABE).read_text(encoding="utf-8")

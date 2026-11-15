@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import neu_aufgabe
 import okf_bundle
+import slug
 import status
 from okf_bundle import EingabeFehler
 
@@ -114,6 +115,62 @@ def test_t3_welle_wird_uebernommen(bundle):
     assert "/wellen/w1.md" in body
 
 
+# --- A33-T10/T11: Wellen-Linktext (A13-3) ---------------------------------
+
+
+def _welle_schreiben(bundle: Path, name: str, inhalt: str) -> str:
+    pfad = f"wellen/{name}"
+    (bundle / pfad).write_text(inhalt, encoding="utf-8")
+    return pfad
+
+
+def _kontext(body: str) -> list[str]:
+    return _abschnitt(body, "# Kontext", "# Betroffene Dateien")
+
+
+def test_a33_t10_welle_linktext_ist_der_titel(bundle):
+    _welle_schreiben(
+        bundle,
+        "w2.md",
+        '---\ntype: Welle\ntitle: "W2"\nstatus: Offen\nowner: ai\n---\n\n# Ziel\n\nZweite Welle.\n',
+    )
+
+    pfad = neu_aufgabe.anlegen(dict(GUELTIG, welle="wellen/w2.md"))
+
+    kontext = _kontext(okf_bundle.lesen(pfad)[1])
+    assert "- Welle: [W2](wellen/w2.md)" in kontext
+    # Der ``user_story``-Linktext bleibt der Dateistamm.
+    assert "- User Story: [us-3](/projekt/user-stories/us-3.md)" in kontext
+
+
+@pytest.mark.parametrize(
+    ("name", "inhalt"),
+    [
+        ("w3.md", None),  # Datei fehlt
+        ("w4.md", "# Nur Text\n\nkein Frontmatter\n"),
+        ("w5.md", "---\ntype: Welle\ntitle: 42\n---\n\n# Ziel\n"),
+        ("w6.md", "---\ntype: Welle\ntitle:\n---\n\n# Ziel\n"),
+    ],
+)
+def test_a33_t11_fallback_linktext_bleibt_dateistamm(bundle, name, inhalt):
+    if inhalt is not None:
+        _welle_schreiben(bundle, name, inhalt)
+    stamm = name.removesuffix(".md")
+
+    pfad = neu_aufgabe.anlegen(dict(GUELTIG, welle=f"wellen/{name}"))
+
+    assert (bundle / pfad).is_file()
+    assert f"- Welle: [{stamm}](wellen/{name})" in _kontext(okf_bundle.lesen(pfad)[1])
+
+
+def test_a33_t11_leere_welle_bleibt_ohne_zeile(bundle):
+    pfad = neu_aufgabe.anlegen(dict(GUELTIG, welle="   "))
+
+    frontmatter, body = okf_bundle.lesen(pfad)
+    assert "welle" not in frontmatter
+    assert not any(zeile.startswith("- Welle:") for zeile in _kontext(body))
+
+
 # --- T4 Body-Abschnitte ---------------------------------------------------
 
 
@@ -161,14 +218,52 @@ def test_t5_akzeptanzliste_als_aufzaehlung(bundle):
     ],
 )
 def test_t6_slug_normalisierung(titel, erwarteter_slug):
-    assert neu_aufgabe.slug_aus_titel(titel) == erwarteter_slug
+    assert slug.slug_aus_titel(titel) == erwarteter_slug
 
 
 def test_t6_slug_maximal_60_zeichen():
-    slug = neu_aufgabe.slug_aus_titel("Wort " * 40)
+    slug_wert = slug.slug_aus_titel("Wort " * 40)
 
-    assert len(slug) <= 60
-    assert not slug.endswith("-")
+    assert len(slug_wert) <= 60
+    assert not slug_wert.endswith("-")
+
+
+# --- A33-T15: gemeinsame Slug-Regel (A5-B4) -------------------------------
+
+SLUG_MATRIX = [
+    ("Übersicht: Status & owner!", "uebersicht-status-owner"),
+    ("Größen-Übersicht", "groessen-uebersicht"),
+    ("Straße & Maß", "strasse-mass"),
+    ("Café déjà vu", "cafe-deja-vu"),
+    # Exotische Zeichen: die Variante aus ``neu_aufgabe`` ist maßgeblich.
+    ("Smørrebrød", "sm-rrebr-d"),
+    ("../../etc/passwd", "etc-passwd"),
+    ("  Doppelte   Leerzeichen  ", "doppelte-leerzeichen"),
+    ("A" * 80, "a" * 60),
+    ("!!!", ""),
+    ("", ""),
+]
+
+
+@pytest.mark.parametrize(("titel", "erwartet"), SLUG_MATRIX)
+def test_a33_t15_slug_matrix(titel, erwartet):
+    assert slug.slug_aus_titel(titel) == erwartet
+
+
+@pytest.mark.parametrize(("titel", "erwartet"), SLUG_MATRIX)
+def test_a33_t15_anlegen_nutzt_gemeinsamen_slug(bundle, titel, erwartet):
+    if not erwartet:
+        vorher = _dateien(bundle)
+
+        with pytest.raises(EingabeFehler):
+            neu_aufgabe.anlegen(dict(GUELTIG, titel=titel))
+
+        assert _dateien(bundle) == vorher
+        return
+
+    pfad = neu_aufgabe.anlegen(dict(GUELTIG, titel=titel))
+
+    assert pfad == f"aufgaben/{erwartet}.md"
 
 
 # --- T7 Kollision ---------------------------------------------------------

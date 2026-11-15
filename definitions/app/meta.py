@@ -10,6 +10,7 @@ vorbehalten. Geschrieben wird immer in einem einzigen, atomaren Vorgang über
 from __future__ import annotations
 
 from typing import Any
+from urllib.parse import unquote
 
 import okf_bundle
 
@@ -125,7 +126,15 @@ def _pruefe_welle(wert: Any) -> tuple[str, str | None]:
 
 
 def _wellen_pfad(text: str) -> str:
-    """Akzeptiert genau ``wellen/<name>.md`` als existierende, nicht reservierte Datei."""
+    """Akzeptiert genau ``wellen/<name>.md`` als existierende, nicht reservierte Datei.
+
+    Prozent-kodierte Pfade werden strikt abgewiesen (A27-K1): sonst würde die
+    Zuordnung unter der kodierten Schreibweise gespeichert, während
+    :func:`okf_bundle.resolve_path` die Datei über die dekodierte Form findet.
+    """
+    if unquote(text) != text:
+        raise okf_bundle.EingabeFehler(WELLE_MELDUNG)
+
     teile = text.split("/")
     if len(teile) != 2 or teile[0] != WELLEN_ORDNER:
         raise okf_bundle.EingabeFehler(WELLE_MELDUNG)

@@ -13,6 +13,7 @@ import nachtrag  # noqa: E402
 import neu_aufgabe  # noqa: E402
 import neu_welle  # noqa: E402
 import okf_bundle  # noqa: E402
+import slug  # noqa: E402
 import status  # noqa: E402
 
 GUELTIG = {
@@ -272,6 +273,64 @@ def test_t9b_kuerzel_max_60_zeichen(bundle):
     kuerzel = Path(pfad).stem
     assert len(kuerzel) <= 60
     assert not kuerzel.endswith("-")
+
+
+# --- A33-T15: gemeinsame Slug-Regel (A5-B4) -------------------------------
+
+
+@pytest.mark.parametrize(
+    ("titel", "erwartet"),
+    [
+        ("Übersicht: Status & owner!", "uebersicht-status-owner"),
+        ("Größen-Übersicht", "groessen-uebersicht"),
+        ("Straße & Maß", "strasse-mass"),
+        ("Café déjà vu", "cafe-deja-vu"),
+        # Exotische Zeichen: die Variante aus ``neu_aufgabe`` ist maßgeblich.
+        ("Smørrebrød", "sm-rrebr-d"),
+        ("../../etc/passwd", "etc-passwd"),
+        ("  Doppelte   Leerzeichen  ", "doppelte-leerzeichen"),
+        ("A" * 80, "a" * 60),
+        ("!!!", ""),
+        ("", ""),
+    ],
+)
+def test_a33_t15_kuerzel_ist_slug_mit_fallback(titel, erwartet):
+    assert slug.slug_aus_titel(titel) == erwartet
+    assert neu_welle.kuerzel(titel) == (erwartet or neu_welle.FALLBACK_KUERZEL)
+
+
+@pytest.mark.parametrize("titel", [None, 42, ["Welle"]])
+def test_a33_t15_nicht_text_faellt_auf_welle(titel):
+    assert neu_welle.kuerzel(titel) == neu_welle.FALLBACK_KUERZEL
+
+
+@pytest.mark.parametrize(
+    ("titel", "erwartet"),
+    [
+        ("Smørrebrød", "sm-rrebr-d"),
+        ("Café déjà vu", "cafe-deja-vu"),
+        ("Straße & Maß", "strasse-mass"),
+    ],
+)
+def test_a33_t15_anlegen_nutzt_gemeinsamen_slug(bundle, titel, erwartet):
+    pfad = neu_welle.anlegen({**GUELTIG, "titel": titel})
+
+    assert pfad == f"wellen/{erwartet}.md"
+    assert (bundle / pfad).is_file()
+
+
+def test_a33_t15_beide_aufrufer_nutzen_dieselbe_funktion(bundle, monkeypatch):
+    """Beide Aufrufer delegieren an ``slug.slug_aus_titel`` (keine Duplikate)."""
+    monkeypatch.setattr(slug, "slug_aus_titel", lambda titel: "gemeinsam")
+    aufgabe = {
+        "titel": "Irgendein Titel",
+        "ziel": "Ziel",
+        "akzeptanz": ["Kriterium"],
+        "prioritaet": "hoch",
+    }
+
+    assert neu_aufgabe.anlegen(aufgabe) == "aufgaben/gemeinsam.md"
+    assert Path(neu_welle.anlegen(GUELTIG)).stem == "gemeinsam"
 
 
 # --- description (A33-T8/T9, A5-B3) --------------------------------------

@@ -9,33 +9,20 @@ werden nie überschrieben — Kollisionen bekommen ein Suffix (``-2``, ``-3``, �
 from __future__ import annotations
 
 import re
-import unicodedata
 
 import yaml
 
 import kennung
 import okf_bundle
+import slug
 from okf_bundle import EingabeFehler
 
 AUFGABEN_ORDNER = "aufgaben"
-MAX_SLUG_LAENGE = 60
 MAX_KURZBESCHREIBUNG = 160
 MAX_KANDIDATEN = 1000
 
 PRIORITAETEN = ("hoch", "mittel", "niedrig")
 
-_UMLAUTE = str.maketrans(
-    {
-        "ä": "ae",
-        "ö": "oe",
-        "ü": "ue",
-        "Ä": "Ae",
-        "Ö": "Oe",
-        "Ü": "Ue",
-        "ß": "ss",
-    }
-)
-_NICHT_SLUG = re.compile(r"[^a-z0-9]+")
 # Ein mitgegebenes Kennungspräfix wird entfernt (die App vergibt die Kennung).
 _KENNUNG_PRAEFIX = re.compile(r"^A[0-9]+(?:\.[0-9]{3})?\s*:\s*")
 
@@ -60,18 +47,6 @@ def anlegen(daten: dict) -> str:
     pfad = _freier_pfad(felder["basis"])
     okf_bundle.schreiben(pfad, _inhalt(felder))
     return pfad
-
-
-def slug_aus_titel(titel: str) -> str:
-    """ASCII-Slug aus dem Titel: Umlaute → ASCII, Sonderzeichen → ``-``, max. 60."""
-    text = str(titel).translate(_UMLAUTE).lower()
-    text = unicodedata.normalize("NFKD", text)
-    text = "".join(zeichen for zeichen in text if not unicodedata.combining(zeichen))
-
-    slug = _NICHT_SLUG.sub("-", text).strip("-")
-    if len(slug) > MAX_SLUG_LAENGE:
-        slug = slug[:MAX_SLUG_LAENGE].rstrip("-")
-    return slug
 
 
 # --- Eingabeprüfung -------------------------------------------------------
@@ -105,12 +80,12 @@ def _pruefe(daten: dict) -> dict:
         )
 
     if parent is None:
-        basis = slug_aus_titel(titel)
+        basis = slug.slug_aus_titel(titel)
         if not basis:
             raise EingabeFehler("Titel enthält keine verwendbaren Zeichen für ein Kürzel")
     else:
         titel = _ohne_kennung(titel)
-        basis = slug_aus_titel(titel)
+        basis = slug.slug_aus_titel(titel)
         if not basis:
             raise EingabeFehler("Titel enthält keine verwendbaren Zeichen für ein Kürzel")
         unterkennung = kennung.naechste_unterkennung(parent["pfad"])
@@ -293,8 +268,22 @@ def _kontext(felder: dict) -> str:
     if felder["user_story"]:
         zeilen.append(f"- User Story: {_verweis_zeile(felder['user_story'])}")
     if felder["welle"]:
-        zeilen.append(f"- Welle: {_verweis_zeile(felder['welle'])}")
+        zeilen.append(f"- Welle: [{_wellen_titel(felder['welle'])}]({felder['welle']})")
     return "\n".join(zeilen) or "Kein zusätzlicher Kontext angegeben."
+
+
+def _wellen_titel(pfad: str) -> str:
+    """Titel der Wellen-Datei als Linktext; sonst der Dateistamm (fail-safe).
+
+    Ein fehlender, unlesbarer oder titelloser Verweis darf das Anlegen der
+    Aufgabe nie verhindern — dann bleibt der bisherige Dateistamm stehen.
+    """
+    stamm = pfad.rstrip("/").rsplit("/", 1)[-1].removesuffix(".md")
+    try:
+        frontmatter, _ = okf_bundle.lesen(pfad)
+    except (okf_bundle.BundlePfadFehler, okf_bundle.FrontmatterFehler, OSError):
+        return stamm
+    return _wert(frontmatter.get("title")) or stamm
 
 
 def _verweis_zeile(pfad: str) -> str:

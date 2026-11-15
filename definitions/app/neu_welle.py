@@ -6,34 +6,18 @@ Dateiformat folgt der Technischen Spec (``type: Welle`` mit ``status``/``owner``
 
 from __future__ import annotations
 
-import re
-import unicodedata
-
 import yaml
 
 import okf_bundle
+import slug
 import status
 from okf_bundle import EingabeFehler
 
 WELLEN_ORDNER = "wellen"
-MAX_KUERZEL_LAENGE = 60
 MAX_KURZBESCHREIBUNG = 160
 MAX_KANDIDATEN = 1000
 FALLBACK_KUERZEL = "welle"
 OWNER_WERTE = ("mensch", "ai")
-
-_UMLAUTE = str.maketrans(
-    {
-        "ä": "ae",
-        "ö": "oe",
-        "ü": "ue",
-        "Ä": "Ae",
-        "Ö": "Oe",
-        "Ü": "Ue",
-        "ß": "ss",
-    }
-)
-_NICHT_KUERZEL = re.compile(r"[^a-z0-9]+")
 
 
 def anlegen(eingaben: dict) -> str:
@@ -73,13 +57,8 @@ def anlegen(eingaben: dict) -> str:
 
 
 def kuerzel(titel: str) -> str:
-    """ASCII-Slug aus dem Titel: Umlaute → ASCII, Sonderzeichen → ``-``, max. 60."""
-    text = _text(titel) or ""
-    text = text.translate(_UMLAUTE)
-    text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
-    text = _NICHT_KUERZEL.sub("-", text.lower()).strip("-")
-    text = text[:MAX_KUERZEL_LAENGE].strip("-")
-    return text or FALLBACK_KUERZEL
+    """ASCII-Slug aus dem Titel (gemeinsame Regel); leer → ``welle``."""
+    return slug.slug_aus_titel(_text(titel) or "") or FALLBACK_KUERZEL
 
 
 def _freier_pfad(titel: str) -> str:
