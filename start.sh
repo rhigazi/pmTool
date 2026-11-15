@@ -3,7 +3,7 @@
 # Setup verifizieren und den App-Server starten.
 #
 # Aufruf:
-#   bash start.sh            lokal: Server auf http://localhost:5000 (BUNDLE_ROOT=./wissen)
+#   bash start.sh            lokal: Server auf http://localhost:5000 (BUNDLE_ROOT=$PROJEKT/wissen, absolut)
 #   bash start.sh --colab    Colab: startet definitions/app/start_colab.py (Port-Freigabe im Browser)
 #   bash start.sh --neu      wissen/ auf die leere Vorlage zurücksetzen (mit Backup), dann starten
 #
@@ -18,12 +18,16 @@
 set -euo pipefail
 
 PROJEKT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BUNDLE_ROOT="${BUNDLE_ROOT:-$PROJEKT/wissen}"
+# Reset-Ziel ist immer <Projekt>/wissen: tools/neues_projekt.py ignoriert BUNDLE_ROOT.
+RESET_ZIEL="$PROJEKT/wissen"
+BUNDLE_ROOT="${BUNDLE_ROOT:-$RESET_ZIEL}"
 PORT="${PORT:-5000}"
 MODUS="lokal"
 DRY_RUN=0
 MIT_VERIFY=1
 NEU=0
+PORT_BELEGT=0
+HINWEIS_GEZEIGT=0
 
 # (pip-Paket, Importname) — geprüft wird der Importname.
 PAKETE=("flask:flask" "pyyaml:yaml" "pytest:pytest")
@@ -37,12 +41,10 @@ PROJEKT_MARKER=(
   "features/okf-projekt-manager-spa.md"
 )
 
-# Einzige Reset-Implementierung ist tools/neues_projekt.py (A24); im
-# Entwicklungs-Repo ist tools/ der Spiegel, die Quelle liegt unter definitions/tools/.
+# Einzige Reset-Implementierung ist tools/neues_projekt.py (A24), von setup.sh
+# dorthin installiert. Die Quelle definitions/tools/ dient bewusst nicht als
+# Fallback: ein Reset darf nie mit einem nicht installierten Werkzeug laufen.
 NEUES_PROJEKT="$PROJEKT/tools/neues_projekt.py"
-if [ ! -f "$NEUES_PROJEKT" ]; then
-  NEUES_PROJEKT="$PROJEKT/definitions/tools/neues_projekt.py"
-fi
 
 info()   { printf '%s\n' "$*"; }
 ok()     { printf '  ✓ %s\n' "$*"; }
@@ -74,8 +76,12 @@ pruefe_python() {
 }
 
 pruefe_struktur() {
-  local fehlt=0
+  local fehlt=0 verzeichnis
   for verzeichnis in wissen definitions; do
+    if [ "$verzeichnis" = "wissen" ] && [ "$NEU" -eq 1 ]; then
+      # --neu legt ein fehlendes Bundle aus der Vorlage an (tools/neues_projekt.py).
+      continue
+    fi
     if [ -d "$PROJEKT/$verzeichnis" ]; then
       ok "$verzeichnis/"
     else
@@ -124,20 +130,30 @@ pruefe_telegram() {
 wissen_vorbefuellt() {
   local marker
   for marker in "${PROJEKT_MARKER[@]}"; do
-    if [ -f "$BUNDLE_ROOT/$marker" ]; then
+    # Marker am Reset-Ziel prüfen, nicht am (abweichend möglichen) BUNDLE_ROOT.
+    if [ -f "$RESET_ZIEL/$marker" ]; then
       return 0
     fi
   done
   return 1
 }
 
+warnung_reset_ziel() {
+  if [ "$BUNDLE_ROOT" != "$RESET_ZIEL" ]; then
+    info "    Achtung: BUNDLE_ROOT=$BUNDLE_ROOT weicht ab — der Reset wirkt auf $RESET_ZIEL, nicht auf $BUNDLE_ROOT."
+  fi
+}
+
 neues_projekt_hinweis() {
   local art="$1"
-  warn "Dieses Repo enthält die Projekt-Daten des pmTool-Vorbilds in $BUNDLE_ROOT."
+  warn "Dieses Repo enthält die Projekt-Daten des pmTool-Vorbilds in $RESET_ZIEL."
+  warnung_reset_ziel
+  HINWEIS_GEZEIGT=1
   case "$art" in
     tty)
-      info "    Ein neues, leeres Projekt setzt wissen/ auf die Vorlage zurück."
-      info "    Vorher entsteht ein Backup wissen-backup-YYYYMMDD-HHMMSS.tar.gz im Projekt-Root."
+      info "    Ein neues, leeres Projekt setzt $RESET_ZIEL auf die Vorlage zurück."
+      info "    Werkzeug: tools/neues_projekt.py — vorher entsteht ein Backup"
+      info "    wissen-backup-YYYYMMDD-HHMMSS.tar.gz im Projekt-Root."
       info "    Ohne Zustimmung wird nichts gelöscht."
       ;;
     dry-run)
@@ -164,8 +180,12 @@ ist_zustimmung() {
 starte_neues_projekt() {
   local ausfuehren="$1"
   if [ ! -f "$NEUES_PROJEKT" ]; then
-    fehler "Reset-Werkzeug fehlt (tools/neues_projekt.py) — es wird nichts gelöscht."
+    fehler "Werkzeug fehlt: tools/neues_projekt.py — Reset nicht möglich (es wird nichts gelöscht)."
     exit 1
+  fi
+
+  if [ "$HINWEIS_GEZEIGT" -eq 0 ]; then
+    warnung_reset_ziel
   fi
 
   if [ "$ausfuehren" -eq 1 ]; then
@@ -184,6 +204,15 @@ starte_neues_projekt() {
 }
 
 pruefe_projektstand() {
+  # K7: Port zuerst prüfen — ein laufender Server soll keinen Reset auslösen,
+  # den der Nutzer nur wegen des zweiten Starts begonnen hätte.
+  if [ "$DRY_RUN" -eq 0 ] && port_belegt; then
+    PORT_BELEGT=1
+    info "→ Port $PORT ist bereits belegt — der Server läuft vermutlich schon: http://localhost:$PORT"
+    info "→ Kein zweiter Start, kein Projekt-Reset."
+    return 0
+  fi
+
   if [ "$NEU" -eq 1 ]; then
     if [ "$DRY_RUN" -eq 1 ]; then
       starte_neues_projekt 0
@@ -260,6 +289,11 @@ starte_server() {
     return 0
   fi
 
+  if [ "$PORT_BELEGT" -eq 1 ]; then
+    info "→ Kein zweiter Start: Port $PORT ist belegt."
+    return 0
+  fi
+
   if port_belegt; then
     info "Port $PORT ist bereits belegt — der Server läuft vermutlich schon: $url"
     info "Kein zweiter Start."
@@ -287,6 +321,10 @@ starte_colab() {
   if [ ! -f "$start" ]; then
     warn "definitions/app/start_colab.py nicht gefunden — bitte im Projektwurzelverzeichnis arbeiten."
     exit 1
+  fi
+  if [ "$PORT_BELEGT" -eq 1 ]; then
+    info "→ Kein zweiter Start: Port $PORT ist belegt (in Colab bei Bedarf die Runtime neu starten)."
+    return 0
   fi
   if [ "$DRY_RUN" -eq 1 ]; then
     info "→ würde aufrufen: python3 $start"

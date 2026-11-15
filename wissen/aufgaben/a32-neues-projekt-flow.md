@@ -29,13 +29,13 @@ Wenn ein neues Projekt per Repo-Pull entsteht, ist `wissen/` mit den pmTool-Proj
 
 ## Präzisierung `coder` (2026-11-15, bei der Umsetzung)
 
-- **Marker:** Liste aus zwei Referenzdateien — `wissen/aufgaben/a1-okf-bundle.md` und `wissen/features/okf-projekt-manager-spa.md`. Keine davon legt die Vorlage an; eine Liste verhindert stilles Versagen bei Umbenennung einer Datei. Der Treffer genügt (Oder-Verknüpfung). Geprüft wird unter `BUNDLE_ROOT` (also dem tatsächlich genutzten Bundle, Default `<Projekt>/wissen`).
+- **Marker:** Liste aus zwei Referenzdateien — `wissen/aufgaben/a1-okf-bundle.md` und `wissen/features/okf-projekt-manager-spa.md`. Keine davon legt die Vorlage an; eine Liste verhindert stilles Versagen bei Umbenennung einer Datei. Der Treffer genügt (Oder-Verknüpfung). Geprüft wird am **Reset-Ziel** `<Projekt>/wissen` (Nachbesserung W1: `tools/neues_projekt.py` ignoriert `BUNDLE_ROOT`).
 - **Reihenfolge:** neuer Schritt 5 „Projektstand" läuft **vor** `verify.sh` (Schritt 6), damit die Prüfung nach einem Reset den leeren Zustand sieht; App-Start ist Schritt 7. Hinweistexte nennen Backup-Ort (`wissen-backup-YYYYMMDD-HHMMSS.tar.gz`) und `tools/neues_projekt.py`.
 - **Ja/Nein:** Zustimmung nur bei `j`, `ja`, `y`, `yes` (Groß-/Kleinschreibung egal). Leere Eingabe, alles andere, `Strg+D` und Lesefehler = **Nein** (unveränderter Start). Kein TTY (`[ ! -t 0 ]`) = nur Hinweis, kein Prompt, kein Reset (fail-safe). `--dry-run` fragt grundsätzlich nicht.
 - **`--neu --dry-run`:** ruft das Werkzeug **ohne** `--ja` auf (Planausgabe) und setzt danach den normalen Trockenlauf fort („würde starten"); kein Backup, keine Änderung. `--neu` ist mit `--colab` kombinierbar (Reihenfolge der Flags egal).
-- **Fehlerpfad:** Fehlt `tools/neues_projekt.py` (und der Fallback `definitions/tools/neues_projekt.py`) oder endet das Werkzeug mit Exit ≠ 0, meldet `start.sh` den Fehler auf stderr (`✗ …`) und beendet sich mit Exit 1 — kein App-Start. Ein Teilreset wird nie als Erfolg behandelt.
-- **Abweichung/Klarstellung zu AK-1:** Ein **fehlendes** `wissen/` bleibt wie bisher ein Abbruch der Strukturprüfung (Schritt 2); `start.sh` legt das Bundle nicht selbst an (das tun `setup.sh --wissen` bzw. `tools/neues_projekt.py`). Die Erkennung liefert in diesem Fall „kein Hinweis".
-- **Entwicklungs-Repo:** Der Reset nutzt bevorzugt `tools/neues_projekt.py`; existiert nur die Quelle `definitions/tools/neues_projekt.py`, wird diese verwendet (gleiche Implementierung, kein zweiter Löschpfad).
+- **Fehlerpfad:** Fehlt `tools/neues_projekt.py` oder endet das Werkzeug mit Exit ≠ 0, meldet `start.sh` den Fehler auf stderr (`✗ …`) und beendet sich mit Exit 1 — kein App-Start. Ein Teilreset wird nie als Erfolg behandelt. Ohne Werkzeug lautet die Meldung „Werkzeug fehlt: tools/neues_projekt.py — Reset nicht möglich".
+- **Abweichung/Klarstellung zu AK-1:** Ein **fehlendes** `wissen/` ist ohne `--neu` weiterhin ein Abbruch der Strukturprüfung (Schritt 2); mit `--neu` prüft Schritt 2 nur `definitions/`, und das Werkzeug legt das Bundle aus der Vorlage an (Nachbesserung K3). Die Erkennung liefert bei fehlendem Bundle „kein Hinweis".
+- **Entwicklungs-Repo:** Der Reset nutzt ausschließlich `tools/neues_projekt.py`; die Quelle `definitions/tools/neues_projekt.py` ist **kein** Fallback (Nachbesserung K1).
 
 # Testfälle (TDD)
 
@@ -57,9 +57,27 @@ wird nie berührt:
 - `test_reset_fehler_bricht_den_start_ab` — unvollständige Vorlage: Exit ≠ 0, Fehler auf stderr, nichts gelöscht, kein Serverstart.
 - `test_ohne_reset_werkzeug_kein_loeschen` — ohne Werkzeug: Exit ≠ 0, Hinweis auf `neues_projekt.py`, nichts gelöscht.
 
-Rot-Stand vor der Implementierung: 11 failed / 11 passed (13 neue Tests, davon zwei
-im Altstand trivial grün); nach der Implementierung 22 passed (9 bestehende + 13
-neue). TTY-Pfade laufen über ein echtes `pty`, damit `[ -t 0 ]` greift.
+Rot-Stand vor der Implementierung: 12 failed / 10 passed; nach der Implementierung
+22 passed (9 bestehende + 13 neue). TTY-Pfade laufen über ein echtes `pty`, damit
+`[ -t 0 ]` greift.
+
+## Nachbesserung `coder` (2026-11-15, Review W1 + K1–K5/K7/K8)
+
+Zusätzliche Tests (alle grün, gleiche Isolation):
+
+- `test_fremdes_bundle_loest_keinen_reset_aus` / `test_lokale_marker_bleiben_trotz_fremdem_bundle_ausloeser` — W1: Marker zählen nur am Reset-Ziel; fremdes `BUNDLE_ROOT` löst weder aus noch unterdrückt es.
+- `test_neu_setzt_lokales_wissen_trotz_fremdem_bundle_zurueck` — W1/K5: `--neu` resettet `<Projekt>/wissen` und nennt das abweichende `BUNDLE_ROOT`.
+- `test_kein_fallback_auf_definitions_tools` — K1: `definitions/tools/` ersetzt den installierten Pfad nicht; fail-loud „Werkzeug fehlt".
+- `test_neu_ohne_wissen_legt_bundle_ohne_backup_an` — K3: `--neu` legt fehlendes `wissen/` aus der Vorlage an (kein Backup nötig).
+- `test_ohne_wissen_ohne_neu_bricht_ab` — K3: ohne `--neu` bleibt der Abbruch unverändert.
+- `test_belegter_port_verhindert_reset_vor_der_rueckfrage` — K7: Port-Hinweis vor der Rückfrage, kein Reset, kein zweiter Start.
+- `test_interaktiv_leere_eingabe_ist_nein` + `test_zustimmung_ignoriert_gross_kleinschreibung[y|Y|YES|yes]` — K5: Enter = Nein, `y`/`Y`/`YES`/`yes` = Ja.
+
+Rot-Stand der Nachbesserung: 7 failed / 26 passed (33 Tests); der 34. Test
+(`--neu` mit abweichendem `BUNDLE_ROOT`) kam beim Nachziehen derselben W1-Note
+hinzu. Nach der Umsetzung 34 passed. K2 (Werkzeug im TTY-Hinweis) prüft
+`test_interaktiv_nein_startet_unveraendert`, K8 (Kopfkommentar) deckt
+`test_help_zeigt_hilfe_ohne_shelloptionen` mit ab.
 
 # Kontext
 
@@ -70,9 +88,9 @@ neue). TTY-Pfade laufen über ein echtes `pty`, damit `[ -t 0 ]` greift.
 # Betroffene Dateien
 
 - `start.sh` — Marker-Erkennung, interaktiver Hinweis, `--neu`, Reset-Aufruf, Schritt „Projektstand", Hilfe.
-- `definitions/app/tests/test_start_skript.py` — 13 neue Tests (tmp-Projekt + pty), Help-Test um `--neu` ergänzt.
-- `README.md` — Options-Tabelle (`--neu`), Abschnitt „Neues Projekt beginnen" (neuer Flow vor der manuellen Variante).
-- `docs/colab-start.md` — Options-Tabelle und Abschnitt „Neues Projekt beginnen (optional)" (Hinweis/`--neu`, manuelle Zellen als Alternative).
+- `definitions/app/tests/test_start_skript.py` — 13 neue Tests (tmp-Projekt + pty), Help-Test um `--neu` ergänzt; Nachbesserung: +12 Tests (BUNDLE_ROOT, Fallback, Port, `--neu` ohne `wissen/`, Eingabe-Randfälle) → 34 Tests.
+- `README.md` — Options-Tabelle (`--neu`), Abschnitt „Neues Projekt beginnen" (neuer Flow vor der manuellen Variante; Nachbesserung: Reset-Ziel/`BUNDLE_ROOT`, Port, `--neu` ohne `wissen/`).
+- `docs/colab-start.md` — Options-Tabelle und Abschnitt „Neues Projekt beginnen (optional)" (Hinweis/`--neu`, manuelle Zellen als Alternative; Nachbesserung: Reset-Ziel/`BUNDLE_ROOT`, `--neu` ohne `wissen/`).
 - Geprüft: kein `definitions/start.sh` vorhanden — `start.sh` ist reines Repo-Root-Werkzeug, keine Spiegelung nötig.
 
 # Ergebnisse

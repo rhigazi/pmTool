@@ -172,6 +172,9 @@ bash start.sh --neu --dry-run  # zeigt nur den Plan — ändert nichts
 - **Ja** = Reset über `tools/neues_projekt.py --ja` (erst Backup, dann Vorlage).
 - **Nein / Strg+D** = unveränderter Normalstart; es wird nichts gelöscht.
 - **Kein TTY** = nur Hinweistext, kein Reset (fail-safe).
+- Der Reset wirkt immer auf `<Projekt>/wissen`; bei abweichendem `BUNDLE_ROOT` nennt
+  der Hinweis ausdrücklich das Reset-Ziel. `--neu` legt auch ein fehlendes
+  `wissen/` aus der Vorlage an (ohne Backup).
 - `--neu` ist mit `--colab` kombinierbar. In Colab ist der Kernel-Aufruf von
   `start_colab.py` (Schritt 2) der Startweg — dort den Reset wie unten in einer
   Zelle ausführen.
