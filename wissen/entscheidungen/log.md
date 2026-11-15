@@ -2,6 +2,14 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-15: Freigabe-Gate für Aufgaben und Wellen (Standardentscheidung)
+
+**Entscheidung:** Neue Aufgaben werden bei Wahrnehmung mit Kennung + Titel (`A<N>: Titel`) versehen und geplant — die **Umsetzung beginnt erst, wenn die Aufgabe geklärt und von der Projektleitung freigegeben** ist ([A28](/aufgaben/a28-benachrichtigung-neue-aufgabe.md)). Aufgaben werden Wellen zugeordnet; eine Welle ist standardmäßig **nicht freigegeben** — erst die Freigabe der Welle startet die Umsetzung aller Aufgaben dieser Welle ([A29](/aufgaben/a29-wellen-abarbeiten.md)). Bis die Funktion existiert, gilt das als Prozessregel: Freigabe = ausdrückliche Zustimmung der Projektleitung (App/Chat/Telegram); die Datenhaltung wird von A28/A29 spezifiziert.
+
+**Begründung:** Nutzer-Anforderung 2026-11-15 (zwei neue Aufgaben aus der App). Standardentscheidung des PM, solange die Projektleitung nicht abweicht: die Freigabe ist ein Menschen-Recht (analog `owner`/Status-Rechte: nur die Person), die Planung darf parallel laufen (Wartezeit verkürzen).
+
+**Auswirkung:** PM-Workflow: annehmen → ID/Titel → pushen → planen → **warten auf Freigabe** → umsetzen. A28 und A29 werden vom `planner` parallel geplant; die Umsetzung von A29 startet zusätzlich erst nach A27 (Datei-Überschneidung `detail.js`/`meta.py`/Wellen-Dateien).
+
 ## 2026-11-15: Neue Aufgaben im Moment der Annahme pushen
 
 **Entscheidung:** Sobald der Projektmanager eine neue Aufgabe wahrgenommen und angenommen hat (Kennung + Titel gesetzt, Datei in `wissen/aufgaben/`), werden Aufgaben-Datei und Index-Eintrag sofort committed und nach GitHub gepusht — vor Planung/Beauftragung. Die Regel steht in [AGENTS.md](/../AGENTS.md) (Abschnitt „Arbeitsweise") und in `definitions/AGENTS.md` (Single Source of Truth).
