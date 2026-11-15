@@ -8,6 +8,7 @@ priority: hoch
 assigned_to: coder
 feature: /features/okf-projekt-manager-spa.md
 owner: ai
+aktuell: "reviewer: Bestätigungs-Review der Nachbesserung (Commit a959d75)"
 ---
 
 # Ziel

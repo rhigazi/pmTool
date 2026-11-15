@@ -2,10 +2,11 @@
 type: Task
 title: "A26: Werkzeug-Verteilung und Root-Suite-Konflikt"
 description: "`tools/neues_projekt.py` in die Definitions-Quelle spiegeln und den Collection-Konflikt der Repo-Root-Suite (doppelte Testdateinamen in `tools/` und `definitions/tools/`) dauerhaft lösen."
-task_status: offen
-phase: 2 Planung
+task_status: in Umsetzung
+phase: 3 Umsetzung
 priority: mittel
 assigned_to: coder
+aktuell: "coder: Umsetzung Verteilung definitions/tools + Root-Suite-Konflikt"
 feature: /features/okf-projekt-manager-spa.md
 owner: ai
 ---

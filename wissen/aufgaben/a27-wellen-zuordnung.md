@@ -2,10 +2,11 @@
 type: Task
 title: "A27: Wellen-Zuordnung (nachträglich zuordnen, filtern, Wellen-Sicht)"
 description: Aufgaben nachträglich einer Welle zuordnen, umsortieren und die Zuordnung entfernen (Detail-Dropdown über POST /api/meta), Aufgaben nach Welle filtern (Listen) und die Aufgaben einer Welle im Wellen-Detail aus dem welle-Feld ableiten.
-task_status: in Planung
-phase: 2 Planung
+task_status: in Umsetzung
+phase: 3 Umsetzung
 priority: hoch
 assigned_to: coder
+aktuell: "coder: Umsetzung Paket 1 (Backend welle-Meta) + Paket 2 (Frontend)"
 feature: /features/okf-projekt-manager-spa.md
 owner: ai
 ---

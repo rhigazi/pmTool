@@ -2,6 +2,14 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-15: Neue Aufgaben im Moment der Annahme pushen
+
+**Entscheidung:** Sobald der Projektmanager eine neue Aufgabe wahrgenommen und angenommen hat (Kennung + Titel gesetzt, Datei in `wissen/aufgaben/`), werden Aufgaben-Datei und Index-Eintrag sofort committed und nach GitHub gepusht — vor Planung/Beauftragung. Die Regel steht in [AGENTS.md](/../AGENTS.md) (Abschnitt „Arbeitsweise") und in `definitions/AGENTS.md` (Single Source of Truth).
+
+**Begründung:** Anweisung der Projektleitung 2026-11-15: „Sobald wir neue Aufgaben anlegen und diese von dir wahrgenommen werden, müssen diese ins Repo gepusht werden, damit wir nichts verloren geht." Ein Container-/Sitzungs-Reset (zweimal erlebt) darf keine erkannte Aufgabe verschlingen; der Sicherungs-Push ist nicht auf grüne Tests beschränkt, wenn es um Aufgaben-Metadaten geht.
+
+**Auswirkung:** Erweiterung des Sicherungs-Push-Regelwerks: zusätzlich zum „Sicherungs-Push nach grünen Tests" gilt „Push bei angenommenen Aufgaben" ohne Warten auf Tests. Betrifft nur Aufgaben-/Status-Metadaten und Doku — halbfertiger Produktcode wird weiterhin erst nach grünen Tests gepusht.
+
 ## 2026-11-15: Aufgaben-Kennung steht eindeutig im Titel
 
 **Entscheidung:** `title` einer Aufgabe führt die Kennung an: `A<N>: <Titel>`. Die Regel steht in [AGENTS.md](/../AGENTS.md) (Abschnitt „Arbeitsweise") und in `definitions/AGENTS.md` (Single Source of Truth) und gilt beim Anlegen, beim Umbenennen der Datei (`a<N>-<slug>.md`) und für per App angelegte Aufgaben. Korrigiert wurden [A23](/aufgaben/a23-feature-liste.md) („Die Feature List fehlt" → „A23: Feature-Liste (Menüpunkt + Feature-Status)") und [A25](/aufgaben/a25-suche.md) („Suche" → „A25: Suche (Feldsuche in den Listen)"); alle übrigen Aufgaben-Dateien waren bereits konform.

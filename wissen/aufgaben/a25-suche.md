@@ -8,6 +8,7 @@ phase: 7 Dokumentation
 priority: mittel
 assigned_to: coder
 owner: ai
+aktuell: "tester: Testphase S1–S6 + H1-Klärung (A23)"
 ---
 
 # Ziel
