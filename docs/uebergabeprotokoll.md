@@ -73,7 +73,7 @@ Statuswerte laut Phasenmodell. Alle Aufgaben A1–A20 sind **abgeschlossen** (Um
 | A21 | Desktop-Modus/Lokal-Betrieb | vorgemerkt (Post-MVP) | Nummer reserviert, noch keine Aufgaben-Datei |
 | A22 | E2E-Regressionstest (`test_e2e.py`) | offen (Post-MVP) | Datei angelegt; überführt die T1/T2/T7-Kette aus A17 |
 
-**Teststand (letzter Gesamtlauf):** `python3 -m pytest definitions/app/tests -q` → **769 passed, Exit 0** (serialisiert; Parallelbetrieb ist eine bekannte Flaky-Zone). `bash definitions/verify.sh .` → **Exit 0**.
+**Teststand (letzter Gesamtlauf):** `python3 -m pytest definitions/app/tests -q` → **772 passed, Exit 0** (serialisiert; Parallelbetrieb ist eine bekannte Flaky-Zone). `bash definitions/verify.sh .` → **Exit 0**.
 
 # Offene Punkte (Post-MVP)
 

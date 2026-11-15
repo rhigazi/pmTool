@@ -86,15 +86,18 @@ Zelle 1 — Abhängigkeiten und Serverstart:
 !BUNDLE_ROOT=/content/pmTool/wissen PORT=5000 python3 /content/pmTool/app/server.py &
 ```
 
-Zelle 2 — Port im Browser freigeben:
+Zelle 2 — Port im Browser freigeben (primär: neuer Browser-Tab):
 
 ```python
 from google.colab import output
 
-output.serve_kernel_port_as_window(5000)
+# Primär: sicherer, authentifizierter Colab-Link in einem neuen Browser-Tab
+output.eval_js('(async () => window.open(await google.colab.kernel.proxyPort(5000), "_blank"))()')
+# Fallback: output.serve_kernel_port_as_window(5000)
+# Notbehelf: output.serve_kernel_port_as_iframe(5000)  (App in der Zelle)
 ```
 
-Bequemer ist die Startzelle `app/start_colab.py` (A16): Sie prüft bzw. installiert `flask` und `pyyaml` bei Bedarf, startet `server.py` mit `BUNDLE_ROOT=/content/pmTool/wissen` als Subprozess, meldet einen belegten Port als „läuft bereits" statt doppelt zu starten und ruft `serve_kernel_port_as_window` selbst auf:
+Bequemer ist die Startzelle `app/start_colab.py` (A16): Sie prüft bzw. installiert `flask` und `pyyaml` bei Bedarf, startet `server.py` als Subprozess (`BUNDLE_ROOT` wird aus dem Skriptpfad abgeleitet; die Env-Variable `BUNDLE_ROOT` hat Vorrang), meldet einen belegten Port als „läuft bereits" statt doppelt zu starten und öffnet die App selbst — primär per `google.colab.kernel.proxyPort` in einem neuen Browser-Tab, Fallback `serve_kernel_port_as_window`, iframe nur Notbehelf:
 
 ```sh
 python3 /content/pmTool/app/start_colab.py
