@@ -3,13 +3,13 @@ type: Task
 title: "A31: Übersicht Liste um Welle ergänzen"
 description: Als Mensch muss ich in der Lage sein zu sehen zu welcher Welle eine Aufgabe
   zugeordnet ist
-task_status: in Review
-phase: 5 Review
+task_status: in Doku
+phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
 welle: wellen/w2.md
 owner: ai
-aktuell: "reviewer: FREIGEGEBEN (K1–K3/H1–H6 → A33 + Doku) — tester: S1–S4 läuft | coder: A28-P2+3"
+aktuell: "PM: Review FREIGEGEBEN + S1–S4 bestanden (1156) — reif für Abschluss"
 ---
 
 # Ziel
