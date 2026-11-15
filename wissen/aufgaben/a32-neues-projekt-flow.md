@@ -8,7 +8,7 @@ phase: 2 Planung
 priority: hoch
 assigned_to: coder
 owner: ai
-aktuell: "planner: Planung/Testfälle"
+aktuell: "coder: Umsetzung start.sh --neu + Erststart-Hinweis"
 ---
 
 # Ziel

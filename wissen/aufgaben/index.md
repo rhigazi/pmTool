@@ -4,6 +4,8 @@ Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in
 
 # Laufende Aufgaben
 
+* [A33: Kleinbefunde-/Aufräum-Takt](a33-kleinbefunde-aufräum-takt.md) - Gebündelte Behebung der offenen Kleinbefunde aus Reviews/Post-MVP (A24-K1–K3, A23-Fixture, A12-1, A14-5/6/7/9, N5/N8 u. a.) in Batches mit je eigenem Commit — **in Planung** (2026-11-15 vom PM angelegt; Umsetzung nach A30/A31/A32)
+
 * [A32: Neues-Projekt-Flow — start.sh --neu + Erststart-Hinweis](a32-neues-projekt-flow.md) - Nach Repo-Pull erkennt `start.sh` pmTool-Projektdaten in `wissen/` und schlägt interaktiv den Reset vor (mit Backup); zusätzlich Flag `--neu` — **in Planung** (2026-11-15, Entscheidung der Projektleitung; Reset-Logik nur über A24-Werkzeug, keine zweite Lösch-Implementierung)
 
 * [A31: Übersicht Liste um Welle ergänzen](a31-uebersicht-liste-um-welle-ergaenzen.md) - Die Übersichtsliste zeigt zu jeder Aufgabe die zugeordnete Welle (oder „keine") — **in Planung** (2026-11-15 aus der App angelegt, angenommen als A31; Priorität hoch; Umsetzung nach A30 wg. `liste.js`)

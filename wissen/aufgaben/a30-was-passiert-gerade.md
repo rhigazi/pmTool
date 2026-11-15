@@ -10,7 +10,7 @@ priority: mittel
 assigned_to: coder
 welle: wellen/w2.md
 owner: ai
-aktuell: "PM: Planung fertig (9 AK, 24 Tests + 4 UI-Szenarien, 3 Pakete) — wartet auf A27-Abschluss, dann coder"
+aktuell: "coder: Paket 1 (Backend arbeitsstand.py) + Paket 3 (Doku) läuft — Paket 2 (UI) nach A27-Review"
 ---
 
 # Ziel
