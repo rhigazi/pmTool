@@ -5,6 +5,7 @@ const SPALTEN = ["Titel", "Status", "owner", "zuletzt geändert"];
 const ZULETZT_ANZAHL = 5;
 const KEINE_ANGABE = "—";
 const LEER_TABELLE = "Keine Einträge.";
+const LEER_TREFFER = "Keine Treffer.";
 const LEER_KLARUNG = "Keine offenen Rückfragen.";
 const LADE_FEHLER = "Einträge konnten nicht geladen werden.";
 const FORMAT_FEHLER = "Einträge haben ein unerwartetes Format.";
@@ -17,6 +18,7 @@ const ANSICHTEN = {
     formular: "filter",
     status: "filter-status",
     owner: "filter-owner",
+    suche: "suche-uebersicht",
     zuruecksetzen: "filter-zuruecksetzen",
   },
   wellen: {
@@ -25,6 +27,7 @@ const ANSICHTEN = {
     formular: "filter-wellen",
     status: "filter-wellen-status",
     owner: "filter-wellen-owner",
+    suche: "suche-wellen",
     zuruecksetzen: "filter-wellen-zuruecksetzen",
   },
   aufgaben: {
@@ -33,6 +36,7 @@ const ANSICHTEN = {
     formular: "filter-aufgaben",
     status: "filter-aufgaben-status",
     owner: "filter-aufgaben-owner",
+    suche: "suche-aufgaben",
     zuruecksetzen: "filter-aufgaben-zuruecksetzen",
   },
 };
@@ -40,14 +44,49 @@ const ANSICHTEN = {
 const datenProAnsicht = new Map();
 const initialisierteFilter = new Set();
 
+// Durchsuchbare Felder aus `/api/overview`; „zuletzt geändert" gehört bewusst
+// nicht dazu (Datumsrecherche ist nicht Teil der Anforderung).
+const SUCHFELDER = ["titel", "path", "typ", "status", "owner", "hinweis", "welle"];
+
 /**
- * Filtert Einträge nach UI-Status und owner; leere Werte bedeuten „alle".
- * `owner: "ohne"` trifft Einträge ohne Zuständigkeit (`null`/leer).
+ * Normalisiert Text für den Vergleich: Kleinschreibung, `ß`→`ss` und
+ * NFD-Faltung, damit „prufung" auch „Prüfung" und „strasse" auch „Straße" trifft.
  */
-export function filtereEintraege(eintraege, { status = "", owner = "" } = {}) {
+function normalisiere(wert) {
+  return String(wert ?? "")
+    .toLowerCase()
+    .replace(/ß/g, "ss")
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+}
+
+/** Zerlegt die Sucheingabe in getrimmte Begriffe; Leerraum trennt (UND). */
+function suchbegriffe(suche) {
+  return normalisiere(suche).split(/\s+/).filter(Boolean);
+}
+
+/**
+ * Prüft, ob ein Eintrag alle Suchbegriffe enthält. Verglichen wird literarisch
+ * über `includes` — kein `RegExp`, damit Sonderzeichen nicht crashen.
+ */
+function passtZurSuche(eintrag, begriffe) {
+  if (begriffe.length === 0) return true;
+
+  const text = normalisiere(SUCHFELDER.map((feld) => eintrag?.[feld]).join("\n"));
+  return begriffe.every((begriff) => text.includes(begriff));
+}
+
+/**
+ * Filtert Einträge nach UI-Status, owner und Suchbegriffen; leere Werte
+ * bedeuten „alle". `owner: "ohne"` trifft Einträge ohne Zuständigkeit.
+ */
+export function filtereEintraege(eintraege, { status = "", owner = "", suche = "" } = {}) {
   if (!Array.isArray(eintraege)) return [];
 
+  const begriffe = suchbegriffe(suche);
+
   return eintraege.filter((eintrag) => {
+    if (!passtZurSuche(eintrag, begriffe)) return false;
     if (status && eintrag?.status !== status) return false;
     if (!owner) return true;
     if (owner === "ohne") return !eintrag?.owner;
@@ -60,12 +99,17 @@ export function filtereEintraege(eintraege, { status = "", owner = "" } = {}) {
  * Leerzustand. Eine Antwort, die kein Array ist, wird als Formatfehler gemeldet
  * statt als leere Liste getarnt.
  */
-export function waehleAnzeige(daten, { status = "", owner = "" } = {}) {
+export function waehleAnzeige(daten, { status = "", owner = "", suche = "" } = {}) {
   if (daten === null) return { art: "fehler", text: LADE_FEHLER, eintraege: [] };
   if (!Array.isArray(daten)) return { art: "fehler", text: FORMAT_FEHLER, eintraege: [] };
 
-  const eintraege = filtereEintraege(daten, { status, owner });
-  if (eintraege.length === 0) return { art: "leer", text: LEER_TABELLE, eintraege };
+  const eintraege = filtereEintraege(daten, { status, owner, suche });
+  if (eintraege.length === 0) {
+    // „Keine Treffer." nur bei gesetztem Suchbegriff und vorhandenen Daten;
+    // sonst bleibt es beim A11-Leerzustand „Keine Einträge.".
+    const ohneTreffer = daten.length > 0 && suchbegriffe(suche).length > 0;
+    return { art: "leer", text: ohneTreffer ? LEER_TREFFER : LEER_TABELLE, eintraege };
+  }
 
   return { art: "tabelle", text: "", eintraege };
 }
@@ -240,6 +284,38 @@ function zeichneUebersichtZusatz(daten) {
   );
 }
 
+/**
+ * Hängt das Suchfeld dynamisch vor die Tabelle. Es liegt außerhalb des
+ * Filterformulars (kein Submit-/Reload-Pfad) und wird nur einmal montiert.
+ */
+function montiereSuche(basis) {
+  const konfiguration = ANSICHTEN[basis];
+  const tabelle = document.getElementById(konfiguration.tabelle);
+  if (!tabelle?.parentElement) return null;
+
+  const vorhanden = document.getElementById(konfiguration.suche);
+  if (vorhanden) return vorhanden;
+
+  const bereich = document.createElement("div");
+  bereich.classList.add("filter");
+  const reihe = document.createElement("div");
+  reihe.classList.add("filter-feld");
+  const beschriftung = document.createElement("label");
+  beschriftung.htmlFor = konfiguration.suche;
+  beschriftung.textContent = "Suche";
+  const eingabe = document.createElement("input");
+  eingabe.type = "search";
+  eingabe.id = konfiguration.suche;
+  eingabe.value = "";
+
+  reihe.append(beschriftung, eingabe);
+  bereich.append(reihe);
+  tabelle.parentElement.insertBefore(bereich, tabelle);
+
+  eingabe.addEventListener("input", () => wendeFilterAn(basis));
+  return eingabe;
+}
+
 function wendeFilterAn(basis) {
   if (!datenProAnsicht.has(basis)) return;
 
@@ -247,7 +323,8 @@ function wendeFilterAn(basis) {
   const daten = datenProAnsicht.get(basis);
   const status = document.getElementById(konfiguration.status)?.value ?? "";
   const owner = document.getElementById(konfiguration.owner)?.value ?? "";
-  const anzeige = waehleAnzeige(daten, { status, owner });
+  const suche = document.getElementById(konfiguration.suche)?.value ?? "";
+  const anzeige = waehleAnzeige(daten, { status, owner, suche });
 
   const bereich = document.getElementById(konfiguration.tabelle);
   if (!bereich) return;
@@ -276,6 +353,8 @@ function initialisiereFilter(basis) {
   zuruecksetzen.addEventListener("click", () => {
     status.value = "";
     owner.value = "";
+    const suche = document.getElementById(konfiguration.suche);
+    if (suche) suche.value = "";
     neuZeichnen();
   });
 
@@ -285,6 +364,7 @@ function initialisiereFilter(basis) {
 async function ladeListe(basis) {
   const konfiguration = ANSICHTEN[basis];
   initialisiereFilter(basis);
+  montiereSuche(basis);
 
   const daten = await getJson(konfiguration.pfad);
   // Rohe Antwort pro Ansicht merken: Fehler-/Formatzustand bleibt so auch bei
