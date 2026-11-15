@@ -5,6 +5,7 @@ Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in
 # Laufende Aufgaben
 
 * [A23: Feature-Liste](a23-feature-liste.md) - Menüpunkt „Feature List": Liste aller Features mit Status, Klick auf ein Feature zeigt die zugehörigen Aufgaben (offen / in Bearbeitung / erledigt) — **in Umsetzung** (Phase 3)
+* [A24: Neues Projekt beginnen (wissen/ zurücksetzen)](a24-neues-projekt.md) - `python3 tools/neues_projekt.py` ersetzt `wissen/` nach Plan-Vorschau (`--ja`) und Backup durch die OKF-Vorlage `definitions/wissen-vorlage/` — **offen** (Phase 2)
 
 # Abgeschlossene Aufgaben
 
