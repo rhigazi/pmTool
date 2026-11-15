@@ -2,8 +2,10 @@
 
 Eine Welle ist standardmäßig **nicht freigegeben** (fail-closed). Für eine
 Aufgabe gilt die wirksame Freigabe als UND aus eigener Freigabe und – falls eine
-Welle zugeordnet ist – deren Freigabe. Geschrieben wird in die Wellen-Datei
-ausschließlich das Feld ``freigabe`` (Menschen-Kanal aus A28).
+Welle zugeordnet ist – deren Freigabe. Der Freigabe-Pfad (``POST /api/freigabe``)
+schreibt in die Wellen-Datei ausschließlich das Feld ``freigabe`` (Menschen-Kanal
+aus A28); der A11/A27-Schreibpfad (``POST /api/meta``) darf weiterhin
+``owner``/``status``/``welle`` schreiben.
 
 Alle Läufe arbeiten gegen das ``bundle``-Fixture (``tmp_path``).
 """

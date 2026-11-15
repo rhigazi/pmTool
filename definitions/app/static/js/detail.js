@@ -680,7 +680,11 @@ function erstelleSperrHinweis(daten) {
   const welle = daten?.welle_freigabe;
   const aufgabe = daten?.freigabe === true;
   let grund = "Aufgabe nicht freigegeben.";
-  if (welle === false) {
+  // Wellen-Grund auch bei `null` (fehlende/unbekannte Welle, A29-T1) — aber nur,
+  // wenn die Aufgabe selbst freigegeben ist. Ohne zugeordnete Welle und ohne
+  // Aufgaben-Freigabe bleibt die Aufgabe der Grund.
+  const welleGesperrt = welle === false || (welle == null && aufgabe);
+  if (welleGesperrt) {
     grund = aufgabe
       ? "Welle nicht freigegeben."
       : "Aufgabe und Welle nicht freigegeben.";
@@ -717,7 +721,7 @@ function erstelleKopf(pfad, daten, wellen) {
     );
     anhaengenFeld(angaben, "Freigabe", erstelleFreigabeAnzeige(pfad, daten));
   } else if (pfad.startsWith(WELLEN_ORDNER)) {
-    anhaengenFeld(angaben, "Freigabe:", erstelleWellenFreigabeAnzeige(pfad, daten));
+    anhaengenFeld(angaben, "Freigabe", erstelleWellenFreigabeAnzeige(pfad, daten));
   }
   kopf.append(angaben);
   if (istAufgabe(pfad, frontmatter) && daten?.neu === true) {

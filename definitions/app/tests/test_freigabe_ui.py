@@ -814,7 +814,10 @@ return {
             },
             "/api/overview": {
                 "status": 200,
-                "koerper": [_aufgabe(AUFGABE_2, "A1: Aufgabe", neu=True)],
+                "koerper": [
+                    _aufgabe(AUFGABE_2, "A1: Aufgabe", neu=True),
+                    _wellen_eintrag(WELLE_1, "Welle 1", True),
+                ],
             },
         },
     )
@@ -827,12 +830,14 @@ return {
     assert "img" not in ergebnis["marken"]
     assert "script" not in ergebnis["marken"]
     assert ergebnis["ausfuehrungen"] == []
-    # Aufgabenliste/Übersicht: nur die A28-„neu"-Marke, keine Wellen-Freigabe.
+    # Aufgabenliste/Übersicht: nur die A28-„neu"-Marke, keine Wellen-Freigabe —
+    # auch Wellen-Zeilen der Übersicht bleiben ohne Marke (nur die Wellen-Ansicht).
     assert ergebnis["aufgaben"] == [
         {"path": AUFGABE_2, "marken": [{"text": "neu", "status": True}]}
     ]
     assert ergebnis["uebersicht"] == [
-        {"path": AUFGABE_2, "marken": [{"text": "neu", "status": True}]}
+        {"path": AUFGABE_2, "marken": [{"text": "neu", "status": True}]},
+        {"path": WELLE_1, "marken": []},
     ]
 
 
@@ -852,7 +857,9 @@ await detail.ladeDetail({ unterpunkt: "wellen/w1.md" });
 const zustand = bei("detail-welle-freigabe-status");
 const knopf = bei("detail-welle-freigabe");
 return {
-  text: bei("detail").textContent,
+  labels: sammle(bei("detail"))
+    .filter((knoten) => knoten.marke === "dt")
+    .map((knoten) => knoten.textContent),
   zustand: zustand?.textContent ?? null,
   knopfText: knopf?.textContent ?? null,
   knopfMarke: knopf?.marke ?? null,
@@ -862,7 +869,9 @@ return {
         _wellen_datei(freigabe_wert),
     )
 
-    assert f"Freigabe: {anzeige}" in ergebnis["text"]
+    # A29-Soll 2: Label ohne Doppelpunkt, wie beim Aufgaben-Feld.
+    assert "Freigabe" in ergebnis["labels"]
+    assert "Freigabe:" not in ergebnis["labels"]
     assert ergebnis["zustand"] == anzeige
     assert ergebnis["knopfText"] == knopf
     assert ergebnis["knopfMarke"] == "button"
@@ -1011,6 +1020,10 @@ return { aufrufe: aufrufe.map((eintrag) => eintrag.endpunkt) };
         (False, False, False, "Umsetzung gesperrt: Aufgabe und Welle nicht freigegeben."),
         (True, True, True, None),
         (True, None, True, None),
+        # A29-T1: fehlende/kaputte Welle (null) ist ein Wellen-Grund, nicht „Aufgabe".
+        (True, None, False, "Umsetzung gesperrt: Welle nicht freigegeben."),
+        # Ohne zugeordnete Welle bleibt die Aufgabe der Grund (kein Wellen-Grund).
+        (False, None, False, "Umsetzung gesperrt: Aufgabe nicht freigegeben."),
     ],
 )
 def test_t20_sperrhinweis_im_aufgaben_detail(

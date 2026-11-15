@@ -8,7 +8,7 @@ const ZULETZT_ANZAHL = 5;
 const KEINE_ANGABE = "—";
 // A28: Marke für Aufgaben ohne gültige Kennung (``neu`` aus der Lese-API).
 const MARKE_NEU = "neu";
-// A29: Freigabe-Status der Wellen in der Titel-Zelle (keine neue Spalte).
+// A29: Freigabe-Status der Wellen in der Titel-Zelle (nur Wellen-Ansicht, keine neue Spalte).
 const MARKE_FREIGEGEBEN = "freigegeben";
 const MARKE_NICHT_FREIGEGEBEN = "nicht freigegeben";
 const LEER_TABELLE = "Keine Einträge.";
@@ -33,6 +33,7 @@ const ANSICHTEN = {
     owner: "filter-owner",
     welle: "filter-welle",
     welleSpalte: true,
+    freigabeMarke: false,
     suche: "suche-uebersicht",
     zuruecksetzen: "filter-zuruecksetzen",
   },
@@ -44,6 +45,7 @@ const ANSICHTEN = {
     owner: "filter-wellen-owner",
     welle: null,
     welleSpalte: false,
+    freigabeMarke: true,
     suche: "suche-wellen",
     zuruecksetzen: "filter-wellen-zuruecksetzen",
   },
@@ -55,6 +57,7 @@ const ANSICHTEN = {
     owner: "filter-aufgaben-owner",
     welle: "filter-welle-aufgaben",
     welleSpalte: true,
+    freigabeMarke: false,
     suche: "suche-aufgaben",
     zuruecksetzen: "filter-aufgaben-zuruecksetzen",
   },
@@ -299,13 +302,13 @@ function erstelleMarke(text) {
 
 /**
  * Titel-Zelle mit optionalen Marken: „neu" für Aufgaben ohne Kennung (A28),
- * „freigegeben"/„nicht freigegeben" für Wellen (A29).
+ * „freigegeben"/„nicht freigegeben" für Wellen (A29, nur Wellen-Ansicht).
  */
-function erstelleTitelZelle(eintrag) {
+function erstelleTitelZelle(eintrag, { mitFreigabeMarke = false } = {}) {
   const titel = eintrag?.titel || KEINE_ANGABE;
   const marken = [];
   if (eintrag?.neu === true) marken.push(MARKE_NEU);
-  if (eintrag?.typ === "Welle") {
+  if (mitFreigabeMarke && eintrag?.typ === "Welle") {
     marken.push(eintrag?.freigabe === true ? MARKE_FREIGEGEBEN : MARKE_NICHT_FREIGEGEBEN);
   }
   if (marken.length === 0) return erstelleZelle(titel);
@@ -319,7 +322,10 @@ function erstelleTitelZelle(eintrag) {
 }
 
 /** Baut die Tabelle aus API-Einträgen; `mitWelle` ergänzt die Spalte „Welle". */
-export function erstelleTabelle(eintraege, { mitWelle = false } = {}) {
+export function erstelleTabelle(
+  eintraege,
+  { mitWelle = false, mitFreigabeMarke = false } = {},
+) {
   const tabelle = document.createElement("table");
   tabelle.classList.add("tabelle");
 
@@ -335,7 +341,7 @@ export function erstelleTabelle(eintraege, { mitWelle = false } = {}) {
     const zeile = koerper.insertRow();
     if (eintrag?.path) zeile.dataset.path = eintrag.path;
     if (eintrag?.status === "Klarung") zeile.classList.add("klarung");
-    zeile.append(erstelleTitelZelle(eintrag));
+    zeile.append(erstelleTitelZelle(eintrag, { mitFreigabeMarke }));
     if (mitWelle) zeile.append(erstelleWelleZelle(eintrag));
     zeile.append(
       erstelleStatusZelle(eintrag),
@@ -624,7 +630,12 @@ function wendeFilterAn(basis) {
 
   bereich.replaceChildren();
   if (anzeige.art === "tabelle") {
-    bereich.append(erstelleTabelle(anzeige.eintraege, { mitWelle: konfiguration.welleSpalte }));
+    bereich.append(
+      erstelleTabelle(anzeige.eintraege, {
+        mitWelle: konfiguration.welleSpalte,
+        mitFreigabeMarke: konfiguration.freigabeMarke,
+      }),
+    );
   } else {
     bereich.append(erstelleHinweis(anzeige.text));
   }
