@@ -626,7 +626,8 @@ return {
     assert ergebnis["werte"] == ["", WELLE_1, WELLE_2]
     assert ergebnis["texte"] == ["keine", "Welle 1: Fixture (wellen/w1.md)", WELLE_2]
     assert ergebnis["wert"] == ""
-    assert ergebnis["aufrufe"] == ["/api/file", "/api/wellen"]
+    # A34/T43: Aufgaben-Details laden zusätzlich ``/api/aufgaben`` (Unter-Aufgaben).
+    assert ergebnis["aufrufe"] == ["/api/file", "/api/wellen", "/api/aufgaben"]
 
 
 @ohne_node
@@ -1299,7 +1300,7 @@ return {{
         (
             AUFGABE,
             AUFGABE_DATEI,
-            ["/api/file", "/api/wellen"],
+            ["/api/file", "/api/wellen", "/api/aufgaben"],
             False,
         ),
         (

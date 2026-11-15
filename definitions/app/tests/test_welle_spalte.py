@@ -762,7 +762,8 @@ return { aufrufe: aufrufe.map((eintrag) => eintrag.endpunkt) };
         },
         wellen=[WELLE_2_EINTRAG],
     )
-    assert detail["aufrufe"] == ["/api/file", "/api/wellen"]
+    # A34/T43: Aufgaben-Details laden zusätzlich ``/api/aufgaben`` (Unter-Aufgaben).
+    assert detail["aufrufe"] == ["/api/file", "/api/wellen", "/api/aufgaben"]
 
 
 @ohne_node

@@ -10,7 +10,7 @@ priority: mittel
 assigned_to: coder
 welle: wellen/w3.md
 owner: ai
-aktuell: "PM: Paket 1+2 fertig (1444 grün) — Paket 3 startet nach A29-Rücklauf (detail.js-Konflikt)"
+aktuell: "coder: Paket 3 (UI) + A29-K1–K3 beauftragt — Welle 2, 2026-11-15"
 ---
 
 # Ziel

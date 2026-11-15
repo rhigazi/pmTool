@@ -8,6 +8,12 @@ import {
   zeigeMeldung,
 } from "./api.js";
 import { erstelleTabelle, formatiereArbeitsstand } from "./liste.js";
+import {
+  UNTERAUFGABEN_FORMAT_FEHLER,
+  UNTERAUFGABEN_LADE_FEHLER,
+  erstelleAnlegeSicht,
+  erstelleUnteraufgabenSicht,
+} from "./unteraufgaben.js";
 
 const CONTAINER_ID = "detail";
 const OWNER_AUSWAHL_ID = "detail-owner";
@@ -41,6 +47,7 @@ const AUFGABEN_LADE_FEHLER = "Aufgaben konnten nicht geladen werden.";
 const AUFGABEN_FORMAT_FEHLER = "Aufgaben haben ein unerwartetes Format.";
 const KEINE_AUFGABEN = "Keine Aufgaben dieser Welle.";
 const ABSCHNITT_KLASSE = "detail-abschnitt";
+const GESCHLOSSEN = "Geschlossen";
 
 // A28: Kennungs-Hinweis und Freigabe (Menschen-Kanal `POST /api/freigabe`).
 const NEU_HINWEIS_ID = "detail-neu-hinweis";
@@ -510,7 +517,7 @@ function erstelleStatusKnopf(status, aktiv) {
   return knopf;
 }
 
-function erstelleAktionen(pfad, status) {
+function erstelleAktionen(pfad, status, anlegeKnopf = null) {
   const aktionen = document.createElement("div");
   aktionen.className = "detail-aktionen";
 
@@ -530,6 +537,8 @@ function erstelleAktionen(pfad, status) {
     statusKnoepfe.push(knopf);
     aktionen.append(knopf);
   }
+
+  if (anlegeKnopf) aktionen.append(anlegeKnopf);
 
   const zurueck = document.createElement("a");
   zurueck.className = "knopf";
@@ -617,7 +626,7 @@ function erstelleFreigabeHinweis(daten) {
 }
 
 /**
- * Wellen-Freigabe im Wellen-Detail: Anzeige „Freigabe: …" plus ein Knopf über
+ * Wellen-Freigabe im Wellen-Detail: Anzeige „Freigabe …" plus ein Knopf über
  * den Menschen-Kanal (``POST /api/freigabe``), Muster wie der Aufgaben-Knopf.
  */
 function erstelleWellenFreigabeAnzeige(pfad, daten) {
@@ -678,12 +687,14 @@ function erstelleSperrHinweis(daten) {
   hinweis.setAttribute("role", "status");
 
   const welle = daten?.welle_freigabe;
+  const hatWelle =
+    typeof daten?.frontmatter?.welle === "string" && daten.frontmatter.welle.trim() !== "";
   const aufgabe = daten?.freigabe === true;
   let grund = "Aufgabe nicht freigegeben.";
-  // Wellen-Grund auch bei `null` (fehlende/unbekannte Welle, A29-T1) — aber nur,
-  // wenn die Aufgabe selbst freigegeben ist. Ohne zugeordnete Welle und ohne
-  // Aufgaben-Freigabe bleibt die Aufgabe der Grund.
-  const welleGesperrt = welle === false || (welle == null && aufgabe);
+  // Wellen-Grund auch bei `null` (fehlende/defekte Wellenreferenz, A29-T1/K1):
+  // Hat die Aufgabe eine Welle, ist ein fehlendes Wellen-Gate ein Wellen-Grund —
+  // auch ohne Aufgaben-Freigabe. Ohne Wellen-Referenz bleibt die Aufgabe der Grund.
+  const welleGesperrt = welle === false || (welle == null && hatWelle);
   if (welleGesperrt) {
     grund = aufgabe
       ? "Welle nicht freigegeben."
@@ -693,7 +704,7 @@ function erstelleSperrHinweis(daten) {
   return hinweis;
 }
 
-function erstelleKopf(pfad, daten, wellen) {
+function erstelleKopf(pfad, daten, wellen, anlegeKnopf = null) {
   const frontmatter =
     daten.frontmatter && typeof daten.frontmatter === "object" ? daten.frontmatter : {};
   const { status, hinweis } = ermittleStatus(frontmatter);
@@ -730,7 +741,7 @@ function erstelleKopf(pfad, daten, wellen) {
   if (istAufgabe(pfad, frontmatter) && daten?.wirksam_freigegeben === false) {
     kopf.append(erstelleSperrHinweis(daten));
   }
-  kopf.append(erstelleAktionen(pfad, status));
+  kopf.append(erstelleAktionen(pfad, status, anlegeKnopf));
 
   return kopf;
 }
@@ -858,9 +869,28 @@ async function speichereMeta(pfad, aenderung, erfolgsmeldung) {
 }
 
 function zeichne(ziel, pfad, daten, zusatz) {
-  const teile = [erstelleKopf(pfad, daten, zusatz.wellen), erstelleInhalt(daten.markdown)];
+  const frontmatter =
+    daten.frontmatter && typeof daten.frontmatter === "object" ? daten.frontmatter : {};
+  const aufgabe = istAufgabe(pfad, frontmatter);
+  // Unter-Aufgaben (Tiefe 1) bekommen weder Anlegen-Knopf noch Abschnitt.
+  const istUnteraufgabe = Boolean(feld(frontmatter, "parent"));
+  const anlege =
+    aufgabe && !istUnteraufgabe && ermittleStatus(frontmatter).status !== GESCHLOSSEN
+      ? erstelleAnlegeSicht(pfad, () => ladeDetail({ unterpunkt: pfad }))
+      : null;
+
+  const teile = [erstelleKopf(pfad, daten, zusatz.wellen, anlege?.knopf ?? null)];
+  if (anlege) teile.push(anlege.bereich);
+  teile.push(erstelleInhalt(daten.markdown));
+
+  if (aufgabe && !istUnteraufgabe) {
+    const unteraufgabenSicht = erstelleUnteraufgabenSicht(pfad, zusatz.aufgaben);
+    if (unteraufgabenSicht) teile.push(unteraufgabenSicht);
+  }
+
   const aufgabenSicht = erstelleAufgabenSicht(pfad, zusatz.aufgaben);
   if (aufgabenSicht) teile.push(aufgabenSicht);
+
   teile.push(erstelleNachtragFormular(pfad));
   ziel.replaceChildren(...teile);
 }
@@ -883,12 +913,16 @@ async function ladeWellenListe(noetig) {
 }
 
 /** Aufgabenliste für die Wellen-Sicht; Fehler erscheinen im Abschnitt. */
-async function ladeAufgabenListe(noetig) {
+async function ladeAufgabenListe(
+  noetig,
+  ladeFehler = AUFGABEN_LADE_FEHLER,
+  formatFehler = AUFGABEN_FORMAT_FEHLER,
+) {
   if (!noetig) return { eintraege: null, fehler: null };
 
   const antwort = await getJson("/api/aufgaben");
-  if (antwort === null) return { eintraege: null, fehler: AUFGABEN_LADE_FEHLER };
-  if (!Array.isArray(antwort)) return { eintraege: null, fehler: AUFGABEN_FORMAT_FEHLER };
+  if (antwort === null) return { eintraege: null, fehler: ladeFehler };
+  if (!Array.isArray(antwort)) return { eintraege: null, fehler: formatFehler };
   return { eintraege: antwort, fehler: null };
 }
 
@@ -918,7 +952,14 @@ export async function ladeDetail({ unterpunkt } = {}) {
   const frontmatter =
     daten.frontmatter && typeof daten.frontmatter === "object" ? daten.frontmatter : {};
   const wellen = await ladeWellenListe(istAufgabe(pfad, frontmatter));
-  const aufgaben = await ladeAufgabenListe(pfad.startsWith(WELLEN_ORDNER));
+  // A34: Unter-Aufgaben kommen aus `GET /api/aufgaben`; Aufgaben brauchen die
+  // Liste auch dann, wenn sie als Unter-Aufgabe keinen Abschnitt zeigen (T43).
+  const wellenSicht = pfad.startsWith(WELLEN_ORDNER);
+  const aufgaben = await ladeAufgabenListe(
+    wellenSicht || istAufgabe(pfad, frontmatter),
+    wellenSicht ? AUFGABEN_LADE_FEHLER : UNTERAUFGABEN_LADE_FEHLER,
+    wellenSicht ? AUFGABEN_FORMAT_FEHLER : UNTERAUFGABEN_FORMAT_FEHLER,
+  );
 
   zeichne(ziel, pfad, daten, { wellen, aufgaben });
 }

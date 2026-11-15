@@ -629,7 +629,7 @@ return {
         (
             AUFGABE_2,
             _task_datei(freigabe=False, neu=False),
-            ["/api/file", "/api/wellen"],
+            ["/api/file", "/api/wellen", "/api/aufgaben"],
         ),
         (
             WELLE,
@@ -644,7 +644,8 @@ return {
     ],
 )
 def test_t33_abgrenzung_und_request_budget(pfad, datei, endpunkte):
-    # Aufgaben-Detail: zwei Requests (A34 ergänzt später ``/api/aufgaben`` als dritten).
+    # Aufgaben-Detail: drei Requests (A34 ergänzt ``/api/aufgaben`` für die
+    # Unter-Aufgaben-Ansicht; Wellen/Projekt bleiben unverändert).
     ergebnis = detail_lauf(
         f"""
 await detail.ladeDetail({{ unterpunkt: {json.dumps(pfad)} }});
@@ -740,8 +741,14 @@ def _wellen_datei(freigabe_wert: bool | None = None, **felder) -> dict:
     return daten
 
 
-def _task_mit_gate(freigabe_wert: bool, welle_freigabe, wirksam: bool) -> dict:
-    daten = _datei({"type": "Task", "title": "A1: Mini-Aufgabe", "task_status": "in Umsetzung"})
+def _task_mit_gate(
+    freigabe_wert: bool, welle_freigabe, wirksam: bool, welle: str | None = None
+) -> dict:
+    """Aufgaben-Detail mit Gate-Feldern; ``welle`` modelliert die Wellen-Referenz."""
+    frontmatter = {"type": "Task", "title": "A1: Mini-Aufgabe", "task_status": "in Umsetzung"}
+    if welle is not None:
+        frontmatter["welle"] = welle
+    daten = _datei(frontmatter)
     daten.update(
         {
             "freigabe": freigabe_wert,
@@ -802,6 +809,7 @@ return {
   texte,
   aufgaben,
   uebersicht: markenTexte("tabelle"),
+  top5: markenTexte("uebersicht-zuletzt"),
   marken: marken(bei("ansicht-wellen")),
   ausfuehrungen,
 };
@@ -836,6 +844,12 @@ return {
         {"path": AUFGABE_2, "marken": [{"text": "neu", "status": True}]}
     ]
     assert ergebnis["uebersicht"] == [
+        {"path": AUFGABE_2, "marken": [{"text": "neu", "status": True}]},
+        {"path": WELLE_1, "marken": []},
+    ]
+    # A29-K3: Auch der Top-5-Block der Übersicht zeigt für Wellen keine Marke —
+    # obwohl die Welle freigegeben ist und der Wellen-Bestand bekannt ist.
+    assert ergebnis["top5"] == [
         {"path": AUFGABE_2, "marken": [{"text": "neu", "status": True}]},
         {"path": WELLE_1, "marken": []},
     ]
@@ -1008,26 +1022,29 @@ return { aufrufe: aufrufe.map((eintrag) => eintrag.endpunkt) };
         _task_mit_gate(True, True, True),
         wellen=[_wellen_eintrag(WELLE_1, "Welle 1", True)],
     )
-    assert aufgabe["aufrufe"] == ["/api/file", "/api/wellen"]
+    assert aufgabe["aufrufe"] == ["/api/file", "/api/wellen", "/api/aufgaben"]
 
 
 @ohne_node
 @pytest.mark.parametrize(
-    "freigabe_wert,wellen_freigabe,wirksam,erwartet",
+    "freigabe_wert,wellen_freigabe,wirksam,hat_welle,erwartet",
     [
-        (True, False, False, "Umsetzung gesperrt: Welle nicht freigegeben."),
-        (False, True, False, "Umsetzung gesperrt: Aufgabe nicht freigegeben."),
-        (False, False, False, "Umsetzung gesperrt: Aufgabe und Welle nicht freigegeben."),
-        (True, True, True, None),
-        (True, None, True, None),
+        (True, False, False, True, "Umsetzung gesperrt: Welle nicht freigegeben."),
+        (False, True, False, True, "Umsetzung gesperrt: Aufgabe nicht freigegeben."),
+        (False, False, False, True, "Umsetzung gesperrt: Aufgabe und Welle nicht freigegeben."),
+        (True, True, True, True, None),
+        (True, None, True, True, None),
         # A29-T1: fehlende/kaputte Welle (null) ist ein Wellen-Grund, nicht „Aufgabe".
-        (True, None, False, "Umsetzung gesperrt: Welle nicht freigegeben."),
+        (True, None, False, True, "Umsetzung gesperrt: Welle nicht freigegeben."),
         # Ohne zugeordnete Welle bleibt die Aufgabe der Grund (kein Wellen-Grund).
-        (False, None, False, "Umsetzung gesperrt: Aufgabe nicht freigegeben."),
+        (False, None, False, False, "Umsetzung gesperrt: Aufgabe nicht freigegeben."),
+        # A29-K1: defekte Wellenreferenz (``welle`` im Frontmatter, ``null`` vom
+        # Server) ist auch ohne Aufgaben-Freigabe ein Wellen-Grund.
+        (False, None, False, True, "Umsetzung gesperrt: Aufgabe und Welle nicht freigegeben."),
     ],
 )
 def test_t20_sperrhinweis_im_aufgaben_detail(
-    freigabe_wert, wellen_freigabe, wirksam, erwartet
+    freigabe_wert, wellen_freigabe, wirksam, hat_welle, erwartet
 ):
     ergebnis = detail_lauf(
         r"""
@@ -1041,7 +1058,12 @@ return {
   aufgabenKnopfDisabled: bei("detail-freigabe")?.disabled ?? null,
 };
 """,
-        _task_mit_gate(freigabe_wert, wellen_freigabe, wirksam),
+        _task_mit_gate(
+            freigabe_wert,
+            wellen_freigabe,
+            wirksam,
+            welle=WELLE_1 if hat_welle else None,
+        ),
         wellen=[_wellen_eintrag(WELLE_1, "Welle 1", wellen_freigabe)],
     )
 
