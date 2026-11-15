@@ -80,3 +80,10 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Umsetzung:** `_laeuft_im_kernel()`, Handlungsanweisung `HINWEIS_PORT_FREIGABE` statt stillem Fallback, `__main__`-Guard ohne `sys.exit` im Kernel, Notebook-Zelle 6 (`%cd` + `%run definitions/app/start_colab.py`), Doku/README angeglichen.
 - **Belege:** 4 neue Tests (rot → grün); Gesamtsuite **765** grün.
 - **Offene Punkte:** (a) „Server läuft bereits" öffnet bei erneutem Zellen-Aufruf kein neues Freigabe-Fenster (bewusst unverändert) — Kleinticket; (b) `start.sh --colab` bleibt Unterprozess-Variante mit Hinweis (Doku weist sie als nicht empfehlenswert aus).
+
+## 2026-11-15 — coder (Bugfix 2. Real-World-Runde: iframe-Freigabe)
+
+- **Ursache:** `serve_kernel_port_as_window` ist bei Colab veraltet — es gibt nur noch `https://localhost:5000/` aus (Deprecation-Warnung); die Freigabe war damit praktisch unbrauchbar.
+- **Umsetzung:** Freigabe-Kette umgestellt: **primär `serve_kernel_port_as_iframe(port)`** (App rendert in der Notebook-Zelle), Fenster nur noch Fallback mit Veraltet-Notiz, letzter Fallback = Handlungs-Hinweis (absoluter Pfad). Meldungen ohne irreführende localhost-URL. README/`docs/colab-start.md`: iframe als Empfehlung, Window als deprecated markiert.
+- **Belege:** 3 neue Tests (rot → grün); Gesamtsuite **768** grün.
+- **Offene Punkte:** (a) Die iframe-Höhe ist Colab-Standard — falls die App abgeschnitten wirkt, `height`-Argument als Kleinticket; (b) unverändert: `start.sh --colab` ohne Freigabe (als nicht empfehlenswert markiert).

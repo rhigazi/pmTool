@@ -4,6 +4,7 @@
 
 ## 2026-11-15
 
+* **Update** A16-Bugfix 2. Real-World-Runde: `serve_kernel_port_as_window` ist bei Colab veraltet (liefert nur `https://localhost:5000/` + Deprecation-Warnung) → Freigabe-Kette umgestellt: **primär `serve_kernel_port_as_iframe(port)`** (App in der Notebook-Zelle), Fenster nur Fallback mit Veraltet-Notiz, letzter Fallback = Handlungs-Hinweis (absoluter Pfad); Meldungen ohne irreführende localhost-URL. README/`docs/colab-start.md`: iframe empfohlen, Window als deprecated markiert; 3 neue Tests, Gesamtsuite **768**. Offen (Post-MVP): iframe-Höhe (Colab-Standard; `height`-Argument bei Bedarf).
 * **Update** A16-Bugfix: `serve_kernel_port_as_window` funktioniert nur im Notebook-Kernel — der bisherige Start als Unterprozess (`!bash start.sh --colab`) ließ die Port-Freigabe **still** fehlschlagen (Nutzer sah nur 127.0.0.1-/172.x-URLs). Umgesetzt: `_laeuft_im_kernel()`, `HINWEIS_PORT_FREIGABE` statt stillem Fallback, `__main__`-Guard ohne `sys.exit` im Kernel, Notebook-Zelle 6 (`%run definitions/app/start_colab.py`), Doku/README angeglichen; 4 neue Tests (rot→grün), Gesamtsuite **765**. Offen (Post-MVP): erneuter Zellen-Aufruf bei laufendem Server öffnet kein neues Freigabe-Fenster (bewusst unverändert); `start.sh --colab` bleibt Unterprozess-Variante mit Hinweis (nicht empfohlen).
 * **Creation** Entscheidung „Colab-Port-Freigabe nur im Kernel-Kontext" im [Entscheidungslog](/entscheidungen/log.md).
 
