@@ -1092,7 +1092,7 @@ return {
 """,
         listen_antwort(LISTEN_EINTRAEGE),
     )
-    assert ergebnis["kopfVorher"] == ["Titel", "Status", "owner", "zuletzt geändert"]
+    assert ergebnis["kopfVorher"] == ["Titel", "Welle", "Status", "owner", "zuletzt geändert"]
     assert ergebnis["kopfNachher"] == ergebnis["kopfVorher"]
     assert ergebnis["gefiltert"] == ["aufgaben/a1.md", "aufgaben/a2.md"]
     assert ergebnis["ohneTreffer"] == KEINE_EINTRAEGE

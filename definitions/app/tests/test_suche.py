@@ -829,7 +829,7 @@ return {
         antwort(DOM_EINTRAEGE),
     )
     assert ergebnis["pfade"] == ["aufgaben/a20.md", "aufgaben/a21.md"]
-    assert ergebnis["kopfVorher"] == ["Titel", "Status", "owner", "zuletzt geändert"]
+    assert ergebnis["kopfVorher"] == ["Titel", "Welle", "Status", "owner", "zuletzt geändert"]
     assert ergebnis["kopfNachher"] == ergebnis["kopfVorher"]
     # Genau ein Ladeaufruf: kein Request pro Tastendruck.
     assert ergebnis["aufrufe"] == ["/api/overview"]

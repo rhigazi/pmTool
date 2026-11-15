@@ -296,21 +296,21 @@ return {
         listen_antwort([MIT_ARBEITSSTAND, OHNE_ARBEITSSTAND], "/api/aufgaben"),
     )
 
-    assert ergebnis["kopf"] == ["Titel", "Status", "owner", "zuletzt geändert"]
+    assert ergebnis["kopf"] == ["Titel", "Welle", "Status", "owner", "zuletzt geändert"]
     assert [zeile["path"] for zeile in ergebnis["zeilen"]] == [
         "aufgaben/a30-arbeit.md",
         "aufgaben/a30-ohne.md",
     ]
     mit, ohne = ergebnis["zeilen"]
     assert mit["arbeitsstaende"] == [{"marke": "div", "text": ARBEITSSTAND}]
-    assert mit["zellen"][1].count(ARBEITSSTAND) == 1
-    assert "In Arbeit" in mit["zellen"][1]
+    assert mit["zellen"][2].count(ARBEITSSTAND) == 1
+    assert "In Arbeit" in mit["zellen"][2]
     # Titel-/owner-Zellen bleiben unverändert.
     assert mit["zellen"][0] == "A30: Was passiert gerade"
-    assert mit["zellen"][2] == "ai"
+    assert mit["zellen"][3] == "ai"
     # Aufgabe ohne Angabe: keine Zusatzzeile.
     assert ohne["arbeitsstaende"] == []
-    assert ohne["zellen"][1] == "Offen"
+    assert ohne["zellen"][2] == "Offen"
     assert "img" not in ergebnis["marken"]
     assert ergebnis["aufrufe"] == ["/api/aufgaben"]
 
@@ -372,9 +372,9 @@ return { aufgaben, uebersicht, top5 };
     for zeile, (_, text) in zip(ergebnis["aufgaben"], erwartet, strict=True):
         eigene = text.split(":")[0]
         fremde = [label for label, _ in (t.split(": ") for _, t in erwartet) if label != eigene]
-        assert zeile["zellen"][1].count(text) == 1
+        assert zeile["zellen"][2].count(text) == 1
         for label in fremde:
-            assert f"{label}:" not in zeile["zellen"][1]
+            assert f"{label}:" not in zeile["zellen"][2]
     # Übersicht und Top-5 zeigen dieselbe Zuordnung in gleicher Reihenfolge.
     assert [zeile["path"] for zeile in ergebnis["uebersicht"]] == [pfad for pfad, _ in erwartet]
     assert [

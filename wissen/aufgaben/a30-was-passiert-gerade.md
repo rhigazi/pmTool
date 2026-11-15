@@ -10,7 +10,7 @@ priority: mittel
 assigned_to: coder
 welle: wellen/w2.md
 owner: ai
-aktuell: "reviewer: Review A30 (Snapshot) | tester: S1–S4 | coder: A31 läuft parallel"
+aktuell: "reviewer: FREIGEGEBEN (Testlücke T5 → A33) — tester: S1–S4 läuft | coder: A31 parallel"
 ---
 
 # Ziel

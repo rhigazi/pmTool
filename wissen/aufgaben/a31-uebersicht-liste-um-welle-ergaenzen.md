@@ -3,13 +3,13 @@ type: Task
 title: "A31: Übersicht Liste um Welle ergänzen"
 description: Als Mensch muss ich in der Lage sein zu sehen zu welcher Welle eine Aufgabe
   zugeordnet ist
-task_status: in Planung
-phase: 2 Planung
+task_status: in Review
+phase: 5 Review
 priority: hoch
 assigned_to: coder
 welle: wellen/w2.md
 owner: ai
-aktuell: "PM: Planung fertig (9 AK, 22 Tests + 4 UI-Szenarien, 3 Pakete, 5. Spalte 'Welle') — wartet auf Freigabe, Umsetzung nach A30"
+aktuell: "reviewer: Review A31 (Snapshot) | tester: UI-Szenarien | coder: A28 läuft parallel"
 ---
 
 # Ziel
@@ -140,4 +140,14 @@ Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das M
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-15 — coder (Umsetzung Paket 1 + 2 + 3)
+
+- **Ergebnis Paket 1 (Spalte und Grundzeile):** `liste.js` — `WELLE_SPALTE = "Welle"`, `ANSICHTEN[...].welleSpalte` (`uebersicht`/`aufgaben: true`, `wellen: false`), `spaltenFuer(mitWelle)` und `erstelleTabelle(eintraege, { mitWelle = false })` mit der Reihenfolge `Titel | Welle | Status | owner | zuletzt geändert`; `erstelleWelleZelle` zeigt „—" ohne Zuordnung. Aufrufstellen übergeben die Ansichts-Konfiguration: `wendeFilterAn` (Haupttabelle) und `zeichneUebersichtZusatz`/`zeichneTabelle` (Top 5). `detail.js` ruft ohne Option → Wellen-Detail und Wellenliste bleiben bei vier Spalten. **Bewusster Vertragswechsel (AK-8):** `test_suche.py` (T16), `test_welle_zuordnung.py` (T31) und `test_arbeitsstand_ui.py` (T15) erwarten jetzt fünf Spalten; `test_welle_zuordnung.py` T34 bleibt vier. Begründung: Der Nutzerwunsch „zu welcher Welle" wiegt schwerer als die A11-Tabellenkonvention; eine Badge-Lösung in der Titel-Zelle würde mit A28 („neu"-Marke) kollidieren, eine zweite Zeile in der Status-Zelle mit A30.
+- **Ergebnis Paket 2 (Auflösung):** `wellenTitel`-Map (Pfad → Titel) wird in `ermittleWellen`/`merkeWellenTitel` aus dem `/api/overview`-Payload bzw. dem A27-Cache `bekannteWellen` gefüllt (Übersicht baut neu auf, Aufgabenliste ergänzt) — **kein zusätzlicher Request**. Zelle: Titel sichtbar, `title`-Attribut = Pfad; ohne Titel (dangling, Deep-Link, Welle ohne `titel`) steht der Pfad als sichtbarer Fallback; ohne/ungültige Zuordnung (`null`, `42`, `{}`, `[]`, `"   "`) „—"; getrimmte Pfade.
+- **Ergebnis Paket 3 (Kombination/Regression):** XSS-Payloads werden textuell gerendert (kein `img`/`script`, kein `alert`), A30-Arbeitsstatus bleibt allein in der Status-Zelle (keine Doppelanzeige), Request-Budget unverändert (je Ansicht ein Request, Detail-Aufgabe `/api/file` + `/api/wellen`), A27-Wellen-Filter + Status + owner + A25-Suche filtern unverändert (Schnittmenge), „Filter zurücksetzen" liefert den Vollbestand mit fünf Spalten und weiterhin aufgelösten Titeln, der Wellen-Titel ist nicht durchsuchbar (nur der Pfad).
+- **Belege:** TDD-Red-Green je Paket. Paket 1: **8 rot** (T1, T2, T3, T5, T8, `test_suche` T16, A30 T15/T16) → 0. Paket 2: **6 rot** (T6, T7, T9, T11, T12, T13) → 0. Paket 3: **3 rot** (eigene Test-Autorenfehler: fehlende XSS-Konstante, Zeilenfilter über Aufgaben, Navigationslink „Wellen" in `index.html`) → 0. `test_welle_spalte.py` neu mit **24 Fällen** (T1–T21; T16 vierfach parametrisiert; T22 ist Review-Schritt). A31-relevante Dateien serialisiert (`test_welle_spalte`, `test_suche`, `test_welle_zuordnung`, `test_arbeitsstand_ui`, `test_arbeitsstand`, `test_liste`, `test_detail`, `test_features`, `test_static`, `test_formulare`, `test_api_lesen`, `test_api_schreiben`, `test_meta`, `test_neu_aufgabe`, `test_neu_welle`): **877 passed**. Gesamtsuite serialisiert (`python3 -m pytest definitions/app/tests -q -p no:randomly`): **1168 passed, 0 failed** (9:38 unter Parallel-Last).
+- **Bewusste Abweichungen/Grenzen:** (1) `test_arbeitsstand_ui.py` T15/T16 mussten neben der Kopfzeile auch die **Zellindizes** um +1 verschieben (Status jetzt Index 2, owner 3) — reine Folge des Spaltenwechsels, keine Logikänderung; die Testlogik bleibt inhaltlich identisch. (2) `T21` ist als pytest-Fall umgesetzt, der prüft, dass die zehn Baseline-Dateien keine A31-Marker enthalten (die eigentliche Suite-/`verify.sh`-Ausführung steht im Lauf oben bzw. beim `tester`). (3) `T22` bleibt Review-Schritt (Begründung siehe Paket 1, `phasen.md`/`technische-spec.md` definieren keine Tabellenspalten und bleiben unverändert). (4) Deep-Link auf `#/aufgaben` ohne Übersichts-Besuch zeigt Pfade statt Titel (A27-Cache-Grenze, bewusst kein Extra-Request wegen der A25-Request-Zusicherungen).
+- **Offene Punkte:** Moli-Szenarien **S1–S4** (tester); `bash definitions/verify.sh .` nicht separat gelaufen (Parallelbetrieb A26/A32); A28 **nicht** begonnen. Keine Commits.
+

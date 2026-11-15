@@ -1,6 +1,8 @@
 import { getJson } from "./api.js";
 
 const SPALTEN = ["Titel", "Status", "owner", "zuletzt geändert"];
+// A31: eigene Wellen-Spalte für Übersicht und Aufgabenliste (nach dem Titel).
+const WELLE_SPALTE = "Welle";
 // Top 5 zuletzt geänderte Punkte gemäß US-1-AC4.
 const ZULETZT_ANZAHL = 5;
 const KEINE_ANGABE = "—";
@@ -25,6 +27,7 @@ const ANSICHTEN = {
     status: "filter-status",
     owner: "filter-owner",
     welle: "filter-welle",
+    welleSpalte: true,
     suche: "suche-uebersicht",
     zuruecksetzen: "filter-zuruecksetzen",
   },
@@ -35,6 +38,7 @@ const ANSICHTEN = {
     status: "filter-wellen-status",
     owner: "filter-wellen-owner",
     welle: null,
+    welleSpalte: false,
     suche: "suche-wellen",
     zuruecksetzen: "filter-wellen-zuruecksetzen",
   },
@@ -45,6 +49,7 @@ const ANSICHTEN = {
     status: "filter-aufgaben-status",
     owner: "filter-aufgaben-owner",
     welle: "filter-welle-aufgaben",
+    welleSpalte: true,
     suche: "suche-aufgaben",
     zuruecksetzen: "filter-aufgaben-zuruecksetzen",
   },
@@ -56,6 +61,8 @@ const initialisierteFilter = new Set();
 // Wellen-Metadaten aus bereits geladenen Daten (kein zusätzlicher Request):
 // die Übersicht enthält alle Wellen, die Aufgabenliste referenziert sie.
 let bekannteWellen = [];
+// Pfad → Wellen-Titel für die Spalte „Welle" (aus denselben Daten gefüllt).
+const wellenTitel = new Map();
 
 // Durchsuchbare Felder aus `/api/overview`; „zuletzt geändert" gehört bewusst
 // nicht dazu (Datumsrecherche ist nicht Teil der Anforderung).
@@ -247,13 +254,36 @@ function erstelleZeitZelle(eintrag) {
   return zelle;
 }
 
-/** Baut die Tabelle (Titel, Status, owner, zuletzt geändert) aus API-Einträgen. */
-export function erstelleTabelle(eintraege) {
+/** Spaltenköpfe je Ansicht; ohne Wellen-Spalte bleibt es bei den vier A11-Spalten. */
+function spaltenFuer(mitWelle) {
+  if (!mitWelle) return SPALTEN;
+  return [SPALTEN[0], WELLE_SPALTE, ...SPALTEN.slice(1)];
+}
+
+/**
+ * Zelle „Welle": sichtbarer Wellen-Titel, Tooltip = Pfad; ohne Zuordnung „—";
+ * ist kein Titel bekannt (dangling, Deep-Link), steht der Pfad als Fallback.
+ */
+function erstelleWelleZelle(eintrag) {
+  const zelle = document.createElement("td");
+  const pfad = typeof eintrag?.welle === "string" ? eintrag.welle.trim() : "";
+  if (!pfad) {
+    zelle.textContent = KEINE_ANGABE;
+    return zelle;
+  }
+
+  zelle.textContent = wellenTitel.get(pfad) || pfad;
+  zelle.title = pfad;
+  return zelle;
+}
+
+/** Baut die Tabelle aus API-Einträgen; `mitWelle` ergänzt die Spalte „Welle". */
+export function erstelleTabelle(eintraege, { mitWelle = false } = {}) {
   const tabelle = document.createElement("table");
   tabelle.classList.add("tabelle");
 
   const kopf = tabelle.createTHead().insertRow();
-  for (const spalte of SPALTEN) {
+  for (const spalte of spaltenFuer(mitWelle)) {
     const zelle = erstelleZelle(spalte, "th");
     zelle.scope = "col";
     kopf.append(zelle);
@@ -264,8 +294,9 @@ export function erstelleTabelle(eintraege) {
     const zeile = koerper.insertRow();
     if (eintrag?.path) zeile.dataset.path = eintrag.path;
     if (eintrag?.status === "Klarung") zeile.classList.add("klarung");
+    zeile.append(erstelleZelle(eintrag?.titel || KEINE_ANGABE));
+    if (mitWelle) zeile.append(erstelleWelleZelle(eintrag));
     zeile.append(
-      erstelleZelle(eintrag?.titel || KEINE_ANGABE),
       erstelleStatusZelle(eintrag),
       erstelleOwnerZelle(eintrag),
       erstelleZeitZelle(eintrag),
@@ -281,14 +312,14 @@ function erstelleHinweis(text) {
   return hinweis;
 }
 
-function zeichneTabelle(bereich, eintraege) {
+function zeichneTabelle(bereich, eintraege, mitWelle) {
   if (!bereich) return;
 
   // Kein eigener Leerzustand: den trägt bereits die Haupttabelle, sonst
   // erscheint „Keine Einträge." doppelt auf der Übersicht (A25-Befund 2).
   bereich.replaceChildren();
   if (eintraege.length === 0) return;
-  bereich.append(erstelleTabelle(eintraege));
+  bereich.append(erstelleTabelle(eintraege, { mitWelle }));
 }
 
 function zeichneRueckfragen(bereich, eintraege) {
@@ -331,6 +362,7 @@ function zeichneUebersichtZusatz(daten) {
   zeichneTabelle(
     document.getElementById("uebersicht-zuletzt"),
     sortiereNachAenderung(anzeige.eintraege).slice(0, ZULETZT_ANZAHL),
+    ANSICHTEN.uebersicht.welleSpalte,
   );
   zeichneRueckfragen(
     document.getElementById("uebersicht-klarung"),
@@ -408,14 +440,31 @@ function fuehreWellenZusammen(...quellen) {
 /**
  * Wellen für eine Ansicht: die Übersicht liefert alle Wellen, die Aufgabenliste
  * ergänzt den bekannten Bestand um die in den Aufgaben referenzierten Pfade.
+ * Die Titel landen in ``wellenTitel`` — Grundlage der Spalte „Welle".
  */
 function ermittleWellen(basis, daten) {
   const ausBestand = wellenAusBestand(daten);
   if (basis === "uebersicht") {
     bekannteWellen = ausBestand;
+    merkeWellenTitel(basis, ausBestand);
     return ausBestand;
   }
-  return fuehreWellenZusammen(bekannteWellen, ausBestand, wellenAusVerweisen(daten));
+  const wellen = fuehreWellenZusammen(bekannteWellen, ausBestand, wellenAusVerweisen(daten));
+  merkeWellenTitel(basis, wellen);
+  return wellen;
+}
+
+/**
+ * Pfad → Titel für die Spalte „Welle". Die Übersicht ist die vollständige
+ * Quelle und baut die Map neu auf; andere Ansichten ergänzen sie nur.
+ */
+function merkeWellenTitel(basis, wellen) {
+  if (basis === "uebersicht") wellenTitel.clear();
+  for (const eintrag of wellen) {
+    const pfad = typeof eintrag?.path === "string" ? eintrag.path.trim() : "";
+    const titel = typeof eintrag?.titel === "string" ? eintrag.titel.trim() : "";
+    if (pfad && titel) wellenTitel.set(pfad, titel);
+  }
 }
 
 function erstelleOption(wert, beschriftung) {
@@ -501,7 +550,7 @@ function wendeFilterAn(basis) {
 
   bereich.replaceChildren();
   if (anzeige.art === "tabelle") {
-    bereich.append(erstelleTabelle(anzeige.eintraege));
+    bereich.append(erstelleTabelle(anzeige.eintraege, { mitWelle: konfiguration.welleSpalte }));
   } else {
     bereich.append(erstelleHinweis(anzeige.text));
   }

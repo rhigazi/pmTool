@@ -3,12 +3,12 @@ type: Task
 title: "A28: Benachrichtigung bei neuer Aufgabe"
 description: Wenn eine neue Aufgabe angelegt wird, muss die KI ist automatisch wahrnehmen
   können um die Planung durchzuführen. Die Aufgabe wird erst begonnen wenn der Aufga…
-task_status: in Planung
-phase: 2 Planung
+task_status: in Umsetzung
+phase: 3 Umsetzung
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: "PM: FREIGEGEBEN (Projektleitung 2026-11-15) — Umsetzungsreihe nach A30/A31"
+aktuell: "coder: A28 Paket 0+1 (Freigabe-Fundament + Wahrnehmung)"
 welle: wellen/w2.md
 ---
 
