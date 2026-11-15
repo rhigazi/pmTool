@@ -431,6 +431,20 @@ tbody tr.klickbar:hover {
   font-size: 0.85rem;
 }
 
+/* Feature-List (A23): Status/Zähler unter dem Feature-Titel ausrichten. */
+.feature-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+  margin: 0;
+  padding: 0 var(--abstand) 0.6rem;
+}
+
+.feature-gruppe {
+  margin-bottom: calc(1.5 * var(--abstand));
+}
+
 @media (max-width: 720px) {
   .kopf {
     padding: var(--abstand);

@@ -1,5 +1,6 @@
 import { loescheFehler, loescheMeldung, zeigeFehler } from "./api.js";
 import { ladeDetail } from "./detail.js";
+import { ladeFeaturesAnsicht } from "./features.js";
 import { initialisiereFormulare, ladeAufgabenAnsicht, ladeWellenAnsicht } from "./formulare.js";
 import { ladeUebersicht } from "./liste.js";
 import { ladeEntscheidungenAnsicht, ladeProjektAnsicht } from "./projekt.js";
@@ -11,6 +12,7 @@ const ANSICHTEN = {
   uebersicht: "ansicht-uebersicht",
   wellen: "ansicht-wellen",
   aufgaben: "ansicht-aufgaben",
+  features: "ansicht-features",
   entscheidungen: "ansicht-entscheidungen",
   projekt: "ansicht-projekt",
   detail: "ansicht-detail",
@@ -65,6 +67,8 @@ function zeigeAnsicht(basis) {
 function markiereNavigation(basis, unterpunkt) {
   document.querySelectorAll(".navigation-link").forEach((link) => {
     const linkUnterpunkt = link.dataset.unterpunkt || "";
+    // `projekt` hat Unterpunkt-Links; alle anderen Ansichten (auch `features`)
+    // haben genau einen Menüpunkt, der auf allen Routen der Ansicht aktiv bleibt.
     const aktiv =
       link.dataset.ansicht === basis &&
       (basis === "projekt" ? linkUnterpunkt === unterpunkt : linkUnterpunkt === "");
@@ -111,6 +115,9 @@ export function navigiere() {
 registriereAnsicht("uebersicht", ladeUebersicht);
 registriereAnsicht("wellen", ladeWellenAnsicht);
 registriereAnsicht("aufgaben", ladeAufgabenAnsicht);
+
+// Feature-List (A23): Liste aller Features und je Feature die zugehörigen Aufgaben.
+registriereAnsicht("features", ladeFeaturesAnsicht);
 
 // Detailansicht (A12): Klick auf eine Listenzeile öffnet den Punkt.
 registriereAnsicht("detail", ladeDetail);
