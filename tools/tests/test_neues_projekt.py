@@ -7,10 +7,13 @@ wird nie angefasst.
 """
 
 import hashlib
+import os
+import re
 import shutil
 import subprocess
 import sys
 import tarfile
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -211,12 +214,16 @@ def test_neues_wissen_ist_fuer_andere_lesbar(projekt, capsys):
     assert modus == 0o755, f"wissen/ hat Modus {modus:o} (mkdtemp hinterlässt 0700)"
 
 
-def test_erfolgsmeldung_behauptet_keinen_unerprueften_verifynachweis(projekt, capsys):
+def test_erfolgsmeldung_enthaelt_keine_unbelegte_verify_behauptung(projekt, capsys):
+    """H1: Eigenschaft statt Wortlaut — nur belegbare Aussagen in der Ausgabe."""
     reset(projekt, "--ja")
 
     ausgabe = capsys.readouterr().out
-    assert "aus der geprüften Vorlage" in ausgabe
-    assert "Pflichtdateien vollständig" not in ausgabe
+    assert re.search(r"verify[^.\n]*(grün|bestanden|erfolgreich|ok)", ausgabe, re.I) is None
+    # Schärfung: auch über die Endung hinweg darf keine Verify-Behauptung stehen.
+    assert re.search(r"verify(?:\.sh)?[^\n]{0,40}(grün|bestanden|erfolgreich|ok)", ausgabe, re.I) is None
+    assert re.search(r"geprüfte[rmn]?\s+Vorlage", ausgabe)
+    assert "Setup prüfen: bash definitions/verify.sh" in ausgabe
 
 
 def test_backup_pfad_ausserhalb_des_repos_wird_abgelehnt(projekt, tmp_path_factory, capsys):
@@ -352,6 +359,96 @@ def test_backup_ziel_als_verzeichnis_wird_abgelehnt(projekt, capsys):
     assert "Verzeichnis" in capsys.readouterr().err
 
 
+# --- K1/K2: zweite Barriere und baumelnde Symlinks ---------------------------
+
+
+def test_backup_erstellen_lehnt_vorhandenes_ziel_ab(projekt):
+    """K1: die Barriere steht auch direkt in ``backup_erstellen`` (nicht nur im CLI)."""
+    vorher = baum(projekt / "wissen")
+    ziel = projekt / "vorhanden.tar.gz"
+    ziel.write_bytes(b"alt")
+
+    with pytest.raises(neues_projekt.BackupFehler):
+        neues_projekt.backup_erstellen(projekt / "wissen", ziel)
+
+    assert ziel.read_bytes() == b"alt"
+    assert baum(projekt / "wissen") == vorher
+
+
+def test_baumelnder_symlink_auf_automatischem_namen_wird_umgangen(projekt, capsys, monkeypatch):
+    """K2: ein baumelnder Symlink auf dem Auto-Namen wird nie überschrieben."""
+    jetzt = datetime(2026, 1, 1, 12, 0, 0)
+
+    class FesteZeit(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return jetzt
+
+    monkeypatch.setattr(neues_projekt, "datetime", FesteZeit)
+    link = projekt / "wissen-backup-20260101-120000.tar.gz"
+    linkziel = projekt / "nicht-angelegt.tar.gz"
+    link.symlink_to(linkziel)
+    vorlage = projekt / "definitions" / "wissen-vorlage"
+
+    exit_code = reset(projekt, "--ja")
+
+    ausweich = projekt / "wissen-backup-20260101-120000-2.tar.gz"
+    assert exit_code == 0
+    assert ausweich.is_file()
+    assert tarfile.is_tarfile(ausweich)
+    assert link.is_symlink()
+    assert os.readlink(link) == str(linkziel)
+    assert not linkziel.exists(), "das Linkziel wurde angelegt (durch den Link geschrieben)"
+    assert baum(projekt / "wissen") == baum(vorlage)
+
+
+def test_backup_erstellen_lehnt_baumelnden_symlink_ab(projekt):
+    """K2: auch die direkte Barriere erkennt einen baumelnden Symlink."""
+    vorher = baum(projekt / "wissen")
+    ziel = projekt / "baumelnd.tar.gz"
+    linkziel = projekt / "fehlt.tar.gz"
+    ziel.symlink_to(linkziel)
+
+    with pytest.raises(neues_projekt.BackupFehler):
+        neues_projekt.backup_erstellen(projekt / "wissen", ziel)
+
+    assert ziel.is_symlink()
+    assert os.readlink(ziel) == str(linkziel)
+    assert not linkziel.exists()
+    assert baum(projekt / "wissen") == vorher
+
+
+def test_backup_name_zaehlt_vorhandene_backups_hoch(projekt):
+    """K3: deterministische Ausweichnamen — Basis und ``-2`` belegt → ``-3``."""
+    zeitpunkt = datetime(2026, 1, 1, 12, 0, 0)
+    stamm = "wissen-backup-20260101-120000"
+    (projekt / f"{stamm}.tar.gz").write_bytes(b"1")
+    (projekt / f"{stamm}-2.tar.gz").write_bytes(b"2")
+
+    assert neues_projekt._backup_name(projekt, zeitpunkt) == f"{stamm}-3.tar.gz"
+
+
+def test_backup_name_fuellt_die_erste_freie_nummer(projekt):
+    """K3: eine Lücke wird geschlossen (``-2`` fehlt, ``-3`` belegt → ``-2``)."""
+    zeitpunkt = datetime(2026, 1, 1, 12, 0, 0)
+    stamm = "wissen-backup-20260101-120000"
+    (projekt / f"{stamm}.tar.gz").write_bytes(b"1")
+    (projekt / f"{stamm}-3.tar.gz").write_bytes(b"3")
+
+    assert neues_projekt._backup_name(projekt, zeitpunkt) == f"{stamm}-2.tar.gz"
+
+
+def test_backup_name_ueberspringt_baumelnden_symlink(projekt):
+    """K3: ``lexists`` statt ``exists`` — auch ein toter Link belegt den Namen."""
+    zeitpunkt = datetime(2026, 1, 1, 12, 0, 0)
+    stamm = "wissen-backup-20260101-120000"
+    linkziel = projekt / "fehlt.tar.gz"
+    (projekt / f"{stamm}.tar.gz").symlink_to(linkziel)
+
+    assert neues_projekt._backup_name(projekt, zeitpunkt) == f"{stamm}-2.tar.gz"
+    assert not linkziel.exists()
+
+
 # --- T4: fehlende oder unvollständige Vorlage --------------------------------
 
 
@@ -485,6 +582,10 @@ def test_fehlgeschlagener_rollback_erhaelt_den_altbestand(projekt, capsys, monke
     assert baum(alts[0]) == vorher
     assert "gesichert" in captured.err
     assert str(alts[0]) in captured.err
+    schritte = [zeile for zeile in captured.err.splitlines() if "Wiederherstellen" in zeile]
+    assert schritte, "stderr nennt keinen konkreten Wiederherstellungsschritt"
+    assert "mv" in schritte[0]
+    assert "wissen" in schritte[0]
 
 
 # --- T6: E2E — Reset auf Testkopie, danach verify.sh -------------------------

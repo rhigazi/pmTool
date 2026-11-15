@@ -9,7 +9,7 @@ phase: 2 Planung
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: "reviewer: B1 im Review | B9 + B4+B7+A27-K1 committed"
+aktuell: "PM: B1 committed (Review frei) — Batches B1–B9 komplett; K-Nachträge → Doku-Runde; Pause 2026-11-15"
 ---
 
 # Ziel

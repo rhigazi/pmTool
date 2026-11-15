@@ -5,7 +5,8 @@ Der gesamte Inhalt von ``wissen/`` wird gelöscht (auch versteckte Dateien) und
 durch ``definitions/wissen-vorlage/`` ersetzt. Ohne ``--ja`` wird nur der Plan
 ausgegeben und nichts verändert; mit ``--ja`` entsteht vorher ein Backup
 ``wissen-backup-YYYYMMDD-HHMMSS.tar.gz`` im Projekt-Root. Ein bereits
-vorhandenes Backup-Ziel wird abgelehnt, nie überschrieben.
+vorhandenes Backup-Ziel wird abgelehnt, nie überschrieben; auch ein baumelnder
+Symlink zählt als belegt (``os.path.lexists``).
 
 Aufruf:
     python3 tools/neues_projekt.py
@@ -86,7 +87,14 @@ def _im_repo(root, pfad):
 
 
 def _pruefe_backup_ziel(root, wissen, vorlage, backup):
-    """Ermittelt das Backup-Ziel und stellt sicher, dass es sicher beschreibbar ist."""
+    """Ermittelt das Backup-Ziel und stellt sicher, dass es sicher beschreibbar ist.
+
+    Geprüft wird mit ``os.path.lexists``: auch ein baumelnder Symlink belegt den
+    Namen und wird nie überschrieben (das Schreiben würde sonst durch den Link
+    gehen). Rest-TOCTOU (R8): zwischen ``lexists`` und dem Öffnen des Archivs kann
+    das Ziel ausgetauscht werden; ein atomares ``O_EXCL``-Öffnen ist bewusst
+    Post-MVP.
+    """
     if backup is None:
         ziel = root / _backup_name(root)
     else:
@@ -99,7 +107,7 @@ def _pruefe_backup_ziel(root, wissen, vorlage, backup):
 
     if ziel.is_relative_to(wissen) or ziel.is_relative_to(vorlage):
         raise PfadFehler("Backup-Ziel darf nicht in wissen/ oder in der Vorlage liegen")
-    if ziel.exists():
+    if os.path.lexists(ziel):
         if ziel.is_dir():
             raise PfadFehler(f"Backup-Ziel ist ein Verzeichnis: {ziel}")
         raise PfadFehler(
@@ -110,11 +118,15 @@ def _pruefe_backup_ziel(root, wissen, vorlage, backup):
 
 
 def _backup_name(root, zeitpunkt=None):
-    """Zeitgestempelter Backup-Name; vorhandene Backups werden nie überschrieben."""
+    """Zeitgestempelter Backup-Name; vorhandene Backups werden nie überschrieben.
+
+    ``lexists`` zählt auch baumelnde Symlinks als belegt — ein ``exists`` würde
+    den Namen freigeben und das Schreiben durch den Link leiten.
+    """
     stempel = (zeitpunkt or datetime.now()).strftime("%Y%m%d-%H%M%S")
     ziel = root / f"{BACKUP_PRAEFIX}-{stempel}{BACKUP_ENDUNG}"
     nummer = 2
-    while ziel.exists():
+    while os.path.lexists(ziel):
         ziel = root / f"{BACKUP_PRAEFIX}-{stempel}-{nummer}{BACKUP_ENDUNG}"
         nummer += 1
     return ziel.name
@@ -172,9 +184,14 @@ def backup_erstellen(wissen, ziel):
     """Packt ``wissen/`` in ein tar.gz; bei jedem Fehler bleibt der Altstand erhalten.
 
     Ein bereits vorhandenes Ziel wird abgelehnt: ``tarfile`` würde es sonst
-    truncaten und damit eine frühere Sicherung vernichten.
+    truncaten und damit eine frühere Sicherung vernichten. Die Prüfung nutzt
+    ``lexists``, damit auch ein baumelnder Symlink nicht als frei gilt (das
+    Schreiben würde sonst durch den Link in ein fremdes Ziel gehen). Diese
+    Barriere steht bewusst zusätzlich zur CLI-Vorprüfung. Rest-TOCTOU (R8):
+    zwischen ``lexists`` und dem Öffnen des Archivs kann das Ziel ausgetauscht
+    werden — ein atomares ``O_EXCL``-Öffnen ist bewusst Post-MVP.
     """
-    if ziel.exists():
+    if os.path.lexists(ziel):
         raise BackupFehler(
             f"Backup-Ziel existiert bereits ({ziel}). Es wurde nichts gelöscht."
         )
@@ -223,8 +240,9 @@ def tausche_gegen_vorlage(root, wissen, vorlage):
 
     So gibt es keinen Halbzustand: schlägt der Aufbau oder der Tausch fehl, bleibt
     ``wissen/`` unverändert und das temporäre Verzeichnis wird entfernt. Scheitert
-    auch der Rollback, bleibt der Altbestand unter ``.wissen-alt-*`` liegen und
-    wird gemeldet — gelöscht wird er nie, solange er nicht zurückgetauscht ist.
+    auch der Rollback, bleibt der Altbestand unter ``.wissen-alt-*`` liegen, wird
+    gemeldet und der konkrete Wiederherstellungsschritt (``mv``) ausgegeben —
+    gelöscht wird er nie, solange er nicht zurückgetauscht ist.
     """
     neu = Path(tempfile.mkdtemp(dir=root, prefix=".wissen-neu-"))
     alt = None
@@ -259,6 +277,7 @@ def tausche_gegen_vorlage(root, wissen, vorlage):
         if alt is not None and alt.exists():
             if alt_erhalten:
                 print(f"Altbestand unter {alt} gesichert.", file=sys.stderr)
+                print(f"Wiederherstellen: mv {alt} {wissen}", file=sys.stderr)
             else:
                 try:
                     shutil.rmtree(alt)
