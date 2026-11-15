@@ -1,12 +1,12 @@
 # Aufgaben
 
-Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in [/projekt/phasen.md](/projekt/phasen.md) definiert. **Stand 2026-11-15: MVP abnahmefähig** — die Aufgaben A1–A20 sind abgeschlossen, A23 und A25 sind in Doku (review-frei; A23-Kleinbefunde K1–K6 und A25-Testphase laufen), A24 ist in Nachbesserung (Review-Befunde, Rücklauf an den `coder`), A26 ist offen (Umsetzung nach A23/A25); offen sind außerdem die Post-MVP-Vormerkungen A21/A22.
+Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in [/projekt/phasen.md](/projekt/phasen.md) definiert. **Stand 2026-11-15: MVP abnahmefähig** — die Aufgaben A1–A20 sind abgeschlossen, A23 und A25 sind in Doku (review-frei; A23-Kleinbefunde K1–K6 und A25-Testphase laufen), A24 ist nachgebessert und in Doku (Nachbesserung abgeschlossen, Review-Bestätigung folgt), A26 ist offen (Umsetzung nach A23/A25); offen sind außerdem die Post-MVP-Vormerkungen A21/A22.
 
 # Laufende Aufgaben
 
 * [A23: Feature-Liste](a23-feature-liste.md) - Menüpunkt „Feature List": Liste aller Features mit Status, Klick auf ein Feature zeigt die zugehörigen Aufgaben (offen / in Bearbeitung / erledigt) — **in Doku** (Phase 7; review-frei, 92/93 Tests — H1 offen; Kleinbefunde K1–K6 laufen als Coder-Takt; App-Suite 864 — Zeitstand A23)
 * [A25: Suche in der Listenansicht](a25-suche.md) - Suchfeld über der Tabelle in allen drei Listen (Übersicht, Wellen, Aufgaben), mehrere Wörter = UND, Umlaut-/ß-tolerant, kombiniert mit Status-/owner-Filter, Leerzustand „Keine Treffer.", „Filter zurücksetzen" leert auch die Suche — **in Doku** (Phase 7; review-frei, 72 Tests, 127 grün inkl. `test_liste.py`, Gesamtsuite 936; 2 Klein-Befunde laufen im A27-Paket 2, Testphase S1–S6 offen)
-* [A24: Neues Projekt beginnen (wissen/ zurücksetzen)](a24-neues-projekt.md) - `python3 tools/neues_projekt.py` ersetzt `wissen/` nach Plan-Vorschau (`--ja`) und Backup durch die OKF-Vorlage `definitions/wissen-vorlage/` — **in Nachbesserung** (Phase 4; Review: 2 wesentliche Sicherheits-Befunde, 3 Kleinbefunde, 5 Testlücken a–e; Rücklauf an den `coder` läuft)
+* [A24: Neues Projekt beginnen (wissen/ zurücksetzen)](a24-neues-projekt.md) - `python3 tools/neues_projekt.py` ersetzt `wissen/` nach Plan-Vorschau (`--ja`) und Backup durch die OKF-Vorlage `definitions/wissen-vorlage/` — **in Doku** (Phase 7; Nachbesserung abgeschlossen: Backup-Ziel nie überschreiben, Rollback erhält den Altbaum, Modus 0755, Vorlagen-Symlinks abgelehnt, 24 → 32 Tests, `tools` 69 grün; Review-Bestätigung folgt)
 * [A26: Werkzeug-Verteilung und Root-Suite-Konflikt](a26-verteilung-und-suite-konflikt.md) - `neues_projekt.py` nach `definitions/tools/` spiegeln (Verteilung durch `setup.sh`) und den Collection-Konflikt der Root-Suite (doppelte Testdateinamen in `tools/` und `definitions/tools/`) lösen — **offen** (Phase 2, Umsetzung nach A23/A25)
 
 # Abgeschlossene Aufgaben

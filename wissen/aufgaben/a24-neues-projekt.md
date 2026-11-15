@@ -2,8 +2,8 @@
 type: Task
 title: "A24: Neues Projekt beginnen (wissen/ zurücksetzen)"
 description: "`python3 tools/neues_projekt.py` löscht `wissen/` und ersetzt es durch die saubere OKF-Vorlage `definitions/wissen-vorlage/` — mit Plan-Vorschau, Backup und Verify-Nachweis."
-task_status: in Nachbesserung
-phase: 4 Umsetzung
+task_status: in Doku
+phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
 feature: /features/okf-projekt-manager-spa.md
@@ -83,3 +83,15 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Kleinbefunde:** Modus `0700`; Symlink-Folgen in der Vorlage; unpräzise Erfolgsmeldung.
 - **Testlücken (a–e):** fünf Lücken gemäß Reviewer-Rückmeldung; im Rücklauf an den `coder` mitzubeheben (Details dort).
 - **Offene Punkte:** Rücklauf an den `coder` läuft (inkl. Testlücken a–e). Status **A24 → in Nachbesserung** (Phase 4). Danach erneutes Review und Testphase; A26 (Verteilung + Root-Suite) bleibt separat.
+
+## 2026-11-15 — coder (Nachbesserung, Stand: in Doku)
+
+- **Ergebnis:** Beide **wesentlichen** Review-Befunde behoben; Kleinbefunde 3–5 und die Testlücken a–e mit erledigt. Commit `a959d75`.
+  - **Befund 1 — Backup-Ziel wird nie überschrieben/trunciert:** Ein vorhandenes Ziel ist jetzt ein `PfadFehler` („bestehende Sicherungen werden nie überschrieben", mit Hinweis auf einen freien Pfad); ein Verzeichnis oder Symlink als Ziel wird ebenfalls abgelehnt. **Doppel-Barriere:** geprüft wird einmal bei der Pfadauflösung des Arguments (`--backup`) **und** noch einmal unmittelbar in `backup_erstellen` vor dem Öffnen des Archivs — die zweite Prüfung deckt den Fall ab, dass das Ziel zwischen Vorschau und Lauf entsteht (`tarfile` würde es sonst truncaten und damit die einzige Sicherung vernichten). Der automatische Name weicht bei Kollision weiter auf `-2`, `-3`, … aus; ein **explizit** genanntes Ziel wird nie ausgewichen und nie überschrieben.
+  - **Befund 2 — fehlgeschlagener Rollback erhält den Altbaum:** Der `os.replace`-Aufruf liegt jetzt in einem eigenen Seam (`_ersetze`) und ist im Test gezielt zum Scheitern zu bringen. Scheitert der Rücktausch, bleibt der Altbestand unter `.wissen-alt-*` **liegen** und wird in der Meldung benannt — er wird nie gelöscht, solange er nicht zurückgetauscht ist (im `finally` wird der Altbaum bei `alt_erhalten` nicht entfernt, sondern nur auf `stderr` gemeldet). Gegen die **alte Git-Version** nachgewiesen: der neue Test schlägt dort fehl (Altbaum wäre verloren), auf dem neuen Stand ist er grün.
+  - **Kleinbefunde 3–5:** Modus der neuen `wissen/`-Struktur **0755** (vorher 0700, für andere lesbar); **Symlinks in der Vorlage werden vor jedem Backup abgelehnt** (kein Dereferenzieren, Vorlage muss ein reiner Dateibaum sein); Erfolgsmeldung **ohne unbelegten verify-Nachweis** (das Skript behauptet keinen Verify-Lauf mehr, den es nicht selbst gefahren hat).
+  - **Testlücken a–e geschlossen:** 8 neue Tests, `test_neues_projekt.py` **24 → 32**; u. a. vorhandenes Backup-Ziel, Symlink-Ziel, Backup-Ziel als Verzeichnis, Symlink in der Vorlage, fehlgeschlagener Rollback, Lesbarkeit der neuen Struktur, keine verify-Behauptung.
+- **Sicherheitsinvariante bestätigt:** **„kein Löschen ohne erhaltenes Backup"** — jeder Fehlerpfad (Ziel belegt, Backup-Fehler, Vorlage unvollständig/Symlink, Rollback-Fehler) lässt den Altbestand unangetastet; ein halb fertiges Archiv wird entfernt.
+- **PM-Entscheidung (2026-11-15):** Der **Plan-Lauf** (ohne `--ja`) bricht bei belegtem Backup-Ziel ebenfalls ab — bleibt so, weil es konsistent ist: Die Vorschau kündigt keinen Lauf an, der mit Sicherheit scheitern würde. Alternative „Vorschau warnt, Lauf weicht aus" wurde verworfen (würde die Regel „nie überschreiben" im Lauf wieder aufweichen).
+- **Belege:** `python3 -m pytest tools/tests -q` → **69 passed** (davon `test_neues_projekt.py` **32**), geprüft 2026-11-15 durch den `documenter`. Der Rollback-Test ist gegen den Elternstand von `a959d75` (alte Git-Version) nachweislich rot und auf dem neuen Stand grün.
+- **Offene Punkte:** Status **A24 → in Doku** (Phase 7). Die Review-Bestätigung des Rücklaufs folgt im gebündelten Lauf bzw. als kurzes Bestätigungs-Review; danach Testphase. **A26** (Verteilung `definitions/tools/` + Root-Suite-Konflikt) bleibt separat und unverändert offen.

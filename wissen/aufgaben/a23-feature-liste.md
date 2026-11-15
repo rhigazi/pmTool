@@ -1,6 +1,6 @@
 ---
 type: Task
-title: Die Feature List fehlt
+title: "A23: Feature-Liste (Menüpunkt + Feature-Status)"
 description: Die Feature List erscheint nicht im Menü, es sollte möglich sein über
   die Feature List zu jedem Feature zu sehen welche Aufgaben noch offen sind welche
   umgeset…
@@ -106,7 +106,7 @@ Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das M
 - **Konfliktlage (Stand geprüft: 2026-11-15):** Arbeitsbaum bis auf diese Aufgaben-Datei clean; letzter Commit `c598b63` (Colab-Tab-Fix) betrifft nur `start_colab.py`, `test_start_colab.py`, `README.md`, `docs/colab-start.md` — **`app.js`, `index.html`, `static/js/*` sind unberührt, kein weiterer Worktree aktiv**. Damit ist A23 mit A22 (nur `tests/test_e2e.py`) und der Doku parallel vergebbar; gemeinsame Berührung ist nur die pytest-Gesamtsuite (Flaky-Zone → Testläufe serialisieren). **Neue Konfliktgruppe G10 („Frontend Feature List"):** `features.js`, `app.js`, `index.html`, `style.css`, `test_features.py` — allein A23. Sollte ein späterer Tab-/Router-Fix `app.js` anfassen, wird er gegen A23 serialisiert.
 - **Reihenfolge & Aufwand:** (1) Testgerüst + Harness-Kopie, Parser-Tests T6–T11 → Parser; (2) Gruppierung/Join T12–T15 → reine Logik; (3) Markup + Router T1–T5 → `index.html`, `app.js`; (4) Liste T16, Detail T17–T18; (5) Fehlerfälle T19–T21, HTTP-Läufe T22; (6) Regression T23. Aufwand **mittel** (ca. 60–80 neue Tests, ein Coder-Durchlauf + Review + Testphase), geschätzt 1 Arbeitstag. UI-Szenarien S1–S4 beim `tester` (Moli).
 - **Risiken/Grenzen:** (a) `features.md` ist eine KI-Datei — Formatänderungen (andere Abschnittstitel, Status außerhalb der vier Werte) brechen den Parser bewusst fail-loud, statt still leer zu bleiben; (b) Feature-Status-Badge ist ein eigener Wertevorrat (kein Mapping) — bewusst, siehe oben; (c) Aufgaben-Zuordnung hängt an den Links in `features.md`; Aufgaben ohne Link erscheinen nur im Sammelhinweis (das ist gewollt transparent, keine automatische Ableitung aus `feature:`-Frontmatter — die bräuchte einen API-Zusatz und ist Post-MVP); (d) `index.html`-Änderung lockert A10 einmalig, der Reviewer prüft die rein additive Natur (T1).
-- **Umbenennung (ausgeführt 2026-11-15):** Datei von `die-feature-list-fehlt.md` nach `wissen/aufgaben/a23-feature-liste.md` umbenannt (Nummerierung wie A1–A22) und in `features.md`/`aufgaben/index.md` als A23 verlinkt; Inhalt der Planung unverändert, Frontmatter auf `in Umsetzung` / `3 Umsetzung` gesetzt.
+- **Umbenennung (ausgeführt 2026-11-15):** Datei von `die-feature-list-fehlt.md` nach `wissen/aufgaben/a23-feature-liste.md` umbenannt (Nummerierung wie A1–A22) und in `features.md`/`aufgaben/index.md` als A23 verlinkt; Inhalt der Planung unverändert, Frontmatter auf `in Umsetzung` / `3 Umsetzung` gesetzt. **Titel-Korrektur (2026-11-15):** `title` von „Die Feature List fehlt" auf `A23: Feature-Liste (Menüpunkt + Feature-Status)` geändert (Projektregel „Aufgaben-Kennung steht im Titel"); der ursprüngliche Nutzertitel bleibt als Ziel-Formulierung im Abschnitt „Ziel" und als Anforderungsquelle erhalten.
 
 # Betroffene Dateien
 

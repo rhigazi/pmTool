@@ -2,6 +2,14 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-15: Aufgaben-Kennung steht eindeutig im Titel
+
+**Entscheidung:** `title` einer Aufgabe führt die Kennung an: `A<N>: <Titel>`. Die Regel steht in [AGENTS.md](/../AGENTS.md) (Abschnitt „Arbeitsweise") und in `definitions/AGENTS.md` (Single Source of Truth) und gilt beim Anlegen, beim Umbenennen der Datei (`a<N>-<slug>.md`) und für per App angelegte Aufgaben. Korrigiert wurden [A23](/aufgaben/a23-feature-liste.md) („Die Feature List fehlt" → „A23: Feature-Liste (Menüpunkt + Feature-Status)") und [A25](/aufgaben/a25-suche.md) („Suche" → „A25: Suche (Feldsuche in den Listen)"); alle übrigen Aufgaben-Dateien waren bereits konform.
+
+**Begründung:** Befund der Projektleitung: „Die Kennung muss eindeutig sein und im Titel stehen". Aufgaben müssen ohne Textlesen identifizierbar sein und per Suche auffindbar — der **Titel** ist der gesuchte Anzeigeort (Liste, Detailkopf, App-Suche). Die Suche selbst funktionierte bereits über den Pfad (`aufgaben/a23-…`, Suchfeld A25), half aber nicht, wenn jemand nur den Titel sieht. Die ursprüngliche Nutzer-Formulierung bleibt als Ziel-/Anforderungstext im Abschnitt „Ziel" erhalten, sie ist die Quelle der Aufgabe.
+
+**Auswirkung:** Einheitliche Lesbarkeit in Aufgaben-Index, Feature-Liste, App-Liste/Detail und Suche; Dateiname und Titel sind an derselben Kennung erkennbar. Neue Aufgaben (auch aus der App) werden mit `A<N>: <Titel>` angelegt.
+
 ## 2026-11-15: A25 Suche läuft parallel zu A23
 
 **Entscheidung:** Die Suche (A25, Konfliktgruppe G11: `liste.js`, `test_suche.py`) wird **parallel** zu A23 (G10: `features.js`, `app.js`, `index.html`, `style.css`, `test_features.py`) umgesetzt. Die frühere Empfehlung „Umsetzung erst nach Abschluss von A23" ist aufgehoben.
