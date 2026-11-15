@@ -3,12 +3,12 @@ type: Task
 title: "A32: Neues-Projekt-Flow — start.sh --neu + Erststart-Hinweis"
 description: Nach einem Repo-Pull startet start.sh in einem neuen Container mit pmTool-Projektdaten
   vorbefüllt — start.sh soll den Reset auf die saubere Vorlage anbieten (Hinweis + --neu-Flag).
-task_status: in Nachbesserung
-phase: 4 Nachbesserung
+task_status: in Doku
+phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
 owner: ai
-aktuell: "tester: S1–S7 BESTANDEN (16/16) — coder: Rücklauf W1+K1–K5/K7/K8 läuft"
+aktuell: "PM: Bestätigungs-Review FREIGEBEN (H1–H6 → A33) — reif für Abschluss"
 ---
 
 # Ziel
