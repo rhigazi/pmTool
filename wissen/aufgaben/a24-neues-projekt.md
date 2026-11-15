@@ -2,8 +2,8 @@
 type: Task
 title: "A24: Neues Projekt beginnen (wissen/ zurücksetzen)"
 description: "`python3 tools/neues_projekt.py` löscht `wissen/` und ersetzt es durch die saubere OKF-Vorlage `definitions/wissen-vorlage/` — mit Plan-Vorschau, Backup und Verify-Nachweis."
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: in Nachbesserung
+phase: 4 Umsetzung
 priority: hoch
 assigned_to: coder
 feature: /features/okf-projekt-manager-spa.md
@@ -74,3 +74,12 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
   - **(c)** **Verteilungslücke** (Skript fehlt in `definitions/tools/`, `setup.sh` verteilt es nicht) wird nicht in A24 nachgezogen, sondern zusammen mit dem alten Root-Suite-Konflikt (doppelte `test_telegram_send.py`) als [A26](a26-verteilung-und-suite-konflikt.md) bereinigt.
 - **Befunde:** Ein `pytest -q` im Repo-Root ist derzeit generell nicht lauffähig (Collection-Konflikt `test_telegram_send.py`, belegt: 924 collected, 1 error) — unabhängig von A24, aber durch das künftige Spiegeln von `test_neues_projekt.py` verschärft → A26.
 - **Offene Punkte:** Review und Testphase laufen gebündelt nach (Status deshalb `in Doku`, nicht `zur Abnahme`); A26 (Verteilung + Root-Suite).
+
+## 2026-11-15 — reviewer (Review, NACHBESSERUNG NÖTIG)
+
+- **Ergebnis:** **NACHBESSERUNG NÖTIG** — Rücklauf an den `coder` läuft. Die AK-Punkte 1–7 sind bis auf die folgenden Lücken erfüllt (Abgleich im Review-Text). Bei einem **Löschwerkzeug** zwei **wesentliche** Sicherheits-Befunde:
+  1. **Explizites `--backup`-Ziel wird still überschrieben** — könnte beliebige Repo-Dateien zerstören und überschreibt ggf. das einzige Backup. Erwartung: ein vorhandenes Ziel verweigern oder ausweichen (nie überschreiben).
+  2. **Fehlgeschlagener Rollback + `finally` vernichtet den Altbestand** — AK 6 („kein Halbzustand") ist damit nicht garantiert; genau dieser Zweig war ungetestet.
+- **Kleinbefunde:** Modus `0700`; Symlink-Folgen in der Vorlage; unpräzise Erfolgsmeldung.
+- **Testlücken (a–e):** fünf Lücken gemäß Reviewer-Rückmeldung; im Rücklauf an den `coder` mitzubeheben (Details dort).
+- **Offene Punkte:** Rücklauf an den `coder` läuft (inkl. Testlücken a–e). Status **A24 → in Nachbesserung** (Phase 4). Danach erneutes Review und Testphase; A26 (Verteilung + Root-Suite) bleibt separat.

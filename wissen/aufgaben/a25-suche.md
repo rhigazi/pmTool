@@ -3,8 +3,8 @@ type: Task
 title: Suche
 description: In der Übersicht Liste brauchen wir eine Möglichkeit Suchbegriffe einzugeben
   um die Aufgaben nach bestimmten Informationen zur durchsuchen
-task_status: in Review
-phase: 5 Review
+task_status: in Doku
+phase: 7 Dokumentation
 priority: mittel
 assigned_to: coder
 owner: ai
@@ -125,3 +125,10 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Belege:** Red-Green-Takt in Blöcken: 39 Tests rot → 0 rot. `test_suche.py` **72 grün**, zusammen mit `test_liste.py` **127 grün** (72+55). Gesamtsuite **936** (Coder-Bericht; `pytest --collect-only` bestätigt 936 Testfälle). `bash definitions/verify.sh .` → Exit 0.
 - **Bewusste Grenzen:** kein Volltext über Datei-**Inhalte** oder `description` (Phase 2 bleibt Vormerkung); kein Debounce (Neuzeichnen der Tabelle pro Tastendruck, aber kein Request); Treffer nur in den von `/api/overview` gelieferten Feldern.
 - **Offene Punkte:** Moli-Szenarien **S1–S6** beim `tester` offen (Hinweise in der Coder-Rückmeldung). Status **A25 → in Review**; das Review läuft parallel zu A24.
+
+## 2026-11-15 — reviewer (Review, FREIGEGEBEN)
+
+- **Ergebnis:** **FREIGEGEBEN** — Sicherheitsfragen sauber belegt (literaler Vergleich über `includes` statt `RegExp`, keine Markup-Senke, Suchfeld-Montage **außerhalb** des Formulars ⇒ kein Submit-/Reload-Pfad), UND-Logik und Normalisierung (ß→ss, NFD-Faltung) korrekt, Leerzustände „Keine Treffer."/„Keine Einträge." wortgleich zu A11, alle PM-Festlegungen umgesetzt.
+- **Klein-Befunde (laufen direkt im A27-Paket 2 mit, gleiche Datei `liste.js` — als laufend vermerkt):** (1) Idempotenz-Prüfung soll `isConnected` berücksichtigen; (2) doppelter Leerzustand. Kein Review-Blocker.
+- **Hinweise für den gebündelten Lauf:** T24-Arbeitsteilung zwischen `tester` und `verify.sh` klären; optional die String-Präsenz-Tests zusammenlegen.
+- **Offene Punkte:** Testphase-Ergänzung **S1–S6** folgt im gebündelten Lauf. Status **A25 → in Doku** (review-frei).

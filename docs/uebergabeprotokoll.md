@@ -9,7 +9,7 @@ status: aktuell
 
 # Zweck dieses Protokolls
 
-Dieses Dokument sichert den **gesamten Projektstand** nach Abschluss der MVP-Umsetzung. Stand: **MVP abnahmefähig** — alle Aufgaben A1–A20 sind abgeschlossen. Zusätzlich sind A23 (Feature-Liste) und A25 (Suche) im Review, A24 (Neues Projekt) ist in Doku; offen sind die **MVP-Abnahme durch die Projektleitung**, A26 (Werkzeug-Verteilung/Root-Suite-Konflikt) und die Post-MVP-Vormerkungen A21/A22.
+Dieses Dokument sichert den **gesamten Projektstand** nach Abschluss der MVP-Umsetzung. Stand: **MVP abnahmefähig** — alle Aufgaben A1–A20 sind abgeschlossen. Zusätzlich sind A23 (Feature-Liste) und A25 (Suche) in Doku (review-frei), A24 (Neues Projekt) ist in Nachbesserung; offen sind die **MVP-Abnahme durch die Projektleitung**, A26 (Werkzeug-Verteilung/Root-Suite-Konflikt) und die Post-MVP-Vormerkungen A21/A22.
 
 **Start in der neuen Sitzung:** Den Startprompt aus `docs/startprompt.md` als erste Nachricht an den Projektmanager schicken — er bringt den PM auf Stand (inkl. Session-Start-Regel und Weiterführung).
 
@@ -46,7 +46,7 @@ pmTool/
 
 # Aufgabenstatus (Stand: 2026-11-15)
 
-Statuswerte laut Phasenmodell. Alle Aufgaben A1–A20 sind **abgeschlossen** (Umsetzung, Review, Testphase, Doku/Ergebnisprotokoll); A23 und A25 sind **in Review**, A24 ist **in Doku**, A26 ist **offen**.
+Statuswerte laut Phasenmodell. Alle Aufgaben A1–A20 sind **abgeschlossen** (Umsetzung, Review, Testphase, Doku/Ergebnisprotokoll); A23 und A25 sind **in Doku** (review-frei, Nachlauf offen), A24 ist **in Nachbesserung**, A26 ist **offen**.
 
 | # | Aufgabe | Status | Kurzstand / Beleg |
 |---|---|---|---|
@@ -70,18 +70,18 @@ Statuswerte laut Phasenmodell. Alle Aufgaben A1–A20 sind **abgeschlossen** (Um
 | A18 | Startskript `start.sh` + `docs/colab-start.md` | abgeschlossen | 7 Tests; A18-1–3 erledigt |
 | A19 | `verify.sh`-Fallback `definitions/app` | abgeschlossen | 5 Tests; `verify.sh` Exit 0 im Dev-Repo |
 | A20 | `setup.sh`-Härtung (Moli/Skill-Installation) | abgeschlossen | Pin v1.1.24 + SHA256, `command -v moli`-Guard; Commits `c1a1a23`/`4d1f335`/`f0a37c8`/`cd91b78` |
-| A23 | Feature-Liste (`features.js`) | in Review | 92 Tests; App-Suite **864** (Zeitstand A23); `markiereNavigation` funktional unverändert |
-| A24 | Neues Projekt/Reset (`tools/neues_projekt.py`) | in Doku | 24 Tests; App-Suite **862** (Zeitstand A24); Verteilung/Root-Suite → A26 |
-| A25 | Suche in der Listenansicht (`liste.js`) | in Review | 72 Tests (`test_suche.py`); **127 grün** (72+55); Gesamtsuite **936**; Moli-Szenarien S1–S6 offen |
+| A23 | Feature-Liste (`features.js`) | in Doku | Review freigegeben (2026-11-15); 92/93 Tests (H1 offen); App-Suite **864** (Zeitstand A23); Kleinbefunde K1–K6 laufen |
+| A24 | Neues Projekt/Reset (`tools/neues_projekt.py`) | in Nachbesserung | Review: 2 wesentliche Sicherheits-Befunde (`--backup`-Überschreiben, Rollback/`finally`), 3 Kleinbefunde, 5 Testlücken a–e; 24 Tests; Rücklauf läuft |
+| A25 | Suche in der Listenansicht (`liste.js`) | in Doku | Review freigegeben (2026-11-15); 72 Tests (`test_suche.py`), **127 grün** (72+55), Gesamtsuite **936**; 2 Klein-Befunde im A27-Paket 2, S1–S6 offen |
 | A26 | Werkzeug-Verteilung + Root-Suite-Konflikt | offen | `neues_projekt.py` nach `definitions/tools/`; doppelte Testdateinamen auflösen — nach A23/A25 |
 | A21 | Desktop-Modus/Lokal-Betrieb | vorgemerkt (Post-MVP) | Nummer reserviert, noch keine Aufgaben-Datei |
 | A22 | E2E-Regressionstest (`test_e2e.py`) | offen (Post-MVP) | Datei angelegt; überführt die T1/T2/T7-Kette aus A17 |
 
-**Teststand (Stand A25, 2026-11-15):** `python3 -m pytest definitions/app/tests -q` → **936 passed, Exit 0** (Coder-Beleg; A23-Zeitstand 864; serialisiert — Parallelbetrieb ist eine bekannte Flaky-Zone). `bash definitions/verify.sh .` → **Exit 0**.
+**Teststand (Stand A25, 2026-11-15):** `python3 -m pytest definitions/app/tests -q` → **936 passed, Exit 0** (Coder-Beleg; A23-Suite **92/93 offen** — H1; A23-Zeitstand 864; serialisiert — Parallelbetrieb ist eine bekannte Flaky-Zone). `bash definitions/verify.sh .` → **Exit 0**. Nach Kleinbefunde-Takt und A24-Rücklauf wird der Stand nachgezogen.
 
 # Offene Punkte (Post-MVP)
 
-* **A23/A25 im Review, A24 in Doku** — Review-Bestätigung und Testphase stehen aus; bei A25 sind die Moli-Szenarien S1–S6 offen, bei A23 S1–S4. Danach Abschluss/Doku und Sicherungs-Commit.
+* **A23/A25 in Doku, A24 in Nachbesserung** — A23 (Kleinbefunde K1–K6, H1-Testzahl 92/93) und A25 (Testphase S1–S6, 2 Klein-Befunde im A27-Paket 2) laufen nach; A24 geht nach dem Rücklauf (2 wesentliche Sicherheits-Befunde + Testlücken a–e) in ein erneutes Review/Testphase. Danach Abschluss/Doku und Sicherungs-Commit.
 * **A26** Werkzeug-Verteilung + Root-Suite-Konflikt: `neues_projekt.py` nach `definitions/tools/` spiegeln (Verteilung durch `setup.sh`) und die doppelten Testdateinamen (`test_telegram_send.py`, künftig auch `test_neues_projekt.py`) auflösen — Umsetzung nach A23/A25.
 * **A22** E2E-Regressionstest (`test_e2e.py`) — T1/T2/T7-Kette aus A17 dauerhaft überführen (offen).
 * **A21** Desktop-Modus/Lokal-Betrieb (vorgemerkt, pywebview nach MVP).
@@ -100,7 +100,7 @@ Statuswerte laut Phasenmodell. Alle Aufgaben A1–A20 sind **abgeschlossen** (Um
 
 # Weiterführung — nächste Schritte
 
-1. **Laufende Aufgaben abschließen:** Review von A23 (Feature-Liste) und A25 (Suche) bestätigen, A24-Review/Testphase gebündelt nachholen; Testphase mit Moli (A23 S1–S4, A25 S1–S6), danach Doku/Abschluss und Sicherungs-Commit.
+1. **Laufende Nachläufe abschließen:** A23-Kleinbefunde K1–K6 (inkl. H1) und A25-Testphase S1–S6 im gebündelten Lauf; A24-Nachbesserung (2 Sicherheits-Befunde + Testlücken a–e), danach erneutes Review/Testphase; anschließend Doku/Abschluss und Sicherungs-Commit.
 2. **MVP-Abnahme durch die Projektleitung** (Kurzbericht: A17-Belege — 23/23 API-E2E, 761 passed, `verify.sh` Exit 0, Moli 0 Konsolenfehler, Hash-Nachweis; Aufgaben A1–A20 abgeschlossen; aktueller Teststand 936).
 3. **Nach der Abnahme (Post-MVP):** A26 (Werkzeug-Verteilung/Root-Suite), A22 (E2E-Regression), A21 (Desktop-Modus) sowie die Post-MVP-/Aufräum-Punkte — ggf. als eigener Takt.
 4. **Sicherungs-Commits** je Takt und nach jedem grünen Tester-Stand weiterführen (Regel „Sicherungs-Push nach grünen Tests").
@@ -129,4 +129,4 @@ Statuswerte laut Phasenmodell. Alle Aufgaben A1–A20 sind **abgeschlossen** (Um
 3. Review-Runden 1+2, Bestätigungs-Review (A1/A5/A7/A9/A15/A19 review-frei), gebündelte Testphase, Testphase 2 (A12/A13/A14), Moli-Smoke erfolgreich.
 4. Kleinbefunde-Takt (4 Batches, je eigener Commit) — 761 grün.
 5. A17-Abnahmelauf bestanden → **MVP abnahmefähig** (alle A1–A20 abgeschlossen).
-6. Post-MVP-Strecke 2026-11-15: A23 (Feature-Liste, 864) und A24 (Neues Projekt, 862) umgesetzt; A25 (Suche, `test_suche.py` 72 Tests) umgesetzt → Gesamtsuite **936**; A23/A25 im Review, A24 in Doku; A26 (Verteilung/Root-Suite) angelegt.
+6. Post-MVP-Strecke 2026-11-15: A23 (Feature-Liste, 864) und A24 (Neues Projekt, 862) umgesetzt; A25 (Suche, `test_suche.py` 72 Tests) umgesetzt → Gesamtsuite **936**. Reviews: A23 und A25 freigegeben (in Doku), A24 in Nachbesserung (2 Sicherheits-Befunde + Testlücken); A26 (Verteilung/Root-Suite) angelegt.
