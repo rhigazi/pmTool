@@ -3,12 +3,12 @@ type: Task
 title: "A32: Neues-Projekt-Flow — start.sh --neu + Erststart-Hinweis"
 description: Nach einem Repo-Pull startet start.sh in einem neuen Container mit pmTool-Projektdaten
   vorbefüllt — start.sh soll den Reset auf die saubere Vorlage anbieten (Hinweis + --neu-Flag).
-task_status: in Planung
-phase: 2 Planung
+task_status: in Review
+phase: 5 Review
 priority: hoch
 assigned_to: coder
 owner: ai
-aktuell: "coder: Umsetzung start.sh --neu + Erststart-Hinweis"
+aktuell: "reviewer: Review Neues-Projekt-Flow | tester: start.sh-Szenarien"
 ---
 
 # Ziel
@@ -27,9 +27,39 @@ Wenn ein neues Projekt per Repo-Pull entsteht, ist `wissen/` mit den pmTool-Proj
 - **AK-5 (Doku):** README („Neues Projekt beginnen") und `docs/colab-start.md` beschreiben den neuen Flow (Pull → `bash start.sh --colab` → Hinweis/`--neu`); die bestehende manuelle Variante bleibt dokumentiert.
 - **AK-6 (Regression):** `test_start_skript.py` bleibt grün (bisheriges Verhalten inkl. `--dry-run`, Ctrl+C, Fallback `definitions/app/server.py`); keine neuen Abhängigkeiten.
 
+## Präzisierung `coder` (2026-11-15, bei der Umsetzung)
+
+- **Marker:** Liste aus zwei Referenzdateien — `wissen/aufgaben/a1-okf-bundle.md` und `wissen/features/okf-projekt-manager-spa.md`. Keine davon legt die Vorlage an; eine Liste verhindert stilles Versagen bei Umbenennung einer Datei. Der Treffer genügt (Oder-Verknüpfung). Geprüft wird unter `BUNDLE_ROOT` (also dem tatsächlich genutzten Bundle, Default `<Projekt>/wissen`).
+- **Reihenfolge:** neuer Schritt 5 „Projektstand" läuft **vor** `verify.sh` (Schritt 6), damit die Prüfung nach einem Reset den leeren Zustand sieht; App-Start ist Schritt 7. Hinweistexte nennen Backup-Ort (`wissen-backup-YYYYMMDD-HHMMSS.tar.gz`) und `tools/neues_projekt.py`.
+- **Ja/Nein:** Zustimmung nur bei `j`, `ja`, `y`, `yes` (Groß-/Kleinschreibung egal). Leere Eingabe, alles andere, `Strg+D` und Lesefehler = **Nein** (unveränderter Start). Kein TTY (`[ ! -t 0 ]`) = nur Hinweis, kein Prompt, kein Reset (fail-safe). `--dry-run` fragt grundsätzlich nicht.
+- **`--neu --dry-run`:** ruft das Werkzeug **ohne** `--ja` auf (Planausgabe) und setzt danach den normalen Trockenlauf fort („würde starten"); kein Backup, keine Änderung. `--neu` ist mit `--colab` kombinierbar (Reihenfolge der Flags egal).
+- **Fehlerpfad:** Fehlt `tools/neues_projekt.py` (und der Fallback `definitions/tools/neues_projekt.py`) oder endet das Werkzeug mit Exit ≠ 0, meldet `start.sh` den Fehler auf stderr (`✗ …`) und beendet sich mit Exit 1 — kein App-Start. Ein Teilreset wird nie als Erfolg behandelt.
+- **Abweichung/Klarstellung zu AK-1:** Ein **fehlendes** `wissen/` bleibt wie bisher ein Abbruch der Strukturprüfung (Schritt 2); `start.sh` legt das Bundle nicht selbst an (das tun `setup.sh --wissen` bzw. `tools/neues_projekt.py`). Die Erkennung liefert in diesem Fall „kein Hinweis".
+- **Entwicklungs-Repo:** Der Reset nutzt bevorzugt `tools/neues_projekt.py`; existiert nur die Quelle `definitions/tools/neues_projekt.py`, wird diese verwendet (gleiche Implementierung, kein zweiter Löschpfad).
+
 # Testfälle (TDD)
 
-Noch keine Einträge — der `planner` ergänzt die Testfälle.
+Alle in `definitions/app/tests/test_start_skript.py`, jeweils in einem Mini-Projekt
+unter `tmp_path` (eigenes `wissen/`, eigene Vorlage, Dummy-Server und
+Dummy-`start_colab.py`, `tools/neues_projekt.py`-Kopie) — das echte `wissen/`
+wird nie berührt:
+
+- `test_erststart_hinweis_ohne_tty_setzt_nichts_zurueck` — vorbefüllt + kein TTY: Hinweis, kein Prompt, keine Löschung, Start läuft.
+- `test_dry_run_zeigt_nie_einen_prompt` — Trockenlauf fragt nicht, löscht nicht, zeigt „würde starten".
+- `test_frische_vorlage_zeigt_keinen_hinweis` — leeres Vorlagen-`wissen/`: kein Hinweis, kein `--neu`-Tipp.
+- `test_jeder_marker_erkennt_vorbefuelltes_wissen[marker0|marker1]` — jeder Marker einzeln genügt.
+- `test_interaktiv_nein_startet_unveraendert` — TTY + „nein": Prompt erscheint, nichts gelöscht, App startet.
+- `test_interaktiv_abbruch_ist_wie_nein` — TTY + Strg+D: wie Nein, nichts gelöscht.
+- `test_interaktiv_ja_setzt_zurueck_und_startet` — TTY + „ja": Backup existiert, Marker weg, App startet.
+- `test_neu_setzt_ohne_rueckfrage_zurueck_und_startet` — `--neu`: eigene Aufgabe weg, Backup vorhanden, kein Prompt, Start.
+- `test_neu_dry_run_zeigt_nur_den_plan` — `--neu --dry-run`: Plan-Titel, kein Backup, Marker bleibt, „würde starten".
+- `test_neu_ist_mit_colab_kombinierbar` — `--neu --colab --dry-run`: Plan + `start_colab.py`, kein Backup.
+- `test_reset_fehler_bricht_den_start_ab` — unvollständige Vorlage: Exit ≠ 0, Fehler auf stderr, nichts gelöscht, kein Serverstart.
+- `test_ohne_reset_werkzeug_kein_loeschen` — ohne Werkzeug: Exit ≠ 0, Hinweis auf `neues_projekt.py`, nichts gelöscht.
+
+Rot-Stand vor der Implementierung: 11 failed / 11 passed (13 neue Tests, davon zwei
+im Altstand trivial grün); nach der Implementierung 22 passed (9 bestehende + 13
+neue). TTY-Pfade laufen über ein echtes `pty`, damit `[ -t 0 ]` greift.
 
 # Kontext
 
@@ -39,7 +69,11 @@ Noch keine Einträge — der `planner` ergänzt die Testfälle.
 
 # Betroffene Dateien
 
-Noch keine Einträge — die Planung ergänzt die betroffenen Dateien.
+- `start.sh` — Marker-Erkennung, interaktiver Hinweis, `--neu`, Reset-Aufruf, Schritt „Projektstand", Hilfe.
+- `definitions/app/tests/test_start_skript.py` — 13 neue Tests (tmp-Projekt + pty), Help-Test um `--neu` ergänzt.
+- `README.md` — Options-Tabelle (`--neu`), Abschnitt „Neues Projekt beginnen" (neuer Flow vor der manuellen Variante).
+- `docs/colab-start.md` — Options-Tabelle und Abschnitt „Neues Projekt beginnen (optional)" (Hinweis/`--neu`, manuelle Zellen als Alternative).
+- Geprüft: kein `definitions/start.sh` vorhanden — `start.sh` ist reines Repo-Root-Werkzeug, keine Spiegelung nötig.
 
 # Ergebnisse
 

@@ -101,8 +101,9 @@ als Fallback, (3) **Notbehelf** iframe — dann erscheint die App in der Zelle
 |---|---|
 | `bash start.sh` | lokal: Server auf `http://localhost:5000`, `BUNDLE_ROOT=$PROJEKT/wissen` (absolut gesetzt, `PROJEKT` = Projektroot) |
 | `bash start.sh --colab` | startet nur den Server über `definitions/app/start_colab.py` **ohne** Port-Freigabe (Unterprozess) — in Colab stattdessen den Kernel-Aufruf oben verwenden |
+| `bash start.sh --neu` | setzt `wissen/` auf die leere Vorlage zurück (mit Backup), dann Start — siehe „Neues Projekt beginnen" |
 | `bash start.sh --skip-verify` | ohne Setup-Prüfung (schneller) |
-| `bash start.sh --dry-run` | zeigt nur, was getan würde (installiert/startet nichts; `verify.sh` wird dabei still übersprungen) |
+| `bash start.sh --dry-run` | zeigt nur, was getan würde (installiert/löscht/startet nichts; `verify.sh` wird dabei still übersprungen) |
 | `bash start.sh --help` | Hilfe |
 
 Läuft der Server bereits auf Port 5000, meldet das Skript das und startet keinen
@@ -158,9 +159,25 @@ opencode
 
 ## Neues Projekt beginnen (optional)
 
-Soll die Instanz **ohne** das mitgelieferte Projektwissen starten, setzt
-`tools/neues_projekt.py` das Bundle `wissen/` auf die OKF-Vorlage
-`definitions/wissen-vorlage/` zurück. Drei Zellen, in dieser Reihenfolge:
+Ein frischer Klon bringt das Projektwissen des Vorbilds mit. `start.sh` erkennt
+das an pmTool-spezifischen Markerdateien (`wissen/aufgaben/a1-okf-bundle.md`,
+`wissen/features/okf-projekt-manager-spa.md`) und bietet den Reset an:
+
+```bash
+bash start.sh                  # Rückfrage: „Neues leeres Projekt beginnen? [j/N]"
+bash start.sh --neu            # Reset ohne Rückfrage (Backup + Vorlage), dann Start
+bash start.sh --neu --dry-run  # zeigt nur den Plan — ändert nichts
+```
+
+- **Ja** = Reset über `tools/neues_projekt.py --ja` (erst Backup, dann Vorlage).
+- **Nein / Strg+D** = unveränderter Normalstart; es wird nichts gelöscht.
+- **Kein TTY** = nur Hinweistext, kein Reset (fail-safe).
+- `--neu` ist mit `--colab` kombinierbar. In Colab ist der Kernel-Aufruf von
+  `start_colab.py` (Schritt 2) der Startweg — dort den Reset wie unten in einer
+  Zelle ausführen.
+
+Den Reset ohne Start des Servers — die manuelle Variante, drei Zellen in dieser
+Reihenfolge:
 
 ```python
 %cd /content/pmTool

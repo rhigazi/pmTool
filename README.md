@@ -82,7 +82,8 @@ Der Server lauscht nur lokal. Nützliche Optionen:
 |---|---|
 | `bash start.sh` | lokal starten (`BUNDLE_ROOT=$PROJEKT/wissen`, Port 5000) |
 | `bash start.sh --colab` | startet nur den Server ohne Port-Freigabe (Unterprozess); in Colab stattdessen `%run /content/pmTool/definitions/app/start_colab.py` in einer Code-Zelle |
-| `bash start.sh --dry-run` | Trockenlauf: zeigt nur, was getan würde (installiert/startet nichts; `verify.sh` wird dabei still übersprungen) |
+| `bash start.sh --neu` | Reset von `wissen/` auf die leere Vorlage (mit Backup), dann Start — siehe „Neues Projekt beginnen" |
+| `bash start.sh --dry-run` | Trockenlauf: zeigt nur, was getan würde (installiert/löscht/startet nichts; `verify.sh` wird dabei still übersprungen) |
 | `bash start.sh --skip-verify` | ohne Setup-Prüfung |
 | `bash start.sh --help` | Hilfe |
 
@@ -136,7 +137,20 @@ Die **mitverteilte Vorlagen-README** liegt in [definitions/README.md](definition
 
 ## Neues Projekt beginnen
 
-Ein frischer Klon bringt das Projektwissen des Vorbilds mit. Für ein eigenes, leeres Projekt setzt `tools/neues_projekt.py` das Bundle `wissen/` auf die OKF-Vorlage `definitions/wissen-vorlage/` zurück:
+Ein frischer Klon bringt das Projektwissen des Vorbilds mit. `start.sh` erkennt das an pmTool-spezifischen Markerdateien (`wissen/aufgaben/a1-okf-bundle.md`, `wissen/features/okf-projekt-manager-spa.md`) und bietet beim Start den Reset auf die leere Vorlage an:
+
+```bash
+bash start.sh                  # fragt bei vorbefülltem wissen/: „Neues leeres Projekt beginnen? [j/N]"
+bash start.sh --neu            # Reset ohne Rückfrage (Backup + Vorlage), dann Start
+bash start.sh --neu --dry-run  # zeigt nur den Plan — ändert nichts
+```
+
+- **Ja** = Reset wie `tools/neues_projekt.py --ja` (erst Backup, dann Vorlage), danach Start mit leerem Projekt.
+- **Nein / Strg+D** = unveränderter Normalstart, es wird nichts gelöscht.
+- **Kein TTY** (Pipe, Skript, Hintergrund) = nur Hinweistext, kein Reset (fail-safe).
+- `--neu` ist mit `--colab` kombinierbar. In Colab bleibt der Kernel-Aufruf von `start_colab.py` der Startweg; den Reset dort wie unten beschrieben ausführen (siehe [docs/colab-start.md](docs/colab-start.md)).
+
+Der Reset läuft ausschließlich über `tools/neues_projekt.py` (eine Lösch-Implementierung, Backup-Pflicht); schlägt er fehl, bricht der Start ab. Die manuelle Variante bleibt:
 
 ```bash
 python3 tools/neues_projekt.py        # 1. Plan: Löschziel, Backup-Pfad, Vorlage — ändert nichts

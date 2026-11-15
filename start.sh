@@ -5,11 +5,16 @@
 # Aufruf:
 #   bash start.sh            lokal: Server auf http://localhost:5000 (BUNDLE_ROOT=./wissen)
 #   bash start.sh --colab    Colab: startet definitions/app/start_colab.py (Port-Freigabe im Browser)
+#   bash start.sh --neu      wissen/ auf die leere Vorlage zurücksetzen (mit Backup), dann starten
 #
 # Optionen:
+#   --neu           Reset ohne Rückfrage über tools/neues_projekt.py (Backup), dann Start
 #   --skip-verify   überspringt die Setup-Prüfung (verify.sh)
-#   --dry-run       zeigt nur, was getan würde — installiert und startet nichts; verify.sh wird dabei still übersprungen
+#   --dry-run       zeigt nur, was getan würde — installiert, löscht und startet nichts; verify.sh wird dabei still übersprungen
 #   -h, --help      zeigt diese Hilfe
+#
+# Bei vorbefülltem wissen/ fragt der Start interaktiv nach einem neuen, leeren
+# Projekt. Ohne TTY oder Bestätigung wird nichts gelöscht (fail-safe).
 set -euo pipefail
 
 PROJEKT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -18,21 +23,40 @@ PORT="${PORT:-5000}"
 MODUS="lokal"
 DRY_RUN=0
 MIT_VERIFY=1
+NEU=0
 
 # (pip-Paket, Importname) — geprüft wird der Importname.
 PAKETE=("flask:flask" "pyyaml:yaml" "pytest:pytest")
 
-info() { printf '%s\n' "$*"; }
-ok()   { printf '  ✓ %s\n' "$*"; }
-warn() { printf '  ! %s\n' "$*"; }
+# Marker des mitgelieferten pmTool-Projekts: Dateien, die nur der Referenzstand
+# mitbringt — die Vorlage (definitions/wissen-vorlage/) legt sie nie an. Eine
+# Liste statt einer Einzeldatei, damit eine Umbenennung die Erkennung nicht
+# still abschaltet.
+PROJEKT_MARKER=(
+  "aufgaben/a1-okf-bundle.md"
+  "features/okf-projekt-manager-spa.md"
+)
+
+# Einzige Reset-Implementierung ist tools/neues_projekt.py (A24); im
+# Entwicklungs-Repo ist tools/ der Spiegel, die Quelle liegt unter definitions/tools/.
+NEUES_PROJEKT="$PROJEKT/tools/neues_projekt.py"
+if [ ! -f "$NEUES_PROJEKT" ]; then
+  NEUES_PROJEKT="$PROJEKT/definitions/tools/neues_projekt.py"
+fi
+
+info()   { printf '%s\n' "$*"; }
+ok()     { printf '  ✓ %s\n' "$*"; }
+warn()   { printf '  ! %s\n' "$*"; }
+fehler() { printf '  ✗ %s\n' "$*" >&2; }
 
 hilfe() {
-  sed -n '2,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 for arg in "$@"; do
   case "$arg" in
     --colab)       MODUS="colab" ;;
+    --neu)         NEU=1 ;;
     --dry-run)     DRY_RUN=1 ;;
     --skip-verify) MIT_VERIFY=0 ;;
     -h|--help)     hilfe; exit 0 ;;
@@ -94,6 +118,102 @@ pruefe_telegram() {
   else
     warn "config.json fehlt (gitignored) — Telegram-Benachrichtigungen sind deaktiviert."
     info "   Anlegen über die Colab-Secrets-Zelle, siehe docs/colab-start.md (nicht committen)."
+  fi
+}
+
+wissen_vorbefuellt() {
+  local marker
+  for marker in "${PROJEKT_MARKER[@]}"; do
+    if [ -f "$BUNDLE_ROOT/$marker" ]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+neues_projekt_hinweis() {
+  local art="$1"
+  warn "Dieses Repo enthält die Projekt-Daten des pmTool-Vorbilds in $BUNDLE_ROOT."
+  case "$art" in
+    tty)
+      info "    Ein neues, leeres Projekt setzt wissen/ auf die Vorlage zurück."
+      info "    Vorher entsteht ein Backup wissen-backup-YYYYMMDD-HHMMSS.tar.gz im Projekt-Root."
+      info "    Ohne Zustimmung wird nichts gelöscht."
+      ;;
+    dry-run)
+      info "    Trockenlauf: Es wird nichts zurückgesetzt und nichts gelöscht."
+      info "    Plan ansehen:    bash start.sh --neu --dry-run"
+      info "    Reset ausführen: bash start.sh --neu"
+      ;;
+    *)
+      info "    Kein interaktives Terminal — es wird nichts gelöscht (fail-safe)."
+      info "    Neues leeres Projekt:  bash start.sh --neu"
+      info "    Nur den Plan ansehen:  bash start.sh --neu --dry-run"
+      info "    Direkt:                python3 tools/neues_projekt.py --ja"
+      ;;
+  esac
+}
+
+ist_zustimmung() {
+  case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')" in
+    j|ja|y|yes) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+starte_neues_projekt() {
+  local ausfuehren="$1"
+  if [ ! -f "$NEUES_PROJEKT" ]; then
+    fehler "Reset-Werkzeug fehlt (tools/neues_projekt.py) — es wird nichts gelöscht."
+    exit 1
+  fi
+
+  if [ "$ausfuehren" -eq 1 ]; then
+    info "→ Neues Projekt beginnen (Backup + Vorlage): python3 $NEUES_PROJEKT --ja"
+    if ! python3 "$NEUES_PROJEKT" --ja; then
+      fehler "Reset fehlgeschlagen — Start abgebrochen, damit kein Halbzustand startet."
+      exit 1
+    fi
+  else
+    info "→ Neues Projekt — Plan (ändert nichts): python3 $NEUES_PROJEKT"
+    if ! python3 "$NEUES_PROJEKT"; then
+      fehler "Plan des Resets fehlgeschlagen — Start abgebrochen."
+      exit 1
+    fi
+  fi
+}
+
+pruefe_projektstand() {
+  if [ "$NEU" -eq 1 ]; then
+    if [ "$DRY_RUN" -eq 1 ]; then
+      starte_neues_projekt 0
+    else
+      starte_neues_projekt 1
+    fi
+    return 0
+  fi
+
+  wissen_vorbefuellt || return 0
+
+  if [ "$DRY_RUN" -eq 1 ]; then
+    neues_projekt_hinweis "dry-run"
+    return 0
+  fi
+  if [ ! -t 0 ]; then
+    neues_projekt_hinweis "kein-tty"
+    return 0
+  fi
+
+  neues_projekt_hinweis "tty"
+  printf '  Neues leeres Projekt beginnen? [j/N] '
+  local antwort=""
+  if ! read -r antwort; then
+    antwort=""
+  fi
+  if ist_zustimmung "$antwort"; then
+    starte_neues_projekt 1
+  else
+    info "→ Nein: Start unverändert, wissen/ bleibt bestehen."
   fi
 }
 
@@ -192,13 +312,16 @@ installiere_pakete
 echo "4) Telegram-Konfiguration"
 pruefe_telegram
 
-echo "5) Setup-Prüfung"
+echo "5) Projektstand"
+pruefe_projektstand
+
+echo "6) Setup-Prüfung"
 fuehre_verify_aus
 
 if [ "$MODUS" = "colab" ]; then
-  echo "6) App starten"
+  echo "7) App starten"
   starte_colab
 else
-  echo "6) App starten"
+  echo "7) App starten"
   starte_server
 fi
