@@ -74,7 +74,7 @@ Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das M
 
 **D. Frontend (`tests/test_freigabe_ui.py`, AK-3, AK-4, AK-8, AK-10)**
 
-Harness: Mini-DOM aus `test_welle_zuordnung.py` übernehmen und um `disabled`, `classList`, `createDocumentFragment` und `fetch`-Stub mit Request-Zähler erweitern (fünfte Kopie — Konsolidierung bleibt [A14-6], nicht Teil dieser Aufgabe). `fetch` beantwortet `/api/file` und `/api/wellen` aus Fixtures; unerwartete Requests schlagen fehl.
+Harness: `tests/dom_helfer.py` nutzen (wird in **A30** angelegt: Mini-DOM + Node-Runner, aus `test_welle_zuordnung.py` extrahiert) und darauf den Fetch-Stub mit Request-Zähler aufsetzen. `fetch` beantwortet `/api/file` und `/api/wellen` aus Fixtures; unerwartete Requests schlagen fehl. Keine weitere Harness-Kopie (A30 läuft vor A28).
 
 - **T23 Marke in der Aufgabenliste:** `ladeAufgaben()` mit zwei Einträgen (`neu: true` / `neu: false`) → genau eine Marke mit `textContent == "neu"` in der Titel-Zelle der neuen Aufgabe, `classList.contains("status")`; `data-path` beider Zeilen unverändert; zweiter Aufruf und Filterwechsel erzeugen keine zweite Marke (Idempotenz).
 - **T24 Marke in der Übersicht:** `ladeUebersicht()` → Marke „neu" in der Top-5-Tabelle für den neuen Eintrag; die Klarung-Liste bleibt unverändert (nur Links/Text, keine Marke); Nicht-Task-Zeilen ohne Marke.
@@ -135,7 +135,7 @@ Harness: Mini-DOM aus `test_welle_zuordnung.py` übernehmen und um `disabled`, `
   - **Paket 3 — Doku/Regelwerk:** AK-9. Parallel zu Paket 2 möglich (disjunkte Dateien), Prüfschritt T36.
   - **Reihenfolge im Paket:** Test schreiben → rot → Minimum → grün → nächster Test. Paket 0 und 1 teilen `overview.py` → **nacheinander** vom selben Coder; Paket 2 nach Paket 1; Paket 3 parallel zu Paket 2.
 - **Reihenfolge-Empfehlung und Freigabe-Gate:**
-  1. **A27 abschließen** (Frontend `liste.js`/`detail.js` in Umsetzung, G13/G14 belegt) — vorher **kein** Start von A28 Paket 0/2.
+  1. **A27 abschließen** (Frontend `liste.js`/`detail.js` in Umsetzung, G13/G14 belegt) und **A30 abschließen** (Arbeitsstatus nutzt `liste.js`/`detail.js` und `overview.py`) — vorher **kein** Start von A28 Paket 0/2.
   2. **Freigabe von A28 durch die Projektleitung** (`freigabe: true` in dieser Datei) — **Start-Gate**. Aktuell fehlt das Feld; die Aufgabe ist damit nicht freigegeben und die Umsetzung darf **nicht** beginnen (Selbstanwendung der neuen Regel).
   3. Danach **Paket 0 → 1 → 2**, **Paket 3 parallel zu 2**; anschließend Review, Test (S1–S5), Doku.
   4. **A29 startet erst nach A28** (Paket 0 und 2 müssen grün und committed sein) **und** nach eigener Freigabe.
@@ -158,7 +158,7 @@ Harness: Mini-DOM aus `test_welle_zuordnung.py` übernehmen und um `disabled`, `
 - `definitions/app/static/js/detail.js` — `#detail-neu-hinweis`, Freigabe-Anzeige, `#detail-freigabe` mit POST/Erfolg/Fehler/Reload, `istAufgabe`-Erkennung, Payload-Helfer (T26–T33).
 - `definitions/app/tests/test_freigabe.py` (**neu**) — T8–T21.
 - `definitions/app/tests/test_neue_aufgabe_signal.py` (**neu**) — T1–T7, T22.
-- `definitions/app/tests/test_freigabe_ui.py` (**neu**) — T23–T33 inkl. Mini-DOM-/Fetch-Harness (wird von A29 erweitert).
+- `definitions/app/tests/test_freigabe_ui.py` (**neu**) — T23–T33; nutzt den Harness aus `tests/dom_helfer.py` (A30) und ergänzt den Fetch-Stub.
 - `definitions/app/tests/test_meta.py` — additiver Modul-Test für den `freigabe`-Guard (T15).
 - `definitions/app/tests/test_api_schreiben.py` — `ENDPUNKTE` + `/api/freigabe`-Fälle (T16–T20).
 - `definitions/app/tests/test_neu_aufgabe.py` — additiv `freigabe is False` (T22).

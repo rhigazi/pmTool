@@ -39,7 +39,7 @@ A29 baut auf dem Freigabe-Fundament aus A28 (Feld `freigabe`, Rechteklasse Mensc
 **Zuordnung AK → Testfälle:**
 **AK-1** → T1–T3, T12. **AK-2** → T1–T3. **AK-3** → T8–T10. **AK-4** → T13, T14. **AK-5** → T15–T19. **AK-6** → T20. **AK-7** → T4, T5, T11, T22. **AK-8** → T6, T7. **AK-9** → T23, T24 (Review-Prüfschritte, kein pytest). **AK-10** → T21, T22.
 
-Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das Minimum implementieren, dann refaktorisieren. Jede Testnummer ist ein eigener pytest-Fall. Neue Datei `tests/test_wellen_freigabe.py` (Backend); **Frontend-Tests werden in `tests/test_freigabe_ui.py` ergänzt** (von A28 angelegt — bewusste Entscheidung gegen eine sechste Harness-Kopie, siehe Kontext). Neue Fixtures (Wellen mit/ohne `freigabe`, Aufgaben mit `welle`) werden im Test unter `tmp_path` angelegt; `bundle_min` hat nur `wellen/w1.md` ohne `freigabe`.
+Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das Minimum implementieren, dann refaktorisieren. Jede Testnummer ist ein eigener pytest-Fall. Neue Datei `tests/test_wellen_freigabe.py` (Backend); **Frontend-Tests werden in `tests/test_freigabe_ui.py` ergänzt** (von A28 angelegt; Harness aus `tests/dom_helfer.py`, in A30 angelegt — keine weitere Kopie). Neue Fixtures (Wellen mit/ohne `freigabe`, Aufgaben mit `welle`) werden im Test unter `tmp_path` angelegt; `bundle_min` hat nur `wellen/w1.md` ohne `freigabe`.
 
 **A. Read-Modell (AK-1, AK-2)**
 
@@ -116,7 +116,7 @@ Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das M
   - **Paket 3 — Doku:** AK-9, Prüfschritte T23/T24; parallel zu Paket 2.
   - **Reihenfolge im Paket:** Test → rot → Minimum → grün. Paket 1 vor Paket 2 (UI braucht die Felder); Paket 3 parallel zu Paket 2.
 - **Reihenfolge-Empfehlung und Freigabe-Gate:**
-  1. **A27 abgeschlossen** (Wellen-Zuordnung, Filter, Wellen-Sicht, `detail.js`/`liste.js` committed).
+  1. **A27 abgeschlossen** (Wellen-Zuordnung, Filter, Wellen-Sicht, `detail.js`/`liste.js` committed) und **A30 abgeschlossen** (Arbeitsstatus nutzt `liste.js`/`detail.js`).
   2. **A28 Paket 0 (Freigabe-Fundament) und Paket 2 (Aufgaben-UI) abgeschlossen** — A29 nutzt `freigabe.py`, `POST /api/freigabe`, `freigabe` im Read-Modell und die gemeinsame Titel-Zellen-Hilfe.
   3. **Freigabe von A29 durch die Projektleitung** (`freigabe: true` in dieser Datei) — **Start-Gate**. Fehlt sie, bleibt A29 `geplant` und wird nicht an den `coder` vergeben (Selbstanwendung der neuen Regel). Die Freigabe kann direkt in der Datei gesetzt werden (Menschen-Recht, auch vor A28-Fertigstellung), die **Umsetzung** wartet dennoch auf Schritt 1 und 2.
   4. Danach **Paket 1 → 2**, **Paket 3 parallel zu 2**; anschließend Review, Test (S1–S5), Doku.
