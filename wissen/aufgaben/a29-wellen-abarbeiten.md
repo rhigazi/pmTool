@@ -4,12 +4,12 @@ title: "A29: Wellen abarbeiten"
 description: Wellen die eine Aufgabe zugeordnet wurden werden erst ab gearbeitet wenn
   die gesamte Welle freigegeben wurde
 freigabe: true
-task_status: in Planung
-phase: 2 Planung
+task_status: in Umsetzung
+phase: 3 Umsetzung
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: "PM: FREIGEGEBEN + Feld nachgetragen (Projektleitung 2026-11-15) — Umsetzung nach A28"
+aktuell: "coder: A29 Paket 1–3 (Wellen-Gate Backend/UI/Doku)"
 ---
 
 # Ziel
