@@ -4,6 +4,8 @@ Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in
 
 # Laufende Aufgaben
 
+* [A32: Neues-Projekt-Flow — start.sh --neu + Erststart-Hinweis](a32-neues-projekt-flow.md) - Nach Repo-Pull erkennt `start.sh` pmTool-Projektdaten in `wissen/` und schlägt interaktiv den Reset vor (mit Backup); zusätzlich Flag `--neu` — **in Planung** (2026-11-15, Entscheidung der Projektleitung; Reset-Logik nur über A24-Werkzeug, keine zweite Lösch-Implementierung)
+
 * [A31: Übersicht Liste um Welle ergänzen](a31-uebersicht-liste-um-welle-ergaenzen.md) - Die Übersichtsliste zeigt zu jeder Aufgabe die zugeordnete Welle (oder „keine") — **in Planung** (2026-11-15 aus der App angelegt, angenommen als A31; Priorität hoch; Umsetzung nach A30 wg. `liste.js`)
 
 * [A30: Was passiert gerade](a30-was-passiert-gerade.md) - In-Arbeit-Aufgaben zeigen den Arbeitsstatus der Subagenten (Planer, Coder, Tester, Review, Documenter) — **in Planung** (2026-11-15 aus der App angelegt, angenommen als A30; von der Projektleitung als nächste Aufgabe priorisiert und freigegeben; Umsetzung nach A27 wg. `liste.js`)

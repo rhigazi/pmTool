@@ -2,6 +2,14 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-15: Neues-Projekt-Flow — start.sh --neu + Erststart-Hinweis
+
+**Entscheidung:** Nach einem Repo-Pull (neuer Container) enthält `wissen/` die pmTool-Projektdaten (Feststellung der Projektleitung). Der neue Flow lautet: `start.sh` **erkennt** vorbefüllte Projektdaten und schlägt **interaktiv** den Reset auf die saubere Vorlage vor (Ja/Nein-Rückfrage, **Nein = unveränderter Normalstart**); zusätzlich gibt es das Flag **`--neu`** für den direkten Reset (Backup + Vorlage + Start). Die Reset-Logik läuft ausschließlich über `tools/neues_projekt.py` (A24) — keine zweite Lösch-Implementierung in `start.sh`. Variante aus vier Optionen von der Projektleitung gewählt (2026-11-15).
+
+**Begründung:** Der manuelle Reset-Schritt wird nach einem Pull nicht gefunden (Nutzer-Feststellung); ein interaktiver Hinweis ist sicher (kein Datenverlust ohne Bestätigung) und komfortabel. `--neu` deckt den bewussten Neustart ab.
+
+**Auswirkung:** [A32](/aufgaben/a32-neues-projekt-flow.md) angelegt (angenommen, ID + Titel, Sofort-Push); betroffen: `start.sh`, `test_start_skript.py`, README, `docs/colab-start.md`. Reihenfolge: parallel zu A30/A31 umsetzbar (keine Datei-Überschneidung mit der UI-Strecke).
+
 ## 2026-11-15: A28 und A29 durch die Projektleitung freigegeben
 
 **Entscheidung:** Die Projektleitung hat A28 („Benachrichtigung bei neuer Aufgabe") und A29 („Wellen abarbeiten") am 2026-11-15 **ausdrücklich freigegeben** („A29,A28 sind freigegeben", Menschen-Kanal). Die Freigaben sind im Frontmatter der Aufgaben-Dateien vermerkt (`aktuell`); sobald das A28-Paket-0-Fundament (`freigabe`-Feld) existiert, werden sie als `freigabe: true` nachgetragen. Die Umsetzung startet in der festgelegten Reihenfolge **A27 (läuft) → A30 → A31 → A28 → A29** (Datei-Konflikte `liste.js`/`detail.js`/`meta.py`/`overview.py`; G15–G23). **A31 ist noch nicht freigegeben** — fail-closed: Umsetzung erst nach ausdrücklicher Freigabe; Rückfrage an die Projektleitung läuft.
