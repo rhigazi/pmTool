@@ -4,6 +4,8 @@ Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in
 
 # Laufende Aufgaben
 
+* [A39: Gemeinsame Test- und Abstimmungsrunde + README-Abschluss](a39-testrunde-readme-abschluss.md) - Abschluss-Meilenstein: nach allen ausstehenden Features gemeinsam mit der Projektleitung ausgiebig testen (Lückenliste „sauber zusammenarbeiten"), danach README final aktualisieren, dann bewusste Pause — **offen** (Vorgabe der Projektleitung 2026-11-15; Start nach A28–A38 + A33-Batches; `owner: mensch`)
+
 * [A34: Unter-Aufgaben erstellen](a34-unter-aufgaben.md) - Unter einer Aufgabe Unter-Aufgaben anlegen und als Liste in der Detailansicht sehen; Nummernschema `A{xxx.uuu}` (u = 001–999) — **in Planung** (2026-11-15 aus der App angelegt, angenommen als A34; Konsistenz zu A28-Kennungsprüfung beachten)
 * [A35: Status-Mapping server-seitig](a35-status-mapping-serverseitig.md) - `overview.details` liefert `ui_status`/`hinweis`/`owner_default` aus `status.py`, JS-Spiegel in `detail.js` entfällt (A12-1) — **offen** (vorgemerkt, Umsetzung nach A29)
 * [A36: schreibgeschuetzt-Signal](a36-schreibgeschuetzt-signal.md) - API markiert reservierte Dateien, UI blendet Schreibaktionen aus; Server-403 bleibt zweite Barriere — **offen** (vorgemerkt, Umsetzung nach A35)

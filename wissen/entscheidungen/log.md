@@ -10,6 +10,14 @@ Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit *
 
 **Auswirkung:** [A32](/aufgaben/a32-neues-projekt-flow.md) angelegt (angenommen, ID + Titel, Sofort-Push); betroffen: `start.sh`, `test_start_skript.py`, README, `docs/colab-start.md`. Reihenfolge: parallel zu A30/A31 umsetzbar (keine Datei-Überschneidung mit der UI-Strecke).
 
+## 2026-11-15: Feature-Strecke zuerst, dann gemeinsame Testpause und README-Abschluss
+
+**Entscheidung:** Vorgehen laut Vorgabe der Projektleitung (2026-11-15): (1) **Alle ausstehenden Features fertig machen** (A28–A38 inkl. A33-Batches, Review/Testphase je Aufgabe). (2) Dann **bewusste Pause + gemeinsame, ausgiebige Test- und Abstimmungsrunde** mit der Projektleitung — Ziel: feststellen, was für sauberes Zusammenarbeiten noch fehlt (Lückenliste). (3) Danach **`README.md` im Repo final aktualisieren** (Abschlussstand, Nutzung, Abläufe). Kein neuer Feature-Takt nach der Runde ohne Weisung. Festgehalten als [A39](/aufgaben/a39-testrunde-readme-abschluss.md) (angenommen, Sofort-Push).
+
+**Begründung:** Die Projektleitung möchte nach der Feature-Strecke gemeinsam Qualität und Zusammenarbeits-Lücken bewerten, statt weiter in Features zu laufen; die README soll erst am Ende den echten Abschlussstand dokumentieren (Zwischenstände laufen weiter klein mit).
+
+**Auswirkung:** A39 ist der Abschluss-Meilenstein und Blocker für neue Feature-Takte; die Lückenliste wird die Folgeaufgaben liefern (dort greifen wieder ID+Titel+Sofort-Push).
+
 ## 2026-11-15: A33-Plan bestätigt — Batches, Nummernvergabe A35–A38, A5-B2 entschieden
 
 **Entscheidung:** (1) Der A33-Plan (28 Befunde → 18 in 9 Batches B1–B9, 22 Tests) wird bestätigt; die 5 offenen Fragen sind entschieden: B9 durch den `coder`; B1 nur `lexists` + R8-Vermerk (`O_EXCL` post-MVP); B4/B5/B6 warten auf A28-P0, B1–B3 laufen (B1 zusätzlich erst nach A26-Review/-Testphase — Moving-Target-Schutz, die lesen die Werkzeug-Dateien). (2) **A5-B2 entfällt als Code-Punkt:** `FALLBACK_KUERZEL` bleibt bewusst robust (bestätigte PM-Entscheidung aus dem A5-Ergebnisprotokoll); die Asymmetrie zu A4 wird in B9 dokumentiert. (3) Die ausgegliederten großen Befunde erhalten die bestätigten Nummern **A35** (Status-Mapping server-seitig, A12-1), **A36** (`schreibgeschuetzt`-Signal), **A37** (DOM-Harness-Konsolidierung, A14-6), **A38** (Log-Anker, A14-9) — die ursprünglichen Planner-Vorschläge A34–A37 kollidierten mit dem zwischenzeitlich angelegten A34 (Unter-Aufgaben) und wurden verschoben. Die vier Aufgaben sind als Dateien angelegt und gepusht (Vormerkung, Umsetzung nach A29/A33).
