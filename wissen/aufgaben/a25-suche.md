@@ -8,7 +8,7 @@ phase: 7 Dokumentation
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: "tester: Testphase S1–S6 + H1-Klärung (A23)"
+aktuell: "PM: Testphase S1–S6 bestanden (44/44) — reif für Abschluss, Doku-Runde folgt"
 ---
 
 # Ziel

@@ -2,6 +2,14 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-15: H1-Schluss (A23) und fester Zählumfang der Gesamtsuite
+
+**Entscheidung:** (1) **H1 (A23-Testzahl 92 vs. 93) wird geschlossen** — die Planzahl war falsch: 71 `def test_`-Zeilen inkl. des Fixtures `test_bundle` + 22 parametrisierte Fälle ⇒ 70 echte Tests + 22 = **92** = pytest-Collect; kein Test fehlt, die Abdeckung (T1–T23) ist vollständig. Planzahl auf 92 korrigiert; die kosmetische Fixture-Umbenennung geht in den Aufräum-Takt. (2) **Der Zählumfang „Gesamtsuite" wird festgelegt:** App-Suite (`definitions/app/tests`) + `tools/tests`; `definitions/tools/tests` wird separat ausgewiesen. Der Stand **1015 war nicht reproduzierbar** und wird auf **1011** korrigiert (Basis `07ad675`: 942 + 69). Stand 2026-11-15 (Arbeitsbaum): 995/996 — der eine „failed" ist fremde halbfertige A27-Arbeit (`test_welle_zuordnung.py` noch rot), kein A25/A23-Regress.
+
+**Begründung:** Tester-Bericht 2026-11-15 (A25-Testphase S1–S6 + H1 + Kontrolllauf). Ohne festen Zählumfang sind Standangaben nicht reproduzierbar; die bekannte Flaky-Zone im Parallelbetrieb verlangt klar bezifferte Basis-Stände.
+
+**Auswirkung:** A23 ist reif für Abschluss. Standangaben in `features.md`/`README`/`Übergabeprotokoll` werden in der Doku-Runde auf 1011-Basis nachgezogen (Auftrag an den `documenter`).
+
 ## 2026-11-15: A30 als nächste Aufgabe — Freigabe durch Priorisierung der Projektleitung
 
 **Entscheidung:** Die Projektleitung hat die neue Aufgabe „Was passiert gerade" (angenommen als [A30](/aufgaben/a30-was-passiert-gerade.md)) als „nächste Aufgabe" bezeichnet. Das gilt als **Priorisierung und Freigabe** über den Menschen-Kanal (Standardentscheidung: ausdrückliche Zustimmung über Chat/Telegram/App genügt) — Planung startet sofort, Umsetzung nach A27 (Datei-Überschneidung `liste.js`). Wird die Freigabe widerrufen, stoppt die Umsetzung (revidierbar).
