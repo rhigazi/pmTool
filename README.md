@@ -46,6 +46,28 @@ Notbehelf die Anzeige in der Zelle (`serve_kernel_port_as_iframe`).
 
 Schritt-für-Schritt-Anleitung inkl. Colab-Secrets und Telegram-Zelle: **[docs/colab-start.md](docs/colab-start.md)**.
 
+### Test-Instanz / Abnahme-Instanz
+
+Für die Abnahme den echten Nutzerpfad testen — **frischer Clone von GitHub**
+(nie den Dev-Ordner kopieren) in einer frischen Colab-Runtime, getrennt von der
+Entwicklungs-Instanz:
+
+```python
+!git clone https://github.com/rhigazi/pmTool /content/pmTool-test
+```
+
+```python
+%cd /content/pmTool-test
+%run /content/pmTool-test/definitions/app/start_colab.py
+```
+
+Das Bundle wird aus dem Skriptpfad abgeleitet (`<Klon>/wissen`), ein gesetztes
+`BUNDLE_ROOT` hätte Vorrang — der Klon-Name ist also egal.
+
+Smoke-Check: Liste (Status/`owner`) → Detail (Markdown, nur `Klarung`/`Geschlossen`)
+→ Nachtrag einfügen → Formular Aufgabe/Welle → Entscheidungen/Projekt.
+Aktualisieren: `!cd /content/pmTool-test && git pull`, dann Startzeile erneut.
+
 ## Schnellstart — lokal
 
 Voraussetzungen: Python 3 mit `flask`, `pyyaml`, `pytest` (fehlende Pakete installiert `start.sh` bei Bedarf). Optional für Browser-Tests: `moli` (Installation: `bash definitions/setup.sh --global`).

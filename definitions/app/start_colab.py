@@ -31,7 +31,10 @@ from pathlib import Path
 APP_DIR = Path(__file__).resolve().parent
 SERVER = APP_DIR / "server.py"
 
-BUNDLE_ROOT = "/content/pmTool/wissen"
+# Repo-Wurzel liegt zwei Ebenen über ``definitions/app/``; Bundle ist ``wissen/``
+# darunter. Damit ist der Klon-Pfad egal (z. B. auch ``/content/pmTool-test``).
+REPO_ROOT = APP_DIR.parents[1]
+BUNDLE_ROOT = REPO_ROOT / "wissen"
 PORT_STANDARD = 5000
 # Wie ``server.HOST``: geprüft wird die Adresse, an die der Server bindet.
 HOST = "0.0.0.0"
@@ -99,7 +102,7 @@ def main() -> int:
         return 0
 
     prozess = _starte_server(port)
-    print(f"Server gestartet (PID {prozess.pid}) für {BUNDLE_ROOT}", flush=True)
+    print(f"Server gestartet (PID {prozess.pid}) für {_bundle_root()}", flush=True)
 
     freigabe = _gib_port_frei(port)
     if freigabe == FREIGABE_PROXY:
@@ -143,6 +146,14 @@ def _installiere(pakete: list[str]) -> bool:
     return True
 
 
+def _bundle_root() -> Path:
+    """Bundle-Wurzel: ``BUNDLE_ROOT`` aus der Umgebung hat Vorrang vor der Ableitung."""
+    roh = os.environ.get("BUNDLE_ROOT", "").strip()
+    if roh:
+        return Path(roh).expanduser().resolve()
+    return BUNDLE_ROOT
+
+
 def _port_aus_umgebung() -> int:
     """``PORT`` aus der Umgebung, sonst :data:`PORT_STANDARD`."""
     roh = os.environ.get("PORT", "").strip()
@@ -170,7 +181,7 @@ def _port_belegt(port: int) -> bool:
 
 
 def _starte_server(port: int) -> subprocess.Popen:
-    umgebung = {**os.environ, "BUNDLE_ROOT": BUNDLE_ROOT, "PORT": str(port)}
+    umgebung = {**os.environ, "BUNDLE_ROOT": str(_bundle_root()), "PORT": str(port)}
     return subprocess.Popen([sys.executable, str(SERVER)], env=umgebung)
 
 

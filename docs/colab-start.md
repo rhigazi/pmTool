@@ -63,6 +63,10 @@ Das Skript erledigt der Reihe nach:
 4. öffnet die App in einem **neuen Browser-Tab** — sicherer Colab-Link über
    `google.colab.kernel.proxyPort` (per `output.eval_js` + `window.open`).
 
+Das Bundle wird aus dem Skriptpfad abgeleitet (`<Repo>/wissen`), ein gesetztes
+`BUNDLE_ROOT` in der Umgebung hat Vorrang (wie bei `server.py`) — der Klon-Name
+ist damit egal.
+
 **Warum nicht `!bash start.sh --colab` oder `!python3 …`?** Ein `!`-Befehl läuft
 als Unterprozess ohne Kernel-Kanal. Dort findet `google.colab` zwar statt, der
 Aufruf der Freigabe schlägt aber fehl — sichtbar wird nur
@@ -160,6 +164,53 @@ opencode
 
 Exit 0 = Setup vollständig. Befunde (`✗`) zuerst beheben; Hinweise (`!`) sind
 optional (z. B. nicht installierte globale Skills → `bash definitions/setup.sh . --global`).
+
+## Test-Instanz / Abnahme-Instanz
+
+**Zweck:** den echten Nutzerpfad prüfen — frischer Clone von GitHub, echte
+Packungs-Details (was nach `git clone` tatsächlich da ist), ohne den
+Entwicklungs-Ordner zu kopieren und ohne dass Testdaten in dessen `wissen/`
+landen. Die Test-Instanz läuft in einer eigenen Colab-Runtime (Port 5000 ist pro
+Runtime nur einmal frei).
+
+1. Frische Runtime starten (*Laufzeit → Sitzung trennen und löschen* oder neues
+   Notebook).
+2. **Nur von GitHub klonen** — niemals `/content/pmTool` kopieren:
+
+   ```python
+   !git clone https://github.com/rhigazi/pmTool /content/pmTool-test
+   ```
+
+3. In einem Rutsch starten (Kernel-Aufruf, absoluter Pfad):
+
+   ```python
+   %cd /content/pmTool-test
+   %run /content/pmTool-test/definitions/app/start_colab.py
+   ```
+
+   Das Skript leitet sein Bundle aus dem Skriptpfad ab
+   (`/content/pmTool-test/wissen`) — der Klon-Name ist egal; ein gesetztes
+   `BUNDLE_ROOT` in der Umgebung hätte Vorrang (wie bei `server.py`).
+
+4. **Smoke-Checkliste** (jeder Punkt 1× durchklicken):
+
+   - **Liste:** Einträge mit Status und `owner` sichtbar, Filter reagieren.
+   - **Detail:** Frontmatter-Kopf + gerendertes Markdown, Status-Buttons nur
+     `Klarung`/`Geschlossen`, owner-Umschalter.
+   - **Nachtrag:** Text einfügen → erscheint im Dokument des Eintrags.
+   - **Formular:** neue **Aufgabe** und neue **Welle** anlegen.
+   - **Entscheidungen/Projekt:** Log-Einträge und Projekt-Unterpunkte laden.
+
+5. **Aktualisieren** (nach neuen Commits):
+
+   ```python
+   %cd /content/pmTool-test
+   !git pull
+   %run /content/pmTool-test/definitions/app/start_colab.py
+   ```
+
+   Läuft der alte Server noch, meldet das Skript „läuft bereits"; für einen
+   echten Neustart die Runtime neu starten.
 
 ## Typischer Ablauf als Kurzfassung
 

@@ -6,6 +6,7 @@ die Portprüfung. Ein echter ``server.py``-Prozess wird nie gestartet.
 
 import builtins
 import hashlib
+import importlib.util
 import socket
 import subprocess
 import sys
@@ -128,6 +129,19 @@ def _baum_hash(wurzel: Path) -> str:
     return pruefer.hexdigest()
 
 
+def _lade_skript_kopie(repo_wurzel: Path):
+    """Lädt ``start_colab.py`` aus einem simulierten Klon ``<repo>/definitions/app/``."""
+    app_dir = repo_wurzel / "definitions" / "app"
+    app_dir.mkdir(parents=True)
+    skript = app_dir / "start_colab.py"
+    skript.write_text(Path(start_colab.__file__).read_text(encoding="utf-8"), encoding="utf-8")
+
+    spez = importlib.util.spec_from_file_location("start_colab_kopie", skript)
+    modul = importlib.util.module_from_spec(spez)
+    spez.loader.exec_module(modul)
+    return modul
+
+
 # --- T1 Port-Freigabe -----------------------------------------------------
 
 
@@ -146,14 +160,43 @@ def test_t1_port_freigabe_genau_einmal(popen, port_frei, colab, monkeypatch):
 
 
 def test_t2_subprozess_erhaelt_bundle_root_und_port(popen, port_frei, ohne_colab, monkeypatch):
+    monkeypatch.delenv("BUNDLE_ROOT", raising=False)
     monkeypatch.setenv("PORT", "8123")
 
     assert start_colab.main() == 0
     aufruf = popen.aufrufe[0]
-    assert aufruf["env"]["BUNDLE_ROOT"] == "/content/pmTool/wissen"
+    # Ableitung aus dem Skriptpfad — kein hart kodierter Klon-Pfad.
+    assert aufruf["env"]["BUNDLE_ROOT"] == str(Path(start_colab.BUNDLE_ROOT).resolve())
     assert aufruf["env"]["PORT"] == "8123"
     assert aufruf["befehl"][0] == sys.executable
     assert Path(aufruf["befehl"][1]).name == "server.py"
+
+
+# --- T12 Bundle-Wurzel aus dem Skriptpfad ableiten (A16) ------------------
+
+
+def test_t12_bundle_root_wird_abgeleitet(tmp_path, monkeypatch):
+    """Anderer Klon-Pfad (z. B. /content/pmTool-test) liefert dessen ``wissen/``."""
+    monkeypatch.delenv("BUNDLE_ROOT", raising=False)
+    modul = _lade_skript_kopie(tmp_path / "pmTool-test")
+
+    assert modul.REPO_ROOT == tmp_path / "pmTool-test"
+    assert modul.BUNDLE_ROOT == tmp_path / "pmTool-test" / "wissen"
+    assert modul._bundle_root() == tmp_path / "pmTool-test" / "wissen"
+
+
+def test_t12_env_bundle_root_hat_vorrang(tmp_path, monkeypatch):
+    """Ein gesetztes ``BUNDLE_ROOT`` (wie ``server.py``) schlägt die Ableitung."""
+    monkeypatch.setenv("BUNDLE_ROOT", str(tmp_path / "anderes-bundle"))
+
+    assert start_colab._bundle_root() == (tmp_path / "anderes-bundle").resolve()
+
+
+def test_t12_env_bundle_root_geht_an_den_subprozess(popen, port_frei, ohne_colab, tmp_path, monkeypatch):
+    monkeypatch.setenv("BUNDLE_ROOT", str(tmp_path / "anderes-bundle"))
+
+    assert start_colab.main() == 0
+    assert popen.aufrufe[0]["env"]["BUNDLE_ROOT"] == str((tmp_path / "anderes-bundle").resolve())
 
 
 def test_t2_standard_port_ist_5000(popen, port_frei, ohne_colab, monkeypatch):
