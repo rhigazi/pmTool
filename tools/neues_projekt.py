@@ -4,7 +4,8 @@
 Der gesamte Inhalt von ``wissen/`` wird gelöscht (auch versteckte Dateien) und
 durch ``definitions/wissen-vorlage/`` ersetzt. Ohne ``--ja`` wird nur der Plan
 ausgegeben und nichts verändert; mit ``--ja`` entsteht vorher ein Backup
-``wissen-backup-YYYYMMDD-HHMMSS.tar.gz`` im Projekt-Root.
+``wissen-backup-YYYYMMDD-HHMMSS.tar.gz`` im Projekt-Root. Ein bereits
+vorhandenes Backup-Ziel wird abgelehnt, nie überschrieben.
 
 Aufruf:
     python3 tools/neues_projekt.py
@@ -27,6 +28,9 @@ WISSEN = "wissen"
 VORLAGE = Path("definitions") / "wissen-vorlage"
 BACKUP_PRAEFIX = "wissen-backup"
 BACKUP_ENDUNG = ".tar.gz"
+
+# mkdtemp legt Verzeichnisse mit 0700 an; wissen/ muss für die App lesbar bleiben.
+WISSEN_MODUS = 0o755
 
 # Artefakte, die nie in ein frisches Projekt gehören.
 CACHE_ORDNER = frozenset({"__pycache__", ".pytest_cache"})
@@ -89,12 +93,19 @@ def _pruefe_backup_ziel(root, wissen, vorlage, backup):
         kandidat = Path(backup)
         if not kandidat.is_absolute():
             kandidat = root / kandidat
+        if kandidat.is_symlink():
+            raise PfadFehler(f"Backup-Ziel ist ein Symlink: {kandidat}")
         ziel = _im_repo(root, kandidat)
 
     if ziel.is_relative_to(wissen) or ziel.is_relative_to(vorlage):
         raise PfadFehler("Backup-Ziel darf nicht in wissen/ oder in der Vorlage liegen")
-    if ziel.exists() and ziel.is_dir():
-        raise PfadFehler(f"Backup-Ziel ist ein Verzeichnis: {ziel}")
+    if ziel.exists():
+        if ziel.is_dir():
+            raise PfadFehler(f"Backup-Ziel ist ein Verzeichnis: {ziel}")
+        raise PfadFehler(
+            f"Backup-Ziel existiert bereits: {ziel} — bestehende Sicherungen werden nie "
+            "überschrieben. Bitte einen freien Pfad angeben."
+        )
     return ziel
 
 
@@ -142,6 +153,15 @@ def pruefe_vorlage(vorlage):
             f"Vorlage unvollständig: {VORLAGE.as_posix()}/ — fehlt {', '.join(fehlend)}. "
             "Es wurde nichts gelöscht."
         )
+    for eintrag in vorlage.rglob("*"):
+        if eintrag.is_symlink():
+            rel = eintrag.relative_to(vorlage).as_posix()
+            # Symlinks würden beim Kopieren dereferenziert und aus der Vorlage
+            # hinauszeigen — die Vorlage muss ein reiner Dateibaum sein.
+            raise VorlageFehler(
+                f"Vorlage enthält einen Symlink: {VORLAGE.as_posix()}/{rel}. "
+                "Es wurde nichts gelöscht."
+            )
     return umfang(vorlage)[:2]
 
 
@@ -149,7 +169,15 @@ def pruefe_vorlage(vorlage):
 
 
 def backup_erstellen(wissen, ziel):
-    """Packt ``wissen/`` in ein tar.gz; bei jedem Fehler bleibt der Altstand erhalten."""
+    """Packt ``wissen/`` in ein tar.gz; bei jedem Fehler bleibt der Altstand erhalten.
+
+    Ein bereits vorhandenes Ziel wird abgelehnt: ``tarfile`` würde es sonst
+    truncaten und damit eine frühere Sicherung vernichten.
+    """
+    if ziel.exists():
+        raise BackupFehler(
+            f"Backup-Ziel existiert bereits ({ziel}). Es wurde nichts gelöscht."
+        )
     try:
         ziel.parent.mkdir(parents=True, exist_ok=True)
         with tarfile.open(ziel, "w:gz") as archiv:
@@ -166,9 +194,15 @@ def backup_erstellen(wissen, ziel):
 
 
 def kopiere_vorlage(quelle, ziel):
-    """Kopiert die Vorlage inklusive versteckter Dateien, ohne Cache-Artefakte."""
+    """Kopiert die Vorlage inklusive versteckter Dateien, ohne Cache-Artefakte.
+
+    Symlinks werden nicht dereferenziert: sie werden als Fehler gemeldet, damit
+    die Kopie nie aus der Vorlage hinauszeigt.
+    """
     for eintrag in quelle.rglob("*"):
         rel = eintrag.relative_to(quelle)
+        if eintrag.is_symlink():
+            raise VorlageFehler(f"Vorlage enthält einen Symlink: {rel.as_posix()}")
         if ist_cache_artefakt(rel):
             continue
         ablage = ziel / rel
@@ -179,37 +213,42 @@ def kopiere_vorlage(quelle, ziel):
             shutil.copy2(eintrag, ablage)
 
 
+def _ersetze(quelle, ziel):
+    """Kapselt ``os.replace`` (eigener Testhaken für den Rollback-Zweig)."""
+    os.replace(quelle, ziel)
+
+
 def tausche_gegen_vorlage(root, wissen, vorlage):
     """Baut die neue Struktur daneben auf und tauscht sie atomar gegen ``wissen/``.
 
     So gibt es keinen Halbzustand: schlägt der Aufbau oder der Tausch fehl, bleibt
-    ``wissen/`` unverändert und das temporäre Verzeichnis wird entfernt.
+    ``wissen/`` unverändert und das temporäre Verzeichnis wird entfernt. Scheitert
+    auch der Rollback, bleibt der Altbestand unter ``.wissen-alt-*`` liegen und
+    wird gemeldet — gelöscht wird er nie, solange er nicht zurückgetauscht ist.
     """
     neu = Path(tempfile.mkdtemp(dir=root, prefix=".wissen-neu-"))
     alt = None
+    alt_erhalten = False
     try:
         kopiere_vorlage(vorlage, neu)
 
         if wissen.exists():
             alt = Path(tempfile.mkdtemp(dir=root, prefix=".wissen-alt-"))
             alt.rmdir()
-            os.replace(wissen, alt)
+            _ersetze(wissen, alt)
+            alt_erhalten = True
 
         try:
-            os.replace(neu, wissen)
+            _ersetze(neu, wissen)
         except OSError:
-            if alt is not None:
-                os.replace(alt, wissen)
+            if alt is not None and not wissen.exists():
+                _ersetze(alt, wissen)
+                alt_erhalten = False
                 alt = None
             raise
 
-        if alt is not None:
-            try:
-                shutil.rmtree(alt)
-            except OSError:
-                # Der Reset ist bereits erfolgreich; das Backup bleibt die Absicherung.
-                print(f"Warnung: Altbestand blieb liegen: {alt}", file=sys.stderr)
-            alt = None
+        os.chmod(wissen, WISSEN_MODUS)
+        alt_erhalten = False
     except OSError as fehler:
         raise NeuesProjektFehler(
             f"Zurücksetzen fehlgeschlagen ({fehler.strerror or fehler})."
@@ -218,7 +257,14 @@ def tausche_gegen_vorlage(root, wissen, vorlage):
         if neu.exists():
             shutil.rmtree(neu, ignore_errors=True)
         if alt is not None and alt.exists():
-            shutil.rmtree(alt, ignore_errors=True)
+            if alt_erhalten:
+                print(f"Altbestand unter {alt} gesichert.", file=sys.stderr)
+            else:
+                try:
+                    shutil.rmtree(alt)
+                except OSError:
+                    # Der Reset ist bereits erfolgreich; das Backup bleibt die Absicherung.
+                    print(f"Warnung: Altbestand blieb liegen: {alt}", file=sys.stderr)
 
 
 # --- Ausgaben -------------------------------------------------------------
@@ -267,7 +313,7 @@ def erfolgs_text(backup_ziel, vorlage_umfang):
         zeilen.append(f"2) Backup: {backup_ziel}")
     zeilen += [
         f"3) {ERFOLG_MELDUNG}",
-        "4) Pflichtdateien vollständig (verify.sh)",
+        f"4) Pflichtdateien aus der geprüften Vorlage übernommen ({len(PFLICHTDATEIEN)}/{len(PFLICHTDATEIEN)})",
         "",
         f"✓ {ERFOLG_MELDUNG}.",
         "",

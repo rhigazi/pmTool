@@ -177,6 +177,34 @@ def test_eigener_backup_pfad_wird_genutzt(projekt, capsys):
     assert str(ziel) in capsys.readouterr().out
 
 
+def test_ohne_wissen_kein_backup_noetig(projekt, capsys):
+    vorlage = projekt / "definitions" / "wissen-vorlage"
+    shutil.rmtree(projekt / "wissen")
+
+    exit_code = reset(projekt, "--ja")
+
+    ausgabe = capsys.readouterr().out
+    assert exit_code == 0
+    assert baum(projekt / "wissen") == baum(vorlage)
+    assert backups(projekt) == []
+    assert "nicht nötig" in ausgabe
+
+
+def test_neues_wissen_ist_fuer_andere_lesbar(projekt, capsys):
+    reset(projekt, "--ja")
+
+    modus = (projekt / "wissen").stat().st_mode & 0o777
+    assert modus == 0o755, f"wissen/ hat Modus {modus:o} (mkdtemp hinterlässt 0700)"
+
+
+def test_erfolgsmeldung_behauptet_keinen_unerprueften_verifynachweis(projekt, capsys):
+    reset(projekt, "--ja")
+
+    ausgabe = capsys.readouterr().out
+    assert "aus der geprüften Vorlage" in ausgabe
+    assert "Pflichtdateien vollständig" not in ausgabe
+
+
 def test_backup_pfad_ausserhalb_des_repos_wird_abgelehnt(projekt, tmp_path_factory, capsys):
     vorher = baum(projekt / "wissen")
     aussen = tmp_path_factory.mktemp("aussen") / "backup.tar.gz"
@@ -187,6 +215,46 @@ def test_backup_pfad_ausserhalb_des_repos_wird_abgelehnt(projekt, tmp_path_facto
     assert not aussen.exists()
     assert baum(projekt / "wissen") == vorher
     assert "Fehler" in capsys.readouterr().err
+
+
+def test_relative_traversale_als_backup_pfad_wird_abgelehnt(projekt, capsys):
+    vorher = baum(projekt / "wissen")
+
+    exit_code = reset(projekt, "--ja", "--backup", "../aussen.tar.gz")
+
+    assert exit_code == 1
+    assert not (projekt.parent / "aussen.tar.gz").exists()
+    assert baum(projekt / "wissen") == vorher
+    assert "außerhalb" in capsys.readouterr().err
+
+
+def test_vorhandenes_backup_ziel_wird_abgelehnt(projekt, capsys):
+    vorher = baum(projekt / "wissen")
+    ziel = projekt / "sicherungen" / "stand.tar.gz"
+    ziel.parent.mkdir()
+    ziel.write_bytes(b"altes backup")
+
+    exit_code = reset(projekt, "--ja", "--backup", str(ziel))
+
+    captured = capsys.readouterr()
+    assert exit_code != 0
+    assert ziel.read_bytes() == b"altes backup"
+    assert baum(projekt / "wissen") == vorher
+    assert "existiert" in captured.err
+
+
+def test_symlink_als_backup_ziel_wird_abgelehnt(projekt, capsys):
+    vorher = baum(projekt / "wissen")
+    (projekt / "link.tar.gz").symlink_to(projekt / "fehlt.tar.gz")
+
+    exit_code = reset(projekt, "--ja", "--backup", "link.tar.gz")
+
+    captured = capsys.readouterr()
+    assert exit_code != 0
+    assert (projekt / "link.tar.gz").is_symlink()
+    assert not (projekt / "fehlt.tar.gz").exists()
+    assert baum(projekt / "wissen") == vorher
+    assert "Symlink" in captured.err
 
 
 def test_backup_pfad_im_wissen_verzeichnis_wird_abgelehnt(projekt, capsys):
@@ -323,6 +391,19 @@ def test_plan_meldet_fehlende_vorlage_ebenfalls(projekt, capsys):
     assert "Vorlage" in capsys.readouterr().err
 
 
+def test_symlink_in_der_vorlage_bricht_ab(projekt, capsys):
+    vorher = baum(projekt / "wissen")
+    (projekt / "definitions" / "wissen-vorlage" / "verknuepfung.md").symlink_to("index.md")
+
+    exit_code = reset(projekt, "--ja")
+
+    captured = capsys.readouterr()
+    assert exit_code != 0
+    assert "Symlink" in captured.err
+    assert baum(projekt / "wissen") == vorher
+    assert backups(projekt) == []
+
+
 # --- T5: keine Cache-Artefakte, keine Reste ----------------------------------
 
 
@@ -361,6 +442,35 @@ def test_vorlage_bleibt_unveraendert(projekt, capsys):
     reset(projekt, "--ja")
 
     assert baum(vorlage) == vorher
+
+
+def test_fehlgeschlagener_rollback_erhaelt_den_altbestand(projekt, capsys, monkeypatch):
+    """Scheitern Tausch *und* Rollback, darf der Altbaum nicht gelöscht werden."""
+    vorher = baum(projekt / "wissen")
+    echt = neues_projekt._ersetze
+    aufrufe = {"n": 0}
+
+    def ersetze(quelle, ziel):
+        aufrufe["n"] += 1
+        if aufrufe["n"] == 2:
+            raise OSError(13, "Tausch verweigert")
+        if aufrufe["n"] == 3:
+            raise OSError(13, "Rollback verweigert")
+        return echt(quelle, ziel)
+
+    monkeypatch.setattr(neues_projekt, "_ersetze", ersetze)
+
+    exit_code = reset(projekt, "--ja")
+
+    captured = capsys.readouterr()
+    assert exit_code != 0
+    assert not (projekt / "wissen").exists()
+    assert not any(p.name.startswith(".wissen-neu-") for p in projekt.iterdir())
+    alts = sorted(p for p in projekt.iterdir() if p.name.startswith(".wissen-alt-"))
+    assert len(alts) == 1, "Altbestand wurde trotz fehlgeschlagenem Rollback gelöscht"
+    assert baum(alts[0]) == vorher
+    assert "gesichert" in captured.err
+    assert str(alts[0]) in captured.err
 
 
 # --- T6: E2E — Reset auf Testkopie, danach verify.sh -------------------------
