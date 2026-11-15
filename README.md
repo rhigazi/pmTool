@@ -4,7 +4,7 @@ Browserbasierte Oberfläche für **eine Person**, die ein OKF-Projekt in Mensch-
 
 Die App ist ein **Tracker**. Die eigentliche Projektarbeit läuft im OpenCode-CLI-Chat: der Projektmanager-Agent steuert `planner`, `coder`, `reviewer`, `tester` und `documenter`; die Oberfläche macht den Stand sichtbar und erlaubt die menschlichen Eingriffe (Nachtrag, „Klarung", „Geschlossen", owner umschalten).
 
-- **Status:** MVP abnahmefähig (alle Aufgaben A1–A20 abgeschlossen, Gesamtsuite 864 grün — Stand A23; die endgültige Zahl folgt nach A25)
+- **Status:** MVP abnahmefähig (alle Aufgaben A1–A20 abgeschlossen, Gesamtsuite **936 grün** — Stand A25, 2026-11-15; A23-Zeitstand 864)
 - **Projektstand & Historie:** [docs/uebergabeprotokoll.md](docs/uebergabeprotokoll.md), [wissen/log.md](wissen/log.md)
 - **Projektwissen:** [wissen/index.md](wissen/index.md)
 
@@ -112,7 +112,7 @@ Alles liegt im OKF-Bundle **[wissen/](wissen/index.md)** — Markdown mit YAML-F
 ## Entwicklung & Tests
 
 ```bash
-python3 -m pytest definitions/app/tests -q   # Gesamtsuite (aktuell 864 passed, Stand A23)
+python3 -m pytest definitions/app/tests -q   # Gesamtsuite (aktuell 936 passed, Stand A25)
 bash definitions/verify.sh .                 # Umgebungs-Check → Exit 0 = vollständig
 ```
 

@@ -3,8 +3,8 @@ type: Task
 title: Suche
 description: In der Übersicht Liste brauchen wir eine Möglichkeit Suchbegriffe einzugeben
   um die Aufgaben nach bestimmten Informationen zur durchsuchen
-task_status: in Umsetzung
-phase: 3 Umsetzung
+task_status: in Review
+phase: 5 Review
 priority: mittel
 assigned_to: coder
 owner: ai
@@ -116,4 +116,12 @@ Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das M
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-15 — coder (Umsetzung, Stand: in Review)
+
+- **Ergebnis:** `definitions/app/static/js/liste.js` um die Suchlogik erweitert: `filtereEintraege(eintraege, { status, owner, suche })` (Normalisierung über `String(...)`/`toLowerCase()`/NFD + Entfernen kombinierender Zeichen, `ß`→`ss`; mehrere durch Leerraum getrennte Begriffe **UND**-verknüpft; Vergleich **literal** über `includes`, kein `RegExp`; `zuletzt_geaendert` ausgenommen) und `montiereSuche` (dynamisch `div.filter` > `div.filter-feld` > `label` + `input[type="search"]`, **vor** `#tabelle` und **außerhalb** des Filterformulars, idempotent; Suchfeld-IDs `suche-uebersicht`/`suche-wellen`/`suche-aufgaben` je Ansicht). `waehleAnzeige` unterscheidet „Keine Treffer." (Suchbegriff gesetzt, Daten vorhanden) von „Keine Einträge." (leere Daten bzw. Filter ohne Treffer); Fehler-/Formatzustand hat Vorrang; „Filter zurücksetzen" leert Status, owner **und** Suche; Live-Filter über `input`-Ereignis ohne Debounce. `tests/test_suche.py` neu (72 Tests, T1–T24) mit DOM-Harness und Fetch-Stab.
+- **PM-Konformität:** alle drei Listen (Übersicht, Wellen, Aufgaben); UND-Verknüpfung; ß→ss + NFD-Faltung; literal statt `RegExp`; „zuletzt geändert" nicht durchsuchbar; Reset leert die Suche; „Keine Treffer." vs. „Keine Einträge." korrekt; Fehlerzustand hat Vorrang; kein neuer Server-Endpunkt, `index.html`/`server.py`/`style.css` unverändert (A10-Vertrag).
+- **Belege:** Red-Green-Takt in Blöcken: 39 Tests rot → 0 rot. `test_suche.py` **72 grün**, zusammen mit `test_liste.py` **127 grün** (72+55). Gesamtsuite **936** (Coder-Bericht; `pytest --collect-only` bestätigt 936 Testfälle). `bash definitions/verify.sh .` → Exit 0.
+- **Bewusste Grenzen:** kein Volltext über Datei-**Inhalte** oder `description` (Phase 2 bleibt Vormerkung); kein Debounce (Neuzeichnen der Tabelle pro Tastendruck, aber kein Request); Treffer nur in den von `/api/overview` gelieferten Feldern.
+- **Offene Punkte:** Moli-Szenarien **S1–S6** beim `tester` offen (Hinweise in der Coder-Rückmeldung). Status **A25 → in Review**; das Review läuft parallel zu A24.
