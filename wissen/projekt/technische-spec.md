@@ -72,6 +72,7 @@ UI-Szenarien: `moli` gegen `http://localhost:5000` (siehe `tester`-Aufgaben).
 | `owner` | `mensch` \| `ai` | Aufgaben (`task_status`-führend), Wellen | Mensch darf umschalten; KI setzt es gemäß Pipeline |
 | `status` | `Klarung`, `Offen`, `In Arbeit`, `Testing`, `Dokumentation`, `Geschlossen` | Wellen & Punkte **ohne** `task_status` | Mensch: nur `Klarung`/`Geschlossen`; KI: alle |
 | `task_status` / `phase` | wie Phasenmodell | Aufgaben | ausschließlich KI (Projektmanager/documenter) |
+| `freigabe` | `true` \| `false`; fehlend oder ≠ `true` = **nicht freigegeben** (fail-closed) | Aufgaben und Wellen | ausschließlich Mensch (App, `POST /api/freigabe`); KI ❌ **403** |
 
 ## Mapping: `task_status` → UI-Status (6 Werte)
 

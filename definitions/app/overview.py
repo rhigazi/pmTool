@@ -17,6 +17,7 @@ from pathlib import Path
 
 import arbeitsstand
 import freigabe
+import kennung
 import okf_bundle
 import status
 
@@ -35,14 +36,6 @@ _MARKER = re.compile(
     r"(?P<text>.*)$"
 )
 _FOLGEZEILE = re.compile(r"^>\s?(?P<text>.*)$")
-
-# Kennung (A28/A34): ``A12`` bzw. zugewiesene Unterkennung ``A34.001``.
-KENNUNG_TITEL = re.compile(r"^A([1-9][0-9]*)(?:\.([0-9]{3}))?:(?:\s|$)")
-KENNUNG_DATEI = re.compile(r"^a([1-9][0-9]*)(?:\.([0-9]{3}))?(?:-|$)")
-# Für ``naechste_kennung`` zählt die bloße Nummer (ohne Formatstrenge); eine
-# zugewiesene Unterkennung (``A34.001``) zählt dabei zur Familie ``A34``.
-NUMMER_TITEL = re.compile(r"^A([0-9]+)(?:\.\d+|:)")
-NUMMER_DATEI = re.compile(r"^a([0-9]+)(?:\.\d+|-)")
 
 
 def liste(praefix: str | None = None) -> list[dict]:
@@ -92,11 +85,11 @@ def details(pfad: str) -> dict:
     if _text(frontmatter.get("type")) == TYP_AUFGABE:
         titel = _text(frontmatter.get("title"))
         daten.update(arbeitsstand.ermittle(frontmatter))
-        daten["neu"] = _ist_neu(pfad, titel)
-        kennung = _kennung(titel)
-        if kennung:
-            daten["kennung"] = kennung
-        daten["naechste_kennung"] = _naechste_kennung()
+        daten["neu"] = not kennung.ist_zugewiesen(titel, Path(pfad).name)
+        kennungswert = kennung.kennung_aus_titel(titel)
+        if kennungswert:
+            daten["kennung"] = kennungswert
+        daten["naechste_kennung"] = kennung.naechste_kennung()
         _ergaenze_gate(daten, frontmatter)
     _ergaenze_freigabe(daten, frontmatter)
     return daten
@@ -184,7 +177,15 @@ def _eintrag(pfad: str) -> dict | None:
         eintrag["welle"] = welle
     if eintrag["typ"] == TYP_AUFGABE:
         eintrag.update(arbeitsstand.ermittle(frontmatter))
-        eintrag["neu"] = _ist_neu(pfad, eintrag["titel"])
+        eintrag["neu"] = not kennung.ist_zugewiesen(
+            eintrag["titel"], Path(pfad).name
+        )
+        kennungswert = kennung.kennung_aus_titel(eintrag["titel"])
+        if kennungswert:
+            eintrag["kennung"] = kennungswert
+        parent = frontmatter.get("parent")
+        if isinstance(parent, str) and parent.strip():
+            eintrag["parent"] = parent.strip()
     _ergaenze_freigabe(eintrag, frontmatter)
     return eintrag
 
@@ -238,49 +239,6 @@ def _wellen_freigabe(pfad: str) -> bool | None:
     if _text(frontmatter.get("type")) != TYP_WELLE:
         return None
     return freigabe.ist_freigegeben(frontmatter)
-
-
-def _ist_neu(pfad: str, titel: str | None) -> bool:
-    """Keine gültige Kennung: Titel/Dateiname passen nicht zusammen (oder fehlen)."""
-    titel_treffer = KENNUNG_TITEL.match(titel) if isinstance(titel, str) else None
-    datei_treffer = KENNUNG_DATEI.match(Path(pfad).stem)
-    if titel_treffer is None or datei_treffer is None:
-        return True
-    return (titel_treffer.group(1), titel_treffer.group(2)) != (
-        datei_treffer.group(1),
-        datei_treffer.group(2),
-    )
-
-
-def _kennung(titel: str | None) -> str | None:
-    """Kennung aus dem Titel (``A12``/``A34.001``); ``None`` ohne gültiges Format."""
-    treffer = KENNUNG_TITEL.match(titel) if isinstance(titel, str) else None
-    if treffer is None:
-        return None
-    unterkennung = f".{treffer.group(2)}" if treffer.group(2) else ""
-    return f"A{treffer.group(1)}{unterkennung}"
-
-
-def _naechste_kennung() -> str:
-    """Hinweis auf die nächste freie Kennung — Maximum aus Titeln und Dateinamen + 1."""
-    hoechste = 0
-    for pfad in okf_bundle.scan():
-        if not pfad.startswith(AUFGABEN_ORDNER):
-            continue
-        hoechste = max(hoechste, _nummer(NUMMER_DATEI, Path(pfad).stem))
-        try:
-            frontmatter, _ = okf_bundle.lesen_tolerant(pfad)
-        except (OSError, UnicodeDecodeError, FileNotFoundError):
-            continue
-        hoechste = max(hoechste, _nummer(NUMMER_TITEL, frontmatter.get("title")))
-    return f"A{hoechste + 1}"
-
-
-def _nummer(muster: re.Pattern[str], wert: object) -> int:
-    if not isinstance(wert, str):
-        return 0
-    treffer = muster.match(wert.strip())
-    return int(treffer.group(1)) if treffer else 0
 
 
 def _ergaenze_freigabe(ziel: dict, frontmatter: dict) -> None:

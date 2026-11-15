@@ -147,27 +147,39 @@ def test_t4_verify_vollinstallation_gruen(ziel):
 
 
 def test_t5_zweiter_lauf_ueberschreibt_nicht(ziel):
-    werkzeug = ziel / "tools" / "neues_projekt.py"
-    test = ziel / "tools" / "tests" / "test_neues_projekt.py"
-    vorher = (werkzeug.read_bytes(), test.read_bytes())
+    dateien = (
+        ziel / "tools" / "neues_projekt.py",
+        ziel / "tools" / "tests" / "test_neues_projekt.py",
+        ziel / "definitions" / "verify.sh",
+        ziel / "definitions" / "wissen-vorlage" / "index.md",
+    )
+    vorher = {pfad: pfad.read_bytes() for pfad in dateien}
 
     ergebnis = _setup(ziel)
 
     assert ergebnis.returncode == 0, ergebnis.stderr
     assert "übersprungen (vorhanden):" in ergebnis.stdout
-    assert str(werkzeug) in ergebnis.stdout
-    assert (werkzeug.read_bytes(), test.read_bytes()) == vorher
+    assert str(ziel / "tools" / "neues_projekt.py") in ergebnis.stdout
+    # Auch die zusätzlich verteilten Ziele (A26-Nachbesserung K3b).
+    assert str(ziel / "definitions" / "verify.sh") in ergebnis.stdout
+    assert "übersprungen (vorhanden): definitions/wissen-vorlage" in ergebnis.stdout
+    assert {pfad: pfad.read_bytes() for pfad in dateien} == vorher
 
 
 def test_t5b_force_ersetzt_die_kopie(ziel):
-    werkzeug = ziel / "tools" / "neues_projekt.py"
-    original = werkzeug.read_bytes()
-    werkzeug.write_text("# lokal verändert\n", encoding="utf-8")
+    dateien = (
+        ziel / "tools" / "neues_projekt.py",
+        ziel / "definitions" / "verify.sh",
+        ziel / "definitions" / "wissen-vorlage" / "index.md",
+    )
+    original = {pfad: pfad.read_bytes() for pfad in dateien}
+    for pfad in dateien:
+        pfad.write_text("# lokal verändert\n", encoding="utf-8")
 
     ergebnis = _setup(ziel, "--force")
 
     assert ergebnis.returncode == 0, ergebnis.stderr
-    assert werkzeug.read_bytes() == original
+    assert {pfad: pfad.read_bytes() for pfad in dateien} == original
 
 
 # --- T6: keine Cache-Artefakte -------------------------------------------
@@ -211,3 +223,77 @@ def test_t8_root_suite_kollektiert_ohne_konflikt():
     gesammelt = ergebnis.stdout.splitlines()
     assert not [zeile for zeile in gesammelt if zeile.startswith("tools/")]
     assert any(zeile.startswith("definitions/tools/tests/") for zeile in gesammelt)
+
+
+# --- T9/T10: Dev-Repo-Selbstlauf und verify.sh im Dev-Layout (W1/W2/K3a) --
+
+
+def dev_layout_bauen(root):
+    """Baut ein Dev-Repo-Layout (``<root>/definitions/`` + Root-``conftest.py``)."""
+    shutil.copytree(DEFINITIONS, root / "definitions")
+    shutil.copy2(DEFINITIONS.parent / "conftest.py", root / "conftest.py")
+    return root
+
+
+@pytest.mark.skipif(not SPIEGEL.is_dir(), reason="Dev-Repo-Wurzel nicht vorhanden")
+def test_t9_dev_selbstlauf_ist_gruen(tmp_path):
+    """Dokumentierte Auffrischung: ``setup.sh <dev-repo> --force --wissen`` (W1/W2).
+
+    Der Lauf darf nichts auf sich selbst kopieren (kein zweites ``app/``, kein
+    verschachteltes ``definitions/``) und ``wissen/`` nicht überschreiben. Danach
+    muss die Root-Suite weiterhin ohne ``import file mismatch`` kollektieren.
+    """
+    root = dev_layout_bauen(tmp_path / "devrepo")
+    (root / "wissen").mkdir()
+    (root / "wissen" / "index.md").write_text("MARKER-BESTAND\n", encoding="utf-8")
+    vorher = baum(root / "definitions")
+
+    ergebnis = _laeuft(
+        ["bash", str(root / "definitions" / "setup.sh"), str(root), "--force", "--wissen"]
+    )
+
+    assert ergebnis.returncode == 0, ergebnis.stdout + ergebnis.stderr
+    # 4b/5/10 werden im Dev-Layout übersprungen (Quelle ist bereits da).
+    assert ergebnis.stdout.count("übersprungen (Quelle = Ziel)") == 3
+    assert baum(root / "definitions") == vorher
+    assert not (root / "app").exists()
+    assert (root / "wissen" / "index.md").read_text(encoding="utf-8") == "MARKER-BESTAND\n"
+    # Der Spiegel wird weiterhin aufgefrischt, aber ohne Cache-Artefakte.
+    assert (root / "tools" / "neues_projekt.py").is_file()
+    assert (root / "tools" / "tests" / "test_verteilung.py").is_file()
+    assert not list((root / "tools").rglob("__pycache__"))
+
+    sammlung = _laeuft(
+        [sys.executable, "-m", "pytest", "-q", "--collect-only", "-p", "no:cacheprovider"],
+        cwd=root,
+    )
+    assert sammlung.returncode == 0, sammlung.stdout + sammlung.stderr
+    assert "import file mismatch" not in sammlung.stdout + sammlung.stderr
+
+
+@pytest.mark.skipif(not SPIEGEL.is_dir(), reason="Dev-Repo-Wurzel nicht vorhanden")
+def test_t10_dev_repo_verify_gruen():
+    """``verify.sh .`` im Dev-Repo: ``collect_ignore`` + expliziter ``tools/tests/``-Pfad (K3a)."""
+    ergebnis = _verify(DEFINITIONS.parent)
+
+    assert ergebnis.returncode == 0, ergebnis.stdout + ergebnis.stderr
+    assert "Setup vollständig" in ergebnis.stdout
+
+
+def test_t11_ziel_gleich_quelle_wird_uebersprungen(tmp_path):
+    """``setup.sh <definitions>`` kopiert nichts auf sich selbst (W1, auch ``copy_tree``)."""
+    root = dev_layout_bauen(tmp_path / "repo")
+    werkzeuge_vorher = baum(root / "definitions" / "tools")
+
+    ergebnis = _laeuft(
+        ["bash", str(root / "definitions" / "setup.sh"), str(root / "definitions"), "--force"]
+    )
+
+    assert ergebnis.returncode == 0, ergebnis.stdout + ergebnis.stderr
+    assert "übersprungen (Quelle = Ziel):" in ergebnis.stdout
+    # Werkzeuge (Dateien via install_file, tests/ via copy_tree) bleiben unangetastet
+    # und werden nicht in sich selbst gespiegelt.
+    assert baum(root / "definitions" / "tools") == werkzeuge_vorher
+    assert not (root / "definitions" / "tools" / "tools").exists()
+    assert not (root / "definitions" / "tools" / "tests" / "tests").exists()
+    assert not (root / "definitions" / "app" / "app").exists()

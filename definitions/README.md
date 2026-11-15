@@ -67,6 +67,10 @@ bash /app/definitions/setup.sh /pfad/zum/neuen/projekt --wissen --global
 - `--global` installiert die Subagenten global (`~/.config/opencode/agents/`) und die Skills nach `~/.agents/skills/` — dann stehen sie in **allen** Projekten zur Verfügung.
 - Ohne `--force` bleiben vorhandene Dateien unangetastet (kein Überschreiben von Projektstand).
 
+### Auffrischen im Entwicklungs-Repo
+
+Im Dev-Repo (Ziel = Elternordner dieses Verzeichnisses) frischt `bash definitions/setup.sh . --force` nur die bereits vorhandenen Spiegel (`AGENTS.md`, `.opencode/agents/`, `opencode.jsonc`, `tools/`) auf. Abschnitte 4b/5/10 werden dort übersprungen und Selbstkopien als „übersprungen (Quelle = Ziel)" gemeldet — so entsteht kein zweites `app/` neben `definitions/app/` und `wissen/` bleibt unangetastet.
+
 ### Nach Prozess-Änderungen
 
 Wurde z. B. `wissen/projekt/phasen.md` im Projekt weiterentwickelt, die Vorlage aktualisieren:

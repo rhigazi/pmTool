@@ -4,10 +4,13 @@ Die UI-Szenarien (Moli-Browser) prüft der ``tester`` gegen die laufende App;
 hier werden ausschließlich die Dateien unter ``static/`` geprüft.
 """
 
+import json
 import re
 from pathlib import Path
 
 import pytest
+
+from dom_helfer import node_ausfuehren, ohne_node
 
 STATIC_DIR = Path(__file__).resolve().parents[1] / "static"
 INDEX = STATIC_DIR / "index.html"
@@ -242,3 +245,72 @@ def test_app_js_registriere_ansicht_prueft_basis():
     treffer = re.search(r"export function registriereAnsicht\([\s\S]*?\n}\n", js)
     assert treffer, "registriereAnsicht() nicht gefunden"
     assert "istAnsicht(basis)" in treffer.group(0)
+
+
+# --- A33-T16 (A14-5): genau ein `istDatei`-Prädikat ----------------------
+
+DETAIL_JS = STATIC_DIR / "js" / "detail.js"
+FEATURES_JS = STATIC_DIR / "js" / "features.js"
+PROJEKT_JS = STATIC_DIR / "js" / "projekt.js"
+
+
+@ohne_node
+def test_a33_t16_ist_datei_antwort_semantik():
+    """Zentrales Prädikat: Objekt, kein Array, ``markdown`` ist ein String."""
+    skript = (
+        f"import * as api from {json.dumps(API_JS.as_uri())};\n"
+        "const faelle = [\n"
+        "  [{ markdown: '' }, true],\n"
+        "  [{ markdown: '# x', frontmatter: {} }, true],\n"
+        "  [null, false],\n"
+        "  [undefined, false],\n"
+        "  [[], false],\n"
+        "  [['x'], false],\n"
+        "  [{}, false],\n"
+        "  [{ markdown: 42 }, false],\n"
+        "  [{ markdown: null }, false],\n"
+        "  ['# x', false],\n"
+        "  [42, false],\n"
+        "];\n"
+        "console.log(JSON.stringify(faelle.map(([wert, erwartet]) => ({\n"
+        "  erwartet,\n"
+        "  tatsaechlich: api.istDateiAntwort(wert),\n"
+        "}))));"
+    )
+    ergebnis = node_ausfuehren(skript)
+
+    assert len(ergebnis) == 11
+    assert [fall for fall in ergebnis if fall["tatsaechlich"] != fall["erwartet"]] == []
+
+
+def test_a33_t16_nur_ein_praedikat_und_importe():
+    """Die drei Ansichten importieren das Prädikat statt eigener Kopien."""
+    assert re.search(r"export\s+function\s+istDateiAntwort\b", lies(API_JS))
+
+    for datei in (DETAIL_JS, FEATURES_JS, PROJEKT_JS):
+        quelle = lies(datei)
+        assert "function istDatei(" not in quelle, datei
+        assert re.search(
+            r'import\s*\{[^}]*\bistDateiAntwort\b[^}]*\}\s*from\s*"\./api\.js"', quelle
+        ), f"{datei} importiert istDateiAntwort nicht aus api.js"
+
+    for datei in sorted((STATIC_DIR / "js").glob("*.js")):
+        if datei.name == "api.js":
+            continue
+        assert 'typeof daten.markdown === "string"' not in lies(datei), datei
+
+
+@pytest.mark.parametrize(
+    ("datei", "meldung"),
+    [
+        (DETAIL_JS, "Datei hat ein unerwartetes Format."),
+        (PROJEKT_JS, "Datei hat ein unerwartetes Format."),
+        (FEATURES_JS, "Feature-Liste hat ein unerwartetes Format"),
+    ],
+)
+def test_a33_t16_meldungen_bleiben_kontextspezifisch(datei, meldung):
+    """Nur das Prädikat ist geteilt; die Meldungen bleiben je Ansicht eigen."""
+    quelle = lies(datei)
+    assert meldung in quelle
+    assert "Format" not in lies(API_JS)
+    assert "konnte nicht geladen werden" not in lies(API_JS)

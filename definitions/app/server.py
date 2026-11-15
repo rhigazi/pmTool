@@ -247,13 +247,17 @@ def _sichere_meldung(fehler: Exception, code: int) -> str:
 
 
 def _pruefe_bundle_root(bundle_root: str | os.PathLike[str] | None) -> Path:
-    """Liefert die absolute Bundle-Wurzel oder wirft :class:`StartFehler`."""
+    """Liefert die absolute Bundle-Wurzel oder wirft :class:`StartFehler`.
+
+    Die Meldungen nennen bewusst keinen Pfad: Startfehler gehen nach stderr und
+    sollen keine absoluten Pfade/OS-Details preisgeben (A7-2).
+    """
     if bundle_root is None or not str(bundle_root).strip():
         raise StartFehler("BUNDLE_ROOT ist nicht gesetzt (z. B. BUNDLE_ROOT=./wissen).")
 
     wurzel = Path(os.path.realpath(str(bundle_root).strip()))
     if not wurzel.is_dir():
-        raise StartFehler(f"BUNDLE_ROOT ist kein Verzeichnis: {wurzel}")
+        raise StartFehler("BUNDLE_ROOT ist kein Verzeichnis (z. B. BUNDLE_ROOT=./wissen).")
     return wurzel
 
 

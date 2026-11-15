@@ -44,12 +44,18 @@ def test_t1_owner_ai(bundle):
 
 
 def test_t2_owner_mensch(bundle):
+    """A33-T14 (A6-2): ``owner`` wechseln ändert den Body nicht und keine Keys."""
+    body_vorher = _body(WELLE)
+    frontmatter_vorher = okf_bundle.lesen(WELLE)[0]
+
     meta.setzen(WELLE, owner="mensch")
 
-    frontmatter, _ = okf_bundle.lesen(WELLE)
+    frontmatter, body_nachher = okf_bundle.lesen(WELLE)
     assert frontmatter["owner"] == "mensch"
     assert frontmatter["type"] == "Welle"
     assert frontmatter["status"] == "Offen"
+    assert set(frontmatter) == set(frontmatter_vorher)
+    assert _hash(body_nachher) == _hash(body_vorher)
 
 
 # --- Rechteprüfung -------------------------------------------------------

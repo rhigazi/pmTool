@@ -1,4 +1,4 @@
-import { getJson, zeigeFehler } from "./api.js";
+import { getJson, istDateiAntwort, zeigeFehler } from "./api.js";
 import { rendereMarkdown } from "./detail.js";
 
 const CONTAINER_ENTSCHEIDUNGEN_ID = "liste-entscheidungen";
@@ -66,15 +66,6 @@ function meldeFehlendenContainer(id) {
   zeigeFehler(`Ansicht nicht verfügbar: Container #${id} fehlt in index.html.`);
 }
 
-function istDatei(daten) {
-  return (
-    daten !== null &&
-    typeof daten === "object" &&
-    !Array.isArray(daten) &&
-    typeof daten.markdown === "string"
-  );
-}
-
 /** Lädt eine Datei über `GET /api/file`; Fehler zeigt bereits api.js an. */
 async function ladeDatei(pfad, ziel) {
   const daten = await getJson(dateiAnfrage(pfad));
@@ -82,7 +73,7 @@ async function ladeDatei(pfad, ziel) {
     ziel.replaceChildren(erstelleHinweis(LADE_FEHLER));
     return null;
   }
-  if (!istDatei(daten)) {
+  if (!istDateiAntwort(daten)) {
     ziel.replaceChildren(erstelleHinweis(FORMAT_FEHLER));
     zeigeFehler(FORMAT_FEHLER);
     return null;

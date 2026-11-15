@@ -21,6 +21,13 @@ ohne Konflikt der einzige Testbaum.
 
 Quelle und Spiegel gleichzeitig explizit zu übergeben (``pytest definitions/tools/tests
 tools/tests``) bleibt ein Fehler — Root-Suite und ``verify.sh`` tun das nicht.
+
+**Namensregel:** Testdatei-Basisnamen sind repo-weit eindeutig zu halten (keine
+zweite ``test_telegram_send.py`` in einem anderen Baum). pytest importiert
+Testmodule über den Basisnamen; gleiche Basisnamen führen zu ``import file
+mismatch`` und brechen die Collection ab — genau die Problemklasse, aus der
+dieses ``collect_ignore`` entstand. Neue Werkzeug-Tests daher nur in der Quelle
+``definitions/tools/tests/`` anlegen (der Spiegel entsteht per ``setup.sh``).
 """
 
 collect_ignore = ["tools/tests"]

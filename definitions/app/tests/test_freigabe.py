@@ -105,7 +105,6 @@ def _spy_set_meta(monkeypatch) -> list:
     "frontmatter,erwartet",
     [
         ({}, False),
-        ({}, False),
         ({"freigabe": True}, True),
         ({"freigabe": False}, False),
         ({"freigabe": "true"}, False),
@@ -162,12 +161,16 @@ def test_t9_setzen_ueber_den_menschen_kanal(bundle, monkeypatch):
 
 
 @pytest.mark.parametrize("herkunft", [freigabe.KI, None, "", "mensch", "MENSCHLICH"])
-def test_t10_ki_kanal_verweigert(bundle, monkeypatch, herkunft):
+@pytest.mark.parametrize("wert", [True, False])
+def test_t10_ki_kanal_verweigert(bundle, monkeypatch, herkunft, wert):
+    # Ausgangslage ist jeweils der Gegenwert: ein Schreibvorgang wäre byte-sichtbar.
+    # Auch ``wert=False`` darf der KI-Weg nie schreiben (A28-AK-6, fail-closed).
+    _mit_freigabe(bundle, AUFGABE, not wert)
     aufrufe = _spy_set_meta(monkeypatch)
     hash_vorher = _datei_hash(bundle, AUFGABE)
 
     with pytest.raises(meta.RechteFehler):
-        freigabe.setzen(AUFGABE, True, herkunft=herkunft)
+        freigabe.setzen(AUFGABE, wert, herkunft=herkunft)
 
     assert aufrufe == []
     assert _datei_hash(bundle, AUFGABE) == hash_vorher

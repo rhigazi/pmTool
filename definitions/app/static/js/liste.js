@@ -62,12 +62,19 @@ const ANSICHTEN = {
 
 const datenProAnsicht = new Map();
 const initialisierteFilter = new Set();
+// Für den Wellen-Filter ermittelte Wellen je Ansicht (A31-H1: unabhängig vom
+// Filterformular gefüllt, damit die Spalte „Welle" auch ohne Formular Titel zeigt).
+const wellenProAnsicht = new Map();
 
 // Wellen-Metadaten aus bereits geladenen Daten (kein zusätzlicher Request):
 // die Übersicht enthält alle Wellen, die Aufgabenliste referenziert sie.
 let bekannteWellen = [];
 // Pfad → Wellen-Titel für die Spalte „Welle" (aus denselben Daten gefüllt).
 const wellenTitel = new Map();
+// Vollständiger Wellen-Bestand bereits geladen (Übersicht/Wellenliste oder
+// Nachladen per `/api/wellen`, A27-F1).
+let wellenBestandVollstaendig = false;
+let wellenNachtragAktiv = false;
 
 // Durchsuchbare Felder aus `/api/overview`; „zuletzt geändert" gehört bewusst
 // nicht dazu (Datumsrecherche ist nicht Teil der Anforderung).
@@ -474,12 +481,15 @@ function fuehreWellenZusammen(...quellen) {
 /**
  * Wellen für eine Ansicht: die Übersicht liefert alle Wellen, die Aufgabenliste
  * ergänzt den bekannten Bestand um die in den Aufgaben referenzierten Pfade.
+ * Auch die Wellenliste liefert den vollständigen Bestand und erneuert den Cache
+ * (A27-K2) — so erscheinen in der Sitzung neu angelegte Wellen im Filter.
  * Die Titel landen in ``wellenTitel`` — Grundlage der Spalte „Welle".
  */
 function ermittleWellen(basis, daten) {
   const ausBestand = wellenAusBestand(daten);
-  if (basis === "uebersicht") {
+  if (basis === "uebersicht" || basis === "wellen") {
     bekannteWellen = ausBestand;
+    wellenBestandVollstaendig = true;
     merkeWellenTitel(basis, ausBestand);
     return ausBestand;
   }
@@ -521,7 +531,8 @@ function fuelleWellenAuswahl(auswahl, wellen) {
 /**
  * Hängt den Wellen-Filter je Ansicht idempotent in das bestehende Filterformular
  * ein (vor „Filter zurücksetzen"); `index.html` bleibt ohne Markup. Die Optionen
- * stammen aus den bereits geladenen Listen — kein zusätzlicher Request.
+ * stammen aus den bereits geladenen Listen (``wellenProAnsicht``) — kein
+ * zusätzlicher Request beim Anzeigen.
  */
 function montiereWellenFilter(basis, daten) {
   const konfiguration = ANSICHTEN[basis];
@@ -546,11 +557,17 @@ function montiereWellenFilter(basis, daten) {
     reihe.append(beschriftung, auswahl);
     formular.insertBefore(reihe, zuruecksetzen);
     auswahl.addEventListener("change", () => wendeFilterAn(basis));
+    // A27-F1: Beim Deep-Link (z. B. `#/aufgaben` als erster Aufruf) fehlen Wellen
+    // ohne Aufgaben. Der vollständige Bestand wird erst bei der ersten Interaktion
+    // nachgeladen — beim reinen Anzeigen bleibt das Request-Budget unverändert.
+    for (const art of ["focus", "pointerdown"]) {
+      auswahl.addEventListener(art, () => ergaenzeWellenBestand(basis));
+    }
   }
 
   const vorher = auswahl.value;
   if (Array.isArray(daten)) {
-    fuelleWellenAuswahl(auswahl, ermittleWellen(basis, daten));
+    fuelleWellenAuswahl(auswahl, wellenProAnsicht.get(basis) ?? []);
     auswahl.disabled = false;
   } else {
     // Fail-loud: ohne Daten wird nicht still weggefiltert, nur „Alle" bleibt.
@@ -559,6 +576,29 @@ function montiereWellenFilter(basis, daten) {
   }
   auswahl.value = optionenEnthaelt(auswahl, vorher) ? vorher : "";
   return auswahl;
+}
+
+/**
+ * Lädt den vollständigen Wellen-Bestand nach (A27-F1) und ergänzt Filter und
+ * Spalte „Welle" der aktuellen Ansicht. Läuft höchstens einmal je Sitzung.
+ */
+async function ergaenzeWellenBestand(basis) {
+  if (wellenBestandVollstaendig || wellenNachtragAktiv) return;
+  wellenNachtragAktiv = true;
+  try {
+    const daten = await getJson(ANSICHTEN.wellen.pfad);
+    // Fehler meldet api.js bereits; die Auswahl bleibt dann unverändert.
+    if (!Array.isArray(daten)) return;
+
+    bekannteWellen = wellenAusBestand(daten);
+    wellenBestandVollstaendig = true;
+    const eigene = datenProAnsicht.get(basis);
+    wellenProAnsicht.set(basis, ermittleWellen(basis, Array.isArray(eigene) ? eigene : []));
+    montiereWellenFilter(basis, eigene ?? null);
+    wendeFilterAn(basis);
+  } finally {
+    wellenNachtragAktiv = false;
+  }
 }
 
 function optionenEnthaelt(auswahl, wert) {
@@ -625,6 +665,9 @@ async function ladeListe(basis) {
   // Rohe Antwort pro Ansicht merken: Fehler-/Formatzustand bleibt so auch bei
   // Filteränderungen erhalten, bis neu geladen wird.
   datenProAnsicht.set(basis, daten ?? null);
+  // A31-H1: Den Titel-Cache unabhängig vom Filterformular füllen — sonst zeigt die
+  // Spalte „Welle" Pfade, wenn das Formular fehlt. Bei Fehlern bleibt der Cache.
+  wellenProAnsicht.set(basis, Array.isArray(daten) ? ermittleWellen(basis, daten) : []);
   montiereWellenFilter(basis, daten ?? null);
   wendeFilterAn(basis);
 

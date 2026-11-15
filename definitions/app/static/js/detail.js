@@ -1,5 +1,6 @@
 import {
   getJson,
+  istDateiAntwort,
   loescheFehler,
   loescheMeldung,
   postJson,
@@ -328,15 +329,6 @@ function erstelleHinweis(text) {
   hinweis.className = "leer";
   hinweis.textContent = text;
   return hinweis;
-}
-
-function istDatei(daten) {
-  return (
-    daten !== null &&
-    typeof daten === "object" &&
-    !Array.isArray(daten) &&
-    typeof daten.markdown === "string"
-  );
 }
 
 function anhaengenFeld(angaben, name, inhalt) {
@@ -913,7 +905,7 @@ export async function ladeDetail({ unterpunkt } = {}) {
     return;
   }
 
-  if (!istDatei(daten)) {
+  if (!istDateiAntwort(daten)) {
     ziel.replaceChildren(erstelleHinweis(FORMAT_FEHLER));
     zeigeFehler(FORMAT_FEHLER);
     return;

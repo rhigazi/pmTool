@@ -13,6 +13,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import freigabe
+import kennung
 import okf_bundle
 import server
 
@@ -160,7 +161,7 @@ def test_t5_naechste_kennung_aus_titel_und_dateinamen(client, bundle):
     assert daten["naechste_kennung"] == "A28"
 
 
-def test_t5_leerer_bestand_ergibt_a1(client, bundle):
+def test_t5_einzige_aufgabe_ergibt_a2(client, bundle):
     for datei in (bundle / "aufgaben").iterdir():
         datei.unlink()
     _schreibe(
@@ -170,6 +171,14 @@ def test_t5_leerer_bestand_ergibt_a1(client, bundle):
     )
 
     assert client.get(f"/api/file?path={AUFGABE}").get_json()["naechste_kennung"] == "A2"
+
+
+def test_t5_leerer_bestand_ist_a1(bundle):
+    """Ohne jede Aufgaben-Datei schlägt die Kennungs-Hilfe ``A1`` vor (AK-2)."""
+    for datei in (bundle / "aufgaben").iterdir():
+        datei.unlink()
+
+    assert kennung.naechste_kennung() == "A1"
 
 
 @pytest.mark.parametrize("pfad", [WELLE, PROJEKT])
@@ -194,8 +203,9 @@ def test_t5_zugewiesene_unterkennung_gilt_als_vergeben(client, bundle):
 
     assert eintrag["neu"] is False
     assert client.get("/api/file?path=aufgaben/a34.001-x.md").get_json()["kennung"] == "A34.001"
-    # ``naechste_kennung`` bleibt top-level: keine ``A34.002``-Fortschreibung.
-    assert client.get(f"/api/file?path={AUFGABE}").get_json()["naechste_kennung"] == "A35"
+    # ``naechste_kennung`` ist top-level-only (A34-AK-2): eine verwaiste
+    # Unter-Kennung (ohne Eltern-Datei A34) beeinflusst den Vorschlag nicht.
+    assert client.get(f"/api/file?path={AUFGABE}").get_json()["naechste_kennung"] == "A2"
 
 
 # --- T6: Detail-Felder ---------------------------------------------------
@@ -281,3 +291,89 @@ def test_t22_neue_aufgabe_ueber_die_app(client, bundle):
         "# Betroffene Dateien",
         "# Ergebnisse",
     ]
+
+
+# --- A34: Unter-Kennungen in neu/kennung (additiv) ------------------------
+
+
+def test_t9_unterkennung_ist_zugewiesen(client, bundle):
+    _schreibe(
+        bundle,
+        "aufgaben/a34.001-x.md",
+        "---\ntype: Task\ntitle: \"A34.001: Unterkennung\"\ntask_status: offen\n---\n\n# Ziel\n",
+    )
+
+    for endpunkt in ("/api/aufgaben", "/api/overview"):
+        eintrag = _eintraege(client, endpunkt)["aufgaben/a34.001-x.md"]
+        assert eintrag["neu"] is False
+
+    daten = client.get("/api/file?path=aufgaben/a34.001-x.md").get_json()
+    assert daten["neu"] is False
+    assert daten["kennung"] == "A34.001"
+
+
+@pytest.mark.parametrize(
+    "pfad,titel",
+    [
+        ("aufgaben/a34.001-x.md", "A34: X"),
+        ("aufgaben/a34-x.md", "A34.001: X"),
+        ("aufgaben/a34.002-x.md", "A34.001: X"),
+        ("aufgaben/a34-001-x.md", "A34.001: X"),
+    ],
+)
+def test_t10_unterkennung_abweichung_ist_neu(client, bundle, pfad, titel):
+    _schreibe(
+        bundle,
+        pfad,
+        f"---\ntype: Task\ntitle: {titel!r}\ntask_status: offen\n---\n\n# Ziel\n",
+    )
+
+    assert _eintraege(client)[pfad]["neu"] is True
+
+
+def test_t11_detail_felder_unteraufgabe(client, bundle):
+    _schreibe(
+        bundle,
+        "aufgaben/a34-x.md",
+        "---\ntype: Task\ntitle: \"A34: Eltern\"\ntask_status: offen\n---\n\n# Ziel\n",
+    )
+    _schreibe(
+        bundle,
+        "aufgaben/a34.001-y.md",
+        "---\ntype: Task\ntitle: \"A34.001: Kind\"\ntask_status: offen\n"
+        "parent: aufgaben/a34-x.md\n---\n\n# Ziel\n",
+    )
+
+    daten = client.get("/api/file?path=aufgaben/a34.001-y.md").get_json()
+
+    assert daten["kennung"] == "A34.001"
+    assert daten["naechste_kennung"] == "A35"
+    assert "naechste_unterkennung" not in daten
+    assert {"frontmatter", "markdown", "nachtraege"} <= set(daten)
+
+    welle = client.get(f"/api/file?path={WELLE}").get_json()
+    assert "kennung" not in welle
+    assert "naechste_kennung" not in welle
+
+
+def test_t12_top_level_matrix_unveraendert(client, bundle):
+    _schreibe(
+        bundle,
+        "aufgaben/x.md",
+        "---\ntype: Task\ntitle: \"A12: X\"\ntask_status: offen\n---\n\n# Ziel\n",
+    )
+    _schreibe(
+        bundle,
+        "aufgaben/a12-x.md",
+        "---\ntype: Task\ntitle: \"A12: X\"\ntask_status: offen\n---\n\n# Ziel\n",
+    )
+    _schreibe(
+        bundle,
+        "aufgaben/a13-x.md",
+        "---\ntype: Task\ntitle: \"A13: \"\ntask_status: offen\n---\n\n# Ziel\n",
+    )
+
+    eintraege = _eintraege(client)
+    assert eintraege["aufgaben/x.md"]["neu"] is True
+    assert eintraege["aufgaben/a12-x.md"]["neu"] is False
+    assert eintraege["aufgaben/a13-x.md"]["neu"] is False

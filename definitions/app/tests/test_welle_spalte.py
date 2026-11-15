@@ -850,33 +850,145 @@ def test_t20_grenzen_ohne_backend_und_markup_aenderung():
     assert "import " not in liste.replace('import { getJson } from "./api.js";', "")
 
 
-def test_t21_baselines_bleiben_ohne_a31_marker():
-    for name in (
-        "test_liste.py",
-        "test_detail.py",
-        "test_formulare.py",
-        "test_features.py",
-        "test_static.py",
-        "test_api_lesen.py",
-        "test_api_schreiben.py",
-        "test_meta.py",
-        "test_neu_aufgabe.py",
-        "test_neu_welle.py",
-    ):
-        quelle = lies(Path(__file__).parent / name)
-        assert "welleSpalte" not in quelle, name
-        assert "Wellen-Spalte" not in quelle, name
+_KOPF_LITERAL = re.compile(r'\["Titel"(?:,\s*"[^"]*")*\]')
+BASELINE_DATEIEN = ("test_suche.py", "test_welle_zuordnung.py", "test_arbeitsstand_ui.py")
+
+
+def _kopf_erwartungen(datei: Path) -> set[tuple[str, ...]]:
+    """Spalten-Erwartungen aus einem Testfile — nur echte ``assert``-Zeilen zählen.
+
+    Reine Textsuche war zu locker (ein Literal im Kommentar hätte genügt, A31-H3).
+    """
+    erwartungen = set()
+    for zeile in lies(datei).splitlines():
+        if not zeile.strip().startswith("assert "):
+            continue
+        for treffer in _KOPF_LITERAL.findall(zeile):
+            erwartungen.add(tuple(json.loads(treffer)))
+    return erwartungen
+
+
+def test_t21_a31_marker_lebt_nur_in_liste_js():
+    """A31-H3: Die Wellen-Spalte lebt nur in ``liste.js``; die Wellenliste bleibt bei vier."""
+    for datei in sorted((STATIC_DIR / "js").glob("*.js")):
+        if datei.name == "liste.js":
+            continue
+        assert "welleSpalte" not in lies(datei), datei
+    for datei in (INDEX_HTML, STYLE_CSS):
+        quelle = lies(datei)
+        assert "welleSpalte" not in quelle, datei
+        assert "Wellen-Spalte" not in quelle, datei
+
+    ergebnis = listen_lauf(
+        r"""
+await liste.ladeWellen();
+return { kopf: kopfzeilen("tabelle-wellen"), texte: texte("tabelle-wellen") };
+""",
+        listen_antwort([_welle(WELLE_2, "W2")], "/api/wellen"),
+    )
+    assert ergebnis["kopf"] == SPALTEN_VIER
+    assert len(ergebnis["texte"][0]) == len(SPALTEN_VIER)
+
 
 # --- F. Vertragswechsel (AK-8) ------------------------------------------
 
 
+@ohne_node
 def test_t19_baselines_erwarten_die_fuenf_spalten():
-    fuenf = '["Titel", "Welle", "Status", "owner", "zuletzt geändert"]'
-    vier = '["Titel", "Status", "owner", "zuletzt geändert"]'
+    """A31-H3: Die fünf Spalten kommen aus der Implementierung UND aus den Baselines."""
+    ergebnis = listen_lauf(
+        r"""
+await liste.ladeUebersicht();
+return { kopf: kopfzeilen("tabelle") };
+""",
+        listen_antwort([_aufgabe("aufgaben/a1.md", "A1", welle=WELLE_2), WELLE_2_EINTRAG]),
+    )
+    assert ergebnis["kopf"] == SPALTEN_FUENF
 
-    for datei in ("test_suche.py", "test_welle_zuordnung.py", "test_arbeitsstand_ui.py"):
-        quelle = lies(Path(__file__).parent / datei)
-        assert fuenf in quelle, f"{datei} erwartet die fünf Spalten nicht"
+    for datei in BASELINE_DATEIEN:
+        erwartungen = _kopf_erwartungen(Path(__file__).parent / datei)
+        assert tuple(SPALTEN_FUENF) in erwartungen, f"{datei} erwartet die fünf Spalten nicht"
+        if datei != "test_welle_zuordnung.py":
+            assert tuple(SPALTEN_VIER) not in erwartungen, f"{datei} erwartet noch vier Spalten"
 
     # Wellen-Detail (T34 in test_welle_zuordnung.py) bleibt bei vier Spalten.
-    assert vier in lies(Path(__file__).parent / "test_welle_zuordnung.py")
+    assert tuple(SPALTEN_VIER) in _kopf_erwartungen(
+        Path(__file__).parent / "test_welle_zuordnung.py"
+    )
+
+
+# --- G. A33-Nachträge (A27-F1/K2, A31-H1) --------------------------------
+
+WELLE_1_EINTRAG = _welle(WELLE_1, "W1")
+
+
+@ohne_node
+def test_a33_t22_k2_wellenliste_fuellt_den_options_cache():
+    """A27-K2: `/api/wellen` liefert den vollständigen Bestand — Cache erneuern."""
+    ergebnis = listen_lauf(
+        r"""
+await liste.ladeWellen();
+await liste.ladeAufgaben();
+return {
+  optionen: optionenwerte(bei("filter-welle-aufgaben")),
+  texte: texte("tabelle-aufgaben"),
+  aufrufe: aufrufe.map((eintrag) => eintrag.endpunkt),
+};
+""",
+        {
+            "/api/wellen": {"status": 200, "koerper": [WELLE_1_EINTRAG, WELLE_2_EINTRAG]},
+            "/api/aufgaben": {"status": 200, "koerper": [MIT_WELLE]},
+        },
+    )
+
+    assert ergebnis["optionen"] == ["", "ohne", WELLE_1, WELLE_2]
+    assert ergebnis["texte"][0][1] == "W2"
+    assert ergebnis["aufrufe"] == ["/api/wellen", "/api/aufgaben"]
+
+
+@ohne_node
+def test_a33_t23_h1_titel_cache_ohne_filterformular():
+    """A31-H1: Ohne Wellen-Filterformular steht trotzdem der Titel in der Spalte."""
+    ergebnis = listen_lauf(
+        r"""
+REGISTRIERT.delete("filter-aufgaben");
+await liste.ladeAufgaben();
+return { zeilen: texte("tabelle-aufgaben") };
+""",
+        listen_antwort([MIT_WELLE, WELLE_2_EINTRAG], "/api/aufgaben"),
+    )
+
+    assert ergebnis["zeilen"][0][1] == "W2"
+
+
+@ohne_node
+def test_a33_t24_f1_deep_link_laedt_wellen_bei_erster_filter_interaktion():
+    """A27-F1: Der Deep-Link lädt den Wellen-Bestand erst bei der ersten Interaktion."""
+    ergebnis = listen_lauf(
+        r"""
+await liste.ladeAufgaben();
+const vorher = optionenwerte(bei("filter-welle-aufgaben"));
+await ausloesen(bei("filter-welle-aufgaben"), "focus");
+const nachher = optionenwerte(bei("filter-welle-aufgaben"));
+const nachErstem = aufrufe.map((eintrag) => eintrag.endpunkt);
+bei("filter-welle-aufgaben").value = "wellen/w1.md";
+await ausloesen(bei("filter-welle-aufgaben"), "focus");
+return {
+  vorher,
+  nachher,
+  nachErstem,
+  auswahl: bei("filter-welle-aufgaben").value,
+  wellenAbrufe: aufrufe.filter((eintrag) => eintrag.endpunkt === "/api/wellen").length,
+};
+""",
+        {
+            "/api/aufgaben": {"status": 200, "koerper": [MIT_WELLE]},
+            "/api/wellen": {"status": 200, "koerper": [WELLE_1_EINTRAG, WELLE_2_EINTRAG]},
+        },
+    )
+
+    assert ergebnis["vorher"] == ["", "ohne", WELLE_2]
+    assert ergebnis["nachher"] == ["", "ohne", WELLE_1, WELLE_2]
+    assert ergebnis["nachErstem"] == ["/api/aufgaben", "/api/wellen"]
+    assert ergebnis["auswahl"] == WELLE_1
+    assert ergebnis["wellenAbrufe"] == 1

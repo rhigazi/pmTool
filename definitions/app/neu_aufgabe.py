@@ -13,6 +13,7 @@ import unicodedata
 
 import yaml
 
+import kennung
 import okf_bundle
 from okf_bundle import EingabeFehler
 
@@ -35,6 +36,8 @@ _UMLAUTE = str.maketrans(
     }
 )
 _NICHT_SLUG = re.compile(r"[^a-z0-9]+")
+# Ein mitgegebenes Kennungspräfix wird entfernt (die App vergibt die Kennung).
+_KENNUNG_PRAEFIX = re.compile(r"^A[0-9]+(?:\.[0-9]{3})?\s*:\s*")
 
 ERGEBNIS_PLATZHALTER = (
     "Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, "
@@ -48,12 +51,13 @@ ERGEBNIS_PLATZHALTER = (
 def anlegen(daten: dict) -> str:
     """Legt eine neue Aufgaben-Datei an und liefert ihren bundle-relativen Pfad.
 
-    Erwartet ``{titel, ziel, akzeptanz[], prioritaet, welle?, user_story?}``.
-    Unzulässige Daten führen zu :class:`EingabeFehler`, ohne dass eine Datei
-    entsteht.
+    Erwartet ``{titel, ziel, akzeptanz[], prioritaet, welle?, user_story?, parent?}``.
+    Mit ``parent`` entsteht eine Unter-Aufgabe: die App vergibt ``A{xxx}.{uuu}``,
+    erbt die ``welle`` der Eltern-Aufgabe und schreibt ``parent``. Unzulässige
+    Daten führen zu :class:`EingabeFehler`, ohne dass eine Datei entsteht.
     """
     felder = _pruefe(daten)
-    pfad = _freier_pfad(felder["slug"])
+    pfad = _freier_pfad(felder["basis"])
     okf_bundle.schreiben(pfad, _inhalt(felder))
     return pfad
 
@@ -92,18 +96,37 @@ def _pruefe(daten: dict) -> dict:
             f"(erlaubt: {', '.join(PRIORITAETEN)})"
         )
 
-    slug = slug_aus_titel(titel)
-    if not slug:
-        raise EingabeFehler("Titel enthält keine verwendbaren Zeichen für ein Kürzel")
+    parent = _eltern(daten.get("parent"))
+    welle = _verweis(daten.get("welle"), "welle")
+    if parent is not None and welle is not None:
+        raise EingabeFehler(
+            "welle darf nicht zusammen mit parent gesetzt werden — "
+            "die Welle wird von der Eltern-Aufgabe geerbt"
+        )
+
+    if parent is None:
+        basis = slug_aus_titel(titel)
+        if not basis:
+            raise EingabeFehler("Titel enthält keine verwendbaren Zeichen für ein Kürzel")
+    else:
+        titel = _ohne_kennung(titel)
+        basis = slug_aus_titel(titel)
+        if not basis:
+            raise EingabeFehler("Titel enthält keine verwendbaren Zeichen für ein Kürzel")
+        unterkennung = kennung.naechste_unterkennung(parent["pfad"])
+        welle = parent["welle"]
+        titel = f"{unterkennung}: {titel}"
+        basis = f"{unterkennung.lower()}-{basis}"
 
     return {
         "titel": titel,
         "ziel": ziel,
         "akzeptanz": akzeptanz,
         "prioritaet": prioritaet,
-        "slug": slug,
+        "basis": basis,
         "user_story": _verweis(daten.get("user_story"), "user_story"),
-        "welle": _verweis(daten.get("welle"), "welle"),
+        "welle": welle,
+        "parent": parent["pfad"] if parent is not None else None,
     }
 
 
@@ -138,6 +161,71 @@ def _verweis(wert: object, feldname: str) -> str | None:
     return text or None
 
 
+def _eltern(wert: object) -> dict | None:
+    """Validiert ``parent`` und liefert ``{pfad, kennung, welle}`` oder ``None``.
+
+    Gültig ist nur eine vorhandene, lesbare Aufgabe unter ``aufgaben/`` ohne
+    eigenes ``parent`` (Tiefe 1), die nicht ``abgeschlossen`` ist und eine
+    konsistente Top-Level-Kennung trägt. Verstöße sind Eingabefehler (400).
+    """
+    if wert is None:
+        return None
+    if not isinstance(wert, str):
+        raise EingabeFehler("parent muss ein Pfad sein")
+    pfad = " ".join(wert.split())
+    if not pfad:
+        return None
+    if not pfad.startswith(f"{AUFGABEN_ORDNER}/"):
+        raise EingabeFehler("parent muss auf eine Aufgabe unter aufgaben/ zeigen")
+    if okf_bundle.ist_reserviert(pfad):
+        raise EingabeFehler("parent darf keine reservierte Datei sein")
+    try:
+        ziel = okf_bundle.resolve_path(pfad)
+        aufgaben = okf_bundle.resolve_path(AUFGABEN_ORDNER)
+    except okf_bundle.BundlePfadFehler:
+        raise EingabeFehler("parent ist kein gültiger Pfad") from None
+    if ziel.suffix.lower() != ".md" or not ziel.is_relative_to(aufgaben):
+        raise EingabeFehler("parent muss auf eine Aufgabe unter aufgaben/ zeigen")
+
+    try:
+        frontmatter, _ = okf_bundle.lesen(pfad)
+    except FileNotFoundError:
+        raise EingabeFehler("Eltern-Aufgabe wurde nicht gefunden") from None
+    except (okf_bundle.FrontmatterFehler, OSError, UnicodeDecodeError):
+        raise EingabeFehler("Eltern-Aufgabe ist nicht lesbar") from None
+
+    if _wert(frontmatter.get("type")) != "Task":
+        raise EingabeFehler("parent muss auf eine Aufgabe zeigen")
+    if _wert(frontmatter.get("parent")):
+        raise EingabeFehler("Unter-Aufgaben sind nur eine Ebene tief")
+    if _wert(frontmatter.get("task_status")) == "abgeschlossen":
+        raise EingabeFehler(
+            "Unter einer abgeschlossenen Aufgabe können keine Unter-Aufgaben entstehen"
+        )
+
+    eltern = kennung.eltern_kennung(pfad, frontmatter)
+    if eltern is None:
+        raise EingabeFehler("Eltern-Aufgabe hat keine gültige Kennung")
+    return {
+        "pfad": pfad,
+        "kennung": eltern,
+        "welle": _wert(frontmatter.get("welle")),
+    }
+
+
+def _ohne_kennung(titel: str) -> str:
+    """Entfernt ein führendes ``A<N>``/``A<N>.<uuu>``-Präfix samt Doppelpunkt."""
+    return _KENNUNG_PRAEFIX.sub("", titel).strip()
+
+
+def _wert(wert: object) -> str | None:
+    """Getrimmter String oder ``None`` (für optionale Frontmatter-Werte)."""
+    if not isinstance(wert, str):
+        return None
+    text = " ".join(wert.split())
+    return text or None
+
+
 # --- Dateiname ------------------------------------------------------------
 
 
@@ -166,12 +254,12 @@ def _inhalt(felder: dict) -> str:
         "priority": felder["prioritaet"],
         "assigned_to": "coder",
     }
-    for feld in ("user_story", "welle"):
+    for feld in ("user_story", "welle", "parent"):
         if felder[feld]:
             frontmatter[feld] = felder[feld]
+    frontmatter["owner"] = "ai"
     # Neue Aufgaben sind nicht freigegeben (Menschen-Recht, A28).
     frontmatter["freigabe"] = False
-    frontmatter["owner"] = "ai"
 
     kopf = yaml.safe_dump(
         frontmatter,

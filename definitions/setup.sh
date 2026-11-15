@@ -10,10 +10,15 @@
 #   --global   installiert die Subagenten nach ~/.config/opencode/agents/
 #              und die Skill-Snapshots nach ~/.agents/skills/
 #   --force    überschreibt vorhandene Dateien (sonst: vorhandene bleiben unangetastet)
+#
+# Selbstkopien werden erkannt und übersprungen („Quelle = Ziel"). Im Dev-Repo
+# (Ziel = Elternverzeichnis dieses Verzeichnisses) frischt der Lauf nur die
+# vorhandenen Spiegel auf; Abschnitte 4b/5/10 entfallen dort (die Quelle liegt
+# bereits unter definitions/, ein zweites app/ würde die Root-Suite brechen).
 set -euo pipefail
 
-SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TARGET="$(pwd)"
+SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+TARGET="$(pwd -P)"
 FORCE=0
 GLOBAL=0
 WISSEN=0
@@ -29,9 +34,27 @@ for arg in "$@"; do
 done
 
 mkdir -p "$TARGET"
-TARGET="$(cd "$TARGET" && pwd)"
+TARGET="$(cd "$TARGET" && pwd -P)"
+
+# Im Dev-Repo liegt das Ziel eine Ebene über den Definitions (TARGET = SRC/..).
+# Dort ist die Quelle bereits im Projekt vorhanden: ein Kopieren würde nur ein
+# zweites app/ neben definitions/app/ erzeugen (doppelte Testmodul-Basisnamen)
+# und definitions/ in sich selbst spiegeln. Abschnitte 4b/5/10 werden daher
+# übersprungen; 1–4 frischen die Projektspiegel auf.
+DEV_REPO=0
+if [ "$(cd "$SRC/.." && pwd -P)" = "$TARGET" ]; then
+  DEV_REPO=1
+fi
+
+ist_selbe_datei() {  # $1 = Quelle, $2 = Ziel (Ziel darf fehlen)
+  [ "$1" -ef "$2" ] 2>/dev/null
+}
 
 install_file() {  # $1 = Quelle, $2 = Ziel
+  if ist_selbe_datei "$1" "$2"; then
+    echo "  übersprungen (Quelle = Ziel): $2"
+    return
+  fi
   if [ -e "$2" ] && [ "$FORCE" -eq 0 ]; then
     echo "  übersprungen (vorhanden): $2"
     return
@@ -42,6 +65,10 @@ install_file() {  # $1 = Quelle, $2 = Ziel
 }
 
 copy_tree() {  # $1 = Quellverzeichnis, $2 = Zielverzeichnis (ohne __pycache__/.pytest_cache/*.pyc)
+  if ist_selbe_datei "$1" "$2"; then
+    echo "  übersprungen (Quelle = Ziel): $2"
+    return
+  fi
   mkdir -p "$2"
   find "$1" -type d ! -name '__pycache__' ! -name '.pytest_cache' ! -path '*/.pytest_cache/*' -print0 |
     while IFS= read -r -d '' verzeichnis; do
@@ -96,17 +123,23 @@ fi
 echo "4b) Projektvorlagen (definitions/)"
 # tools/neues_projekt.py setzt wissen/ auf definitions/wissen-vorlage/ zurück und
 # verweist im Erfolgstext auf definitions/verify.sh — beides muss im Ziel vorliegen.
-install_file "$SRC/verify.sh" "$TARGET/definitions/verify.sh"
-if [ -e "$TARGET/definitions/wissen-vorlage" ] && [ "$FORCE" -eq 0 ]; then
-  echo "  übersprungen (vorhanden): definitions/wissen-vorlage"
+if [ "$DEV_REPO" -eq 1 ]; then
+  echo "  übersprungen (Quelle = Ziel): definitions/ (Dev-Repo)"
 else
-  copy_tree "$SRC/wissen-vorlage" "$TARGET/definitions/wissen-vorlage"
-  echo "  installiert: definitions/wissen-vorlage"
+  install_file "$SRC/verify.sh" "$TARGET/definitions/verify.sh"
+  if [ -e "$TARGET/definitions/wissen-vorlage" ] && [ "$FORCE" -eq 0 ]; then
+    echo "  übersprungen (vorhanden): definitions/wissen-vorlage"
+  else
+    copy_tree "$SRC/wissen-vorlage" "$TARGET/definitions/wissen-vorlage"
+    echo "  installiert: definitions/wissen-vorlage"
+  fi
 fi
 
 if [ "$WISSEN" -eq 1 ]; then
   echo "5) OKF-Wissensdatenbank (wissen/)"
-  if [ -e "$TARGET/wissen/index.md" ] && [ "$FORCE" -eq 0 ]; then
+  if [ "$DEV_REPO" -eq 1 ]; then
+    echo "  übersprungen (Quelle = Ziel): wissen/ (Dev-Repo)"
+  elif [ -e "$TARGET/wissen/index.md" ] && [ "$FORCE" -eq 0 ]; then
     echo "  übersprungen (vorhanden): $TARGET/wissen/"
   else
     mkdir -p "$TARGET/wissen"
@@ -177,7 +210,9 @@ else
 fi
 
 echo "10) App (app/)"
-if [ -d "$SRC/app" ]; then
+if [ "$DEV_REPO" -eq 1 ]; then
+  echo "  übersprungen (Quelle = Ziel): app/ (Dev-Repo)"
+elif [ -d "$SRC/app" ]; then
   for f in "$SRC"/app/*; do
     [ -e "$f" ] || continue
     name="$(basename "$f")"

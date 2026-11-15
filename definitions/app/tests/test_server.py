@@ -111,11 +111,54 @@ def test_t6_fehlendes_bundle_root_bricht_ab(monkeypatch, capsys):
     assert "BUNDLE_ROOT" in capsys.readouterr().err
 
 
-def test_t6_ungueltiges_bundle_root_bricht_ab(tmp_path, monkeypatch, capsys):
-    monkeypatch.setenv("BUNDLE_ROOT", str(tmp_path / "gibt-es-nicht"))
+def test_a33_t12_startfehler_ohne_pfad_leak(tmp_path, monkeypatch, capsys):
+    """A33-T12 (A7-2): Die Startmeldung nennt den Grund, aber keinen absoluten Pfad."""
+    fehlend = tmp_path / "gibt-es-nicht"
+    monkeypatch.setenv("BUNDLE_ROOT", str(fehlend))
 
     assert server.main() != 0
-    assert "BUNDLE_ROOT" in capsys.readouterr().err
+
+    fehler = capsys.readouterr().err
+    assert "Start abgebrochen" in fehler
+    assert "BUNDLE_ROOT" in fehler
+    assert "kein Verzeichnis" in fehler
+    assert str(tmp_path) not in fehler
+    assert str(fehlend) not in fehler
+
+
+def test_a33_t12_datei_statt_verzeichnis_ohne_pfad_leak(tmp_path, monkeypatch, capsys):
+    """A33-T12: Auch eine Datei als Wurzel wird ohne Pfadangabe abgelehnt."""
+    datei = tmp_path / "wissen.md"
+    datei.write_text("# Datei statt Ordner\n", encoding="utf-8")
+    monkeypatch.setenv("BUNDLE_ROOT", str(datei))
+
+    assert server.main() != 0
+
+    fehler = capsys.readouterr().err
+    assert "kein Verzeichnis" in fehler
+    assert str(tmp_path) not in fehler
+
+
+@pytest.mark.parametrize("wert", [None, "", "   "])
+def test_a33_t13_fehlendes_bundle_root_meldung_unveraendert(wert, monkeypatch, capsys):
+    """A33-T13 (A7-2): Fehlendes/leeres ``BUNDLE_ROOT`` meldet unverändert „nicht gesetzt"."""
+    if wert is None:
+        monkeypatch.delenv("BUNDLE_ROOT", raising=False)
+    else:
+        monkeypatch.setenv("BUNDLE_ROOT", wert)
+
+    assert server.main() != 0
+    assert "BUNDLE_ROOT ist nicht gesetzt" in capsys.readouterr().err
+
+
+def test_a33_t13_gueltige_wurzel_startet_weiterhin(bundle, monkeypatch, unterdruecke_start, capsys):
+    """A33-T13: Eine gültige Wurzel startet unverändert (keine Abbruchmeldung)."""
+    monkeypatch.setenv("BUNDLE_ROOT", str(bundle))
+    monkeypatch.delenv("PORT", raising=False)
+
+    assert server.main() == 0
+    assert unterdruecke_start["host"] == "0.0.0.0"
+    assert "Start abgebrochen" not in capsys.readouterr().err
 
 
 def test_t6_ungueltiger_port_bricht_ab(bundle, monkeypatch, capsys):

@@ -1,4 +1,4 @@
-import { getJson, zeigeFehler } from "./api.js";
+import { getJson, istDateiAntwort, zeigeFehler } from "./api.js";
 
 const CONTAINER_ID = "liste-features";
 const FEATURES_PFAD = "features.md";
@@ -298,15 +298,6 @@ function meldeFehlendenContainer(id) {
   zeigeFehler(`Ansicht nicht verfügbar: Container #${id} fehlt in index.html.`);
 }
 
-function istDatei(daten) {
-  return (
-    daten !== null &&
-    typeof daten === "object" &&
-    !Array.isArray(daten) &&
-    typeof daten.markdown === "string"
-  );
-}
-
 function erstelleFeatureListe(features, aufgaben) {
   const liste = document.createElement("ul");
   liste.classList.add("liste");
@@ -446,7 +437,7 @@ export async function ladeFeaturesAnsicht({ unterpunkt } = {}) {
     ziel.replaceChildren(erstelleHinweis(LADE_FEHLER));
     return { ok: false };
   }
-  if (!istDatei(daten)) {
+  if (!istDateiAntwort(daten)) {
     ziel.replaceChildren(erstelleHinweis(FORMAT_FEHLER));
     zeigeFehler(FORMAT_FEHLER);
     return { ok: false };

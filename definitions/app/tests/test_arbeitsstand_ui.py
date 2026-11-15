@@ -152,6 +152,18 @@ globalThis.fetch = async (pfad, optionen = {}) => {
   };
 };
 
+// Status-Zelle über ihre Marken (Klassen `status`/`arbeitsstand`) finden — nicht
+// über den Spaltenindex; neue Spalten (z. B. „Welle") verschieben die Zelle (A31-H4).
+const statusZelle = (zeile) => {
+  const zelle = zeile.kinder.find((kind) =>
+    sammle(kind).some(
+      (knoten) =>
+        knoten.classList.contains("status") || knoten.classList.contains("arbeitsstand"),
+    ),
+  );
+  return zelle ? zelle.textContent : "";
+};
+
 // Zeilen einer Tabelle mit ihren Zelleninhalten und Arbeitsstand-Knoten.
 const zeilen = (id) =>
   sammle(bei(id))
@@ -159,6 +171,7 @@ const zeilen = (id) =>
     .map((zeile) => ({
       path: zeile.dataset.path,
       zellen: zeile.kinder.map((zelle) => zelle.textContent),
+      status: statusZelle(zeile),
       arbeitsstaende: sammle(zeile)
         .filter((knoten) => knoten.classList.contains("arbeitsstand"))
         .map((knoten) => ({ marke: knoten.marke, text: knoten.textContent })),
@@ -303,14 +316,14 @@ return {
     ]
     mit, ohne = ergebnis["zeilen"]
     assert mit["arbeitsstaende"] == [{"marke": "div", "text": ARBEITSSTAND}]
-    assert mit["zellen"][2].count(ARBEITSSTAND) == 1
-    assert "In Arbeit" in mit["zellen"][2]
+    assert mit["status"].count(ARBEITSSTAND) == 1
+    assert "In Arbeit" in mit["status"]
     # Titel-/owner-Zellen bleiben unverändert.
     assert mit["zellen"][0] == "A30: Was passiert gerade"
     assert mit["zellen"][3] == "ai"
     # Aufgabe ohne Angabe: keine Zusatzzeile.
     assert ohne["arbeitsstaende"] == []
-    assert ohne["zellen"][2] == "Offen"
+    assert ohne["status"] == "Offen"
     assert "img" not in ergebnis["marken"]
     assert ergebnis["aufrufe"] == ["/api/aufgaben"]
 
@@ -372,9 +385,9 @@ return { aufgaben, uebersicht, top5 };
     for zeile, (_, text) in zip(ergebnis["aufgaben"], erwartet, strict=True):
         eigene = text.split(":")[0]
         fremde = [label for label, _ in (t.split(": ") for _, t in erwartet) if label != eigene]
-        assert zeile["zellen"][2].count(text) == 1
+        assert zeile["status"].count(text) == 1
         for label in fremde:
-            assert f"{label}:" not in zeile["zellen"][2]
+            assert f"{label}:" not in zeile["status"]
     # Übersicht und Top-5 zeigen dieselbe Zuordnung in gleicher Reihenfolge.
     assert [zeile["path"] for zeile in ergebnis["uebersicht"]] == [pfad for pfad, _ in erwartet]
     assert [

@@ -35,6 +35,19 @@ export function loescheMeldung() {
 }
 
 /**
+ * Prüft eine `/api/file`-Antwort: Objekt, kein Array und `markdown` als String.
+ * Ein Prädikat für alle Ansichten (A14-5); die Meldungen bleiben je Ansicht eigen.
+ */
+export function istDateiAntwort(daten) {
+  return (
+    daten !== null &&
+    typeof daten === "object" &&
+    !Array.isArray(daten) &&
+    typeof daten.markdown === "string"
+  );
+}
+
+/**
  * Liest den Antwort-Body. `204` und leere Bodies liefern `null` ohne Fehler;
  * nicht parsebares JSON wird als Lesefehler gekennzeichnet.
  */
