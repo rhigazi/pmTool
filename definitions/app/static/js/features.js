@@ -9,9 +9,11 @@ const DETAIL_VORSCHLAG = "#/detail/";
 const LEER_FEATURES = "Keine Features.";
 const LADE_FEHLER = "Feature-Liste konnte nicht geladen werden.";
 const LADE_AUFGABEN_FEHLER = "Aufgaben konnten nicht geladen werden.";
-const FORMAT_FEHLER = "Feature-Liste hat ein unerwartetes Format.";
+const FORMAT_PRAEFIX = "Feature-Liste hat ein unerwartetes Format";
+const FORMAT_FEHLER = `${FORMAT_PRAEFIX}.`;
 const FORMAT_AUFGABEN_FEHLER = "Aufgaben haben ein unerwartetes Format.";
-const ABSCHNITT_FEHLER = "Feature-Liste hat ein unerwartetes Format: Feature-Abschnitt fehlt.";
+const ABSCHNITT_FEHLER = `${FORMAT_PRAEFIX}: Feature-Abschnitt fehlt.`;
+const ZEILEN_FEHLER = `${FORMAT_PRAEFIX}: Feature-Zeile hat einen Link nicht am Zeilenanfang.`;
 
 const STATUS_WORTE = ["offen", "in Umsetzung", "umgesetzt", "pausiert"];
 const PRIORITAET_WORTE = ["hoch", "mittel", "niedrig"];
@@ -34,11 +36,14 @@ const FEATURE_ZEILE = /^\[([^\]]+)\]\(([^)]+)\)/;
 
 function dekodiereZiel(ziel) {
   const text = ziel.trim();
+  let dekodiert;
   try {
-    return decodeURIComponent(text);
+    dekodiert = decodeURIComponent(text);
   } catch {
-    return text;
+    dekodiert = text;
   }
+  // Absolute Ziele (`/aufgaben/…`) gelten relativ zum Bundle-Wurzelverzeichnis.
+  return dekodiert.replace(/^\//, "");
 }
 
 function linkZiele(text) {
@@ -155,9 +160,17 @@ export function parseFeatures(markdown) {
     }
 
     const treffer = FEATURE_ZEILE.exec(bullet[2]);
-    const pfad = treffer ? dekodiereZiel(treffer[2]) : "";
+    // Fail-loud: Ein Top-Level-Bullet mit `.md`-Link, dessen Link nicht am
+    // Zeilenanfang steht, ist eine kaputte Feature-Zeile statt eines Texts.
+    if (!treffer) {
+      if (linkZiele(bullet[2]).length > 0) throw new Error(ZEILEN_FEHLER);
+      aktuell = null;
+      continue;
+    }
+
+    const pfad = dekodiereZiel(treffer[2]);
     // Ein Aufgaben-Link ist kein Feature, auch wenn er auf oberster Ebene steht.
-    if (!treffer || !ZIEL_ENDE.test(pfad) || pfad.startsWith("aufgaben/")) {
+    if (!ZIEL_ENDE.test(pfad) || pfad.startsWith("aufgaben/")) {
       aktuell = null;
       continue;
     }
@@ -176,7 +189,7 @@ export function parseFeatures(markdown) {
   }
 
   if (!abschnittGefunden) {
-    throw new Error("Kein Feature-Abschnitt (Offene/Umgesetzte Features) gefunden");
+    throw new Error(ABSCHNITT_FEHLER);
   }
   return features;
 }
@@ -334,7 +347,7 @@ function erstelleStatusMarke(status, hinweis) {
 
   if (hinweis) {
     const zusatz = document.createElement("span");
-    zusatz.textContent = ` (${hinweis})`;
+    zusatz.textContent = ` — ${hinweis}`;
     marke.append(zusatz);
   }
   return marke;
@@ -374,7 +387,8 @@ function erstelleGruppe(schluessel, titel, aufgaben) {
 function erstelleSammelhinweis(features, aufgaben) {
   const rest = ohneZuordnung(features, aufgaben);
   if (rest.length === 0) return null;
-  return erstelleHinweis(`${rest.length} Aufgaben ohne Feature-Zuordnung`, "hinweis");
+  const wort = rest.length === 1 ? "Aufgabe" : "Aufgaben";
+  return erstelleHinweis(`${rest.length} ${wort} ohne Feature-Zuordnung`, "hinweis");
 }
 
 function erstelleFeatureDetail(feature, aufgaben) {
@@ -441,9 +455,13 @@ export async function ladeFeaturesAnsicht({ unterpunkt } = {}) {
   let features;
   try {
     features = parseFeatures(daten.markdown);
-  } catch {
-    ziel.replaceChildren(erstelleHinweis(ABSCHNITT_FEHLER));
-    zeigeFehler(ABSCHNITT_FEHLER);
+  } catch (fehler) {
+    const meldung =
+      typeof fehler?.message === "string" && fehler.message.startsWith(FORMAT_PRAEFIX)
+        ? fehler.message
+        : ABSCHNITT_FEHLER;
+    ziel.replaceChildren(erstelleHinweis(meldung));
+    zeigeFehler(meldung);
     return { ok: false };
   }
 

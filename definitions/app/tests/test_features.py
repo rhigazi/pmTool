@@ -177,8 +177,10 @@ def test_t1_bestehende_navigation_bleibt_vollstaendig():
         assert f'href="#/{route}"' in nav
     for unterpunkt in UNTERPUNKT_ROUTEN:
         assert f'href="#/projekt/{unterpunkt}"' in nav
-    # Zehn bisherige Links (fünf Hauptpunkte + fünf Projekt-Unterpunkte) + einer.
-    assert nav.count('class="navigation-link"') == 11
+    # Teilmengenprüfung: mindestens die elf erwarteten Links (fünf Hauptpunkte,
+    # fünf Projekt-Unterpunkte, Feature List) müssen vorhanden sein; weitere
+    # Menüpunkte anderer Aufgaben brechen diesen Test nicht.
+    assert nav.count('class="navigation-link"') >= 11
 
 
 def test_t1_view_container_feature_list():
@@ -229,7 +231,9 @@ def test_t4_features_js_nutzt_textcontent_und_classlist():
 def test_t4_server_ohne_neuen_endpunkt():
     quelle = lies(SERVER_PY)
     assert "/api/features" not in quelle
-    assert len(re.findall(r"@app\.get\(", quelle)) == 5
+    # Teilmengenprüfung: die bestehenden GET-Endpunkte bleiben vorhanden;
+    # zusätzliche Endpunkte anderer Aufgaben (z. B. A27) brechen den Test nicht.
+    assert len(re.findall(r"@app\.get\(", quelle)) >= 5
 
 
 def test_t5_menuepunkt_ueber_http_erreichbar(tmp_path):
@@ -428,6 +432,22 @@ def test_t11_crlf_und_kodierte_ziele():
 
 
 @ohne_node
+def test_t11_absolute_linkziele_werden_normalisiert():
+    # `wissen/features.md` verlinkt relativ, absolute Ziele (`/aufgaben/…`)
+    # dürfen aber nicht still herausfallen.
+    markdown = (
+        "# Offene Features\n"
+        "\n"
+        "* [Titel](/features/titel.md) — **offen** · Priorität **hoch**\n"
+        "  * [A1](/aufgaben/a1-okf-bundle.md) Fundament\n"
+    )
+    ergebnis = js("features.parseFeatures(daten)", markdown)[0]
+    assert ergebnis["pfad"] == "features/titel.md"
+    assert ergebnis["slug"] == "titel"
+    assert ergebnis["aufgaben"] == ["aufgaben/a1-okf-bundle.md"]
+
+
+@ohne_node
 def test_t11_bullet_ohne_link_und_ziel_ohne_md():
     markdown = (
         "# Offene Features\n"
@@ -441,6 +461,30 @@ def test_t11_bullet_ohne_link_und_ziel_ohne_md():
 @ohne_node
 def test_t11_abschnitte_ohne_eintraege_sind_leer():
     assert js("features.parseFeatures(daten)", LEERER_ABSCHNITT_MD) == []
+
+
+@ohne_node
+def test_t11_zeile_mit_link_nicht_am_anfang_ist_formatfehler():
+    # Ein Top-Level-Bullet mit `.md`-Link, dessen Link nicht am Zeilenanfang
+    # steht, ist eine kaputte Feature-Zeile — kein stilles Verwerfen.
+    markdown = (
+        "# Offene Features\n"
+        "\n"
+        "* [Gut](features/gut.md) — **offen**\n"
+        "* Siehe [Kaputt](features/kaputt.md) — **offen**\n"
+    )
+    ergebnis = js_ablauf(
+        "try {\n"
+        "  features.parseFeatures(daten);\n"
+        "  return { wirft: false };\n"
+        "} catch (fehler) {\n"
+        "  return { wirft: true, text: String(fehler.message) };\n"
+        "}",
+        markdown,
+    )
+    assert ergebnis["wirft"] is True
+    assert "Format" in ergebnis["text"]
+    assert "Zeile" in ergebnis["text"]
 
 
 @ohne_node
@@ -943,7 +987,7 @@ def test_t16_liste_zeigt_features_mit_status_prioritaet_und_zaehlern():
         {"text": "OKF Projekt-Manager (SPA)", "href": "#/features/okf-projekt-manager-spa"}
     ]
     assert ergebnis["marken"] == [
-        "umgesetzt (MVP abnahmefähig (Abnahme durch Projektleitung ausstehend))"
+        "umgesetzt — MVP abnahmefähig (Abnahme durch Projektleitung ausstehend)"
     ]
     punkt = ergebnis["punkte"][0]
     assert "Priorität hoch" in punkt
@@ -967,6 +1011,24 @@ def test_t16_liste_zeigt_sammelhinweis_fuer_nicht_zugeordnete_aufgaben():
 
 
 @ohne_node
+@pytest.mark.parametrize(
+    "anzahl,erwartet",
+    [(1, "1 Aufgabe ohne Feature-Zuordnung"), (2, "2 Aufgaben ohne Feature-Zuordnung")],
+)
+def test_t16_sammelhinweis_ist_im_singular_und_plural(anzahl, erwartet):
+    zugeordnet = {"aufgaben/a1-okf-bundle.md", "aufgaben/a2-status-mapping.md"}
+    rest = [aufgabe for aufgabe in API_AUFGABEN if aufgabe["path"] not in zugeordnet]
+    antworten = standard_antworten()
+    antworten[AUFGABEN_ENDPUNKT] = antwort_aufgaben(
+        [aufgabe for aufgabe in API_AUFGABEN if aufgabe["path"] in zugeordnet] + rest[:anzahl]
+    )
+    ergebnis = dom(SZENARIO_LISTE, antworten)
+    assert erwartet in ergebnis["text"]
+    if anzahl == 1:
+        assert "1 Aufgaben" not in ergebnis["text"]
+
+
+@ohne_node
 def test_t15_ohne_luecken_kein_sammelhinweis():
     antworten = standard_antworten()
     antworten[AUFGABEN_ENDPUNKT] = antwort_aufgaben(
@@ -986,7 +1048,7 @@ def test_t17_detail_zeigt_status_gruppen_und_aufgabenlinks():
         "Erledigt (1)",
     ]
     assert ergebnis["marken"][0] == (
-        "umgesetzt (MVP abnahmefähig (Abnahme durch Projektleitung ausstehend))"
+        "umgesetzt — MVP abnahmefähig (Abnahme durch Projektleitung ausstehend)"
     )
     assert {eintrag["name"] for eintrag in ergebnis["gruppen"]} == {
         "offen",
@@ -1152,6 +1214,28 @@ def test_t19d_dokument_ohne_feature_abschnitt_ist_formatfehler():
 
 
 @ohne_node
+def test_t19d_zeile_mit_link_nicht_am_anfang_zeigt_formatfehler():
+    markdown = (
+        "# Offene Features\n"
+        "\n"
+        "* [Gut](features/gut.md) — **offen**\n"
+        "* Siehe [Kaputt](features/kaputt.md) — **offen**\n"
+    )
+    ergebnis = dom(
+        szenario_fehler('await features.ladeFeaturesAnsicht({ unterpunkt: "" });'),
+        {
+            FEATURES_PFAD: antwort_features(markdown),
+            AUFGABEN_ENDPUNKT: antwort_aufgaben(API_AUFGABEN),
+        },
+    )
+    assert "Format" in ergebnis["text"]
+    assert "Zeile" in ergebnis["text"]
+    assert "Keine Features." not in ergebnis["text"]
+    assert ergebnis["links"] == 0
+    assert ergebnis["fehler"]["sichtbar"] is True
+
+
+@ohne_node
 def test_t19e_aufgabenfehler_zeigt_keine_teilliste():
     ergebnis = dom(
         szenario_fehler('await features.ladeFeaturesAnsicht({ unterpunkt: "" });'),
@@ -1264,12 +1348,25 @@ for (const basis of basisListe) {
 }
 
 const navigation = {};
+const navigationBereich = document.createElement("nav");
 for (const basis of ["uebersicht", "wellen", "aufgaben", "features", "entscheidungen", "projekt"]) {
   const link = document.createElement("a");
   link.classList.add("navigation-link");
   link.dataset.ansicht = basis;
   link.textContent = basis === "features" ? "Feature List" : basis;
+  navigationBereich.append(link);
   navigation[basis] = link;
+}
+// Zwei Projekt-Unterpunkte wie in index.html (`data-unterpunkt`), damit die
+// Aktivmarkierung Unterpunkt-Routen gegen die Hauptpunkte abgrenzt.
+for (const unterpunkt of ["konzept", "phasen"]) {
+  const link = document.createElement("a");
+  link.classList.add("navigation-link");
+  link.dataset.ansicht = "projekt";
+  link.dataset.unterpunkt = unterpunkt;
+  link.textContent = unterpunkt;
+  navigationBereich.append(link);
+  navigation[`projekt/${unterpunkt}`] = link;
 }
 sicht.features.append(bei("liste-features"));
 
@@ -1361,9 +1458,35 @@ def test_t2_router_zeigt_nur_die_features_ansicht():
 def test_t3_feature_list_ist_bei_detailroute_aktiv():
     ergebnis = router_lauf("#/features/okf-projekt-manager-spa")
     assert ergebnis["sichtbar"] == ["features"]
+    # Genau ein aktiver Link, auch mit den Projekt-Unterpunkten im Menü.
     assert ergebnis["aktiv"] == ["features"]
     assert ergebnis["aria"] == ["features"]
     assert "Erledigt (1)" in ergebnis["text"]
+
+
+SZENARIO_ROUTER_KURZ = r"""
+window.location.hash = __HASH__;
+await import(__APP__);
+for (const hoerer of dokumentHoerer.DOMContentLoaded || []) await hoerer();
+await warte();
+const aktive = (pruefung) => Object.entries(navigation)
+  .filter(([, link]) => pruefung(link))
+  .map(([basis]) => basis);
+return {
+  aktiv: aktive((link) => link.classList.contains("aktiv")),
+  aria: aktive((link) => link.getAttribute("aria-current") === "page"),
+};
+"""
+
+
+@ohne_node
+def test_t3_projektroute_markiert_genau_den_unterpunkt():
+    ablauf = SZENARIO_ROUTER_KURZ.replace("__HASH__", json.dumps("#/projekt/konzept")).replace(
+        "__APP__", json.dumps(APP_JS.as_uri())
+    )
+    ergebnis = app_lauf(ablauf, standard_antworten())
+    assert ergebnis["aktiv"] == ["projekt/konzept"]
+    assert ergebnis["aria"] == ["projekt/konzept"]
 
 
 # --- HTTP-Läufe gegen ein Test-Bundle unter tmp_path (T22) ----------------
@@ -1466,10 +1589,11 @@ def test_http_t22_liste_aus_test_bundle(app_server):
     ergebnis = ui_lauf(app_server, SZENARIO_LISTE)
     assert [link["text"] for link in ergebnis["links"]] == ["Feature Eins", "Feature Zwei"]
     assert "offen" in ergebnis["marken"][0]
-    assert "umgesetzt (fertig)" in ergebnis["marken"][1]
+    assert "umgesetzt — fertig" in ergebnis["marken"][1]
     assert "0 offen · 1 in Bearbeitung · 1 erledigt" in ergebnis["punkte"][0]
     assert "0 offen · 0 in Bearbeitung · 0 erledigt" in ergebnis["punkte"][1]
-    assert "1 Aufgaben ohne Feature-Zuordnung" in ergebnis["text"]
+    assert "1 Aufgabe ohne Feature-Zuordnung" in ergebnis["text"]
+    assert "1 Aufgaben ohne Feature-Zuordnung" not in ergebnis["text"]
     assert ergebnis["abgerufen"] == [
         f"/api/file {FEATURES_PFAD}",
         "/api/aufgaben /api/aufgaben",
@@ -1536,6 +1660,9 @@ return {
 def test_t17_klick_auf_aufgabe_oeffnet_die_detailansicht():
     ablauf = SZENARIO_AUFGABE_OEFFNEN.replace("__APP__", json.dumps(APP_JS.as_uri()))
     antworten = standard_antworten()
+    # Die Detailansicht lädt bei Aufgaben zusätzlich die Wellen-Auswahl (A26/A27);
+    # hier genügt eine leere, gültige Liste.
+    antworten["/api/wellen"] = antwort_aufgaben([])
     antworten["aufgaben/a2-status-mapping.md"] = {
         "status": 200,
         "koerper": {
