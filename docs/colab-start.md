@@ -20,25 +20,35 @@ Bereits vorhanden? Dann direkt `%cd /content/pmTool` und mit Schritt 2 weitermac
 `start.sh` liegt als Repo-Werkzeug direkt in der Projektwurzel (neben
 `definitions/`) und wird von `setup.sh` **nicht** in Zielprojekte verteilt.
 Es prüft genau dieses Repository und ist für den **lokalen** Start gedacht;
-in Colab übernimmt `%run definitions/app/start_colab.py` (Schritt 2).
+in Colab übernimmt `%run /content/pmTool/definitions/app/start_colab.py` (Schritt 2).
 
 ## 2) Umgebung wiederherstellen und Server starten
 
-Die Port-Freigabe von Colab (`serve_kernel_port_as_window`) wirkt **nur im
+Die Port-Freigabe von Colab (`serve_kernel_port_as_iframe`) wirkt **nur im
 Notebook-Kernel**. Deshalb wird das Startskript als Kernel-Aufruf gestartet —
-nicht als Shell-Befehl:
+nicht als Shell-Befehl. Die App erscheint danach direkt in der Zelle. Beide
+Varianten funktionieren; die erste ist ein Einzeiler mit absolutem Pfad:
+
+```python
+%run /content/pmTool/definitions/app/start_colab.py
+```
+
+Oder relativ — dann **muss** `%cd` in einer eigenen Zeile davor stehen:
 
 ```python
 %cd /content/pmTool
 %run definitions/app/start_colab.py
 ```
 
+> **Achtung:** `%run definitions/app/start_colab.py` ohne vorheriges `%cd`
+> schlägt fehl (`File not found`), weil das Notebook-Verzeichnis in einer
+> frischen Sitzung `/content` ist — nicht die Projektwurzel.
+
 Dasselbe ohne Magie (falls `%run` in der Zelle nicht möglich ist):
 
 ```python
-import os, sys
-os.chdir("/content/pmTool")
-sys.path.insert(0, "definitions/app")
+import sys
+sys.path.insert(0, "/content/pmTool/definitions/app")
 import start_colab
 start_colab.main()
 ```
@@ -49,18 +59,25 @@ Das Skript erledigt der Reihe nach:
 2. installiert **nur bei Bedarf** `flask` und `pyyaml` (per `pip`),
 3. startet `definitions/app/server.py` als Subprozess auf Port 5000
    (Bundle `wissen/` wird nur lesend verwendet),
-4. gibt den Port im Kernel frei → Browserfenster mit der App.
+4. zeigt die App per `serve_kernel_port_as_iframe` **in der Notebook-Zelle**
+   (nur Fallback: das veraltete `serve_kernel_port_as_window`).
 
 **Warum nicht `!bash start.sh --colab` oder `!python3 …`?** Ein `!`-Befehl läuft
 als Unterprozess ohne Kernel-Kanal. Dort findet `google.colab` zwar statt, der
 Aufruf der Freigabe schlägt aber fehl — sichtbar wird nur
 `127.0.0.1:5000`/`172.x:5000`, das im Browser nicht erreichbar ist. Das Skript
-erkennt das und gibt die Handlungsanweisung aus:
+erkennt das und gibt die Handlungsanweisung aus. Freigabe in laufender Sitzung
+nachholen (Server läuft schon):
 
 ```python
 from google.colab import output
-output.serve_kernel_port_as_window(5000)   # in laufender Sitzung nachholen
+output.serve_kernel_port_as_iframe(5000)   # App erscheint in der Zelle
 ```
+
+> **Veraltet:** `output.serve_kernel_port_as_window(5000)` gibt inzwischen nur
+> noch `https://localhost:5000/` aus (mit Deprecation-Warnung) — diese URL ist
+> im Browser nicht nutzbar. Das Skript nutzt die Funktion deshalb nur noch als
+> Fallback, falls `serve_kernel_port_as_iframe` fehlt.
 
 `start.sh` selbst bleibt für den lokalen Start zuständig:
 
@@ -136,8 +153,7 @@ optional (z. B. nicht installierte globale Skills → `bash definitions/setup.sh
 
 ```python
 !git clone https://github.com/rhigazi/pmTool
-%cd /content/pmTool
-%run definitions/app/start_colab.py   # Server + Browserfenster (Kernel-Aufruf!)
+%run /content/pmTool/definitions/app/start_colab.py   # Server + App in der Zelle (Kernel-Aufruf, absoluter Pfad)
 # Secrets-Zelle aus Schritt 3 ausführen (falls Telegram gewünscht)
 !bash definitions/verify.sh .         # Setup-Check
 # neues Terminal: cd /content/pmTool && opencode

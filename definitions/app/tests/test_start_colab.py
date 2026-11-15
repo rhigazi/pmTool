@@ -42,20 +42,35 @@ def port_frei(monkeypatch):
     monkeypatch.setattr(start_colab, "_port_belegt", lambda port: False)
 
 
-@pytest.fixture()
-def colab(monkeypatch):
-    """Fake-``google.colab.output``; die Rückgabe sammelt die Port-Aufrufe."""
-    aufrufe = []
-
+def _fake_colab(monkeypatch, iframe=None, fenster=None):
+    """Registriert ein Fake-``google.colab.output`` mit den gegebenen Port-Funktionen."""
     modul_google = types.ModuleType("google")
     modul_colab = types.ModuleType("google.colab")
     modul_output = types.ModuleType("google.colab.output")
-    modul_output.serve_kernel_port_as_window = aufrufe.append
+    if iframe is not None:
+        modul_output.serve_kernel_port_as_iframe = iframe
+    if fenster is not None:
+        modul_output.serve_kernel_port_as_window = fenster
     modul_google.colab = modul_colab
     modul_colab.output = modul_output
     monkeypatch.setitem(sys.modules, "google", modul_google)
     monkeypatch.setitem(sys.modules, "google.colab", modul_colab)
     monkeypatch.setitem(sys.modules, "google.colab.output", modul_output)
+
+
+@pytest.fixture()
+def colab(monkeypatch):
+    """Fake-``google.colab.output``: sammelt iframe- und Fenster-Aufrufe."""
+    aufrufe = types.SimpleNamespace(iframe=[], fenster=[])
+    _fake_colab(monkeypatch, iframe=aufrufe.iframe.append, fenster=aufrufe.fenster.append)
+    return aufrufe
+
+
+@pytest.fixture()
+def colab_nur_fenster(monkeypatch):
+    """Colab-Laufzeit ohne ``serve_kernel_port_as_iframe`` (ältere Umgebung)."""
+    aufrufe = []
+    _fake_colab(monkeypatch, fenster=aufrufe.append)
     return aufrufe
 
 
@@ -66,20 +81,6 @@ def ohne_colab(monkeypatch):
         monkeypatch.setitem(sys.modules, name, None)
 
 
-def _fake_colab(monkeypatch, freigabe):
-    """Registriert ein Fake-``google.colab.output`` mit ``freigabe`` als Port-Funktion."""
-    modul_google = types.ModuleType("google")
-    modul_colab = types.ModuleType("google.colab")
-    modul_output = types.ModuleType("google.colab.output")
-    if freigabe is not None:
-        modul_output.serve_kernel_port_as_window = freigabe
-    modul_google.colab = modul_colab
-    modul_colab.output = modul_output
-    monkeypatch.setitem(sys.modules, "google", modul_google)
-    monkeypatch.setitem(sys.modules, "google.colab", modul_colab)
-    monkeypatch.setitem(sys.modules, "google.colab.output", modul_output)
-
-
 @pytest.fixture()
 def colab_ohne_kernel(monkeypatch):
     """Colab-Laufzeit vorhanden, aber ohne Kernel-Kanal (Aufruf im Unterprozess)."""
@@ -87,13 +88,13 @@ def colab_ohne_kernel(monkeypatch):
     def ohne_kanal(port):
         raise RuntimeError("no kernel channel")
 
-    _fake_colab(monkeypatch, ohne_kanal)
+    _fake_colab(monkeypatch, iframe=ohne_kanal, fenster=ohne_kanal)
 
 
 @pytest.fixture()
 def colab_ohne_funktion(monkeypatch):
-    """``google.colab`` ohne ``serve_kernel_port_as_window``."""
-    _fake_colab(monkeypatch, None)
+    """``google.colab.output`` ohne jede Port-Freigabe-Funktion."""
+    _fake_colab(monkeypatch)
 
 
 def _baum_hash(wurzel: Path) -> str:
@@ -114,7 +115,8 @@ def test_t1_port_freigabe_genau_einmal(popen, port_frei, colab, monkeypatch):
     monkeypatch.delenv("PORT", raising=False)
 
     assert start_colab.main() == 0
-    assert colab == [5000]
+    assert colab.iframe == [5000]
+    assert colab.fenster == []
     assert len(popen.aufrufe) == 1
 
 
@@ -155,6 +157,15 @@ def test_t3_ohne_colab_exit_null_und_url(popen, port_frei, ohne_colab, monkeypat
 # --- T9 Port-Freigabe scheitert ohne Kernel-Kanal (A16) -------------------
 
 
+def _pruefe_handlungsanweisung(ausgabe: str) -> None:
+    """Der Hinweis nennt den absoluten Skriptpfad — relativ scheitert in Colab."""
+    pfad = Path(start_colab.__file__).resolve()
+    assert pfad.is_absolute()
+    assert f"%run {pfad}" in ausgabe
+    assert "%run definitions/" not in ausgabe
+    assert "serve_kernel_port_as_iframe(5000)" in ausgabe
+
+
 def test_t9_unterprozess_meldet_handlungsanweisung(popen, port_frei, colab_ohne_kernel, monkeypatch, capsys):
     """Ohne Kernel-Kanal (z. B. Unterprozess) nennt die Ausgabe den Ausweg."""
     monkeypatch.delenv("PORT", raising=False)
@@ -162,9 +173,8 @@ def test_t9_unterprozess_meldet_handlungsanweisung(popen, port_frei, colab_ohne_
     assert start_colab.main() == 0
 
     ausgabe = capsys.readouterr().out
-    assert "%run definitions/app/start_colab.py" in ausgabe
-    assert "serve_kernel_port_as_window" in ausgabe
-    assert "http://localhost:5000" in ausgabe
+    _pruefe_handlungsanweisung(ausgabe)
+    assert "localhost" not in ausgabe
     assert len(popen.aufrufe) == 1
 
 
@@ -174,8 +184,7 @@ def test_t9_colab_ohne_funktion_meldet_handlungsanweisung(popen, port_frei, cola
     assert start_colab.main() == 0
 
     ausgabe = capsys.readouterr().out
-    assert "%run definitions/app/start_colab.py" in ausgabe
-    assert "serve_kernel_port_as_window" in ausgabe
+    _pruefe_handlungsanweisung(ausgabe)
     assert len(popen.aufrufe) == 1
 
 
@@ -192,6 +201,51 @@ def test_t10_kernel_erkennung_im_kernel(monkeypatch):
     monkeypatch.setattr(builtins, "get_ipython", lambda: object(), raising=False)
 
     assert start_colab._laeuft_im_kernel() is True
+
+
+# --- T11 iframe primär, Fenster nur Fallback (A16) ------------------------
+
+
+def test_t11_iframe_meldet_anzeige_ohne_localhost(popen, port_frei, colab, monkeypatch, capsys):
+    """Erfolgreiche Freigabe nennt keine unbrauchbare localhost-URL."""
+    monkeypatch.delenv("PORT", raising=False)
+
+    assert start_colab.main() == 0
+
+    ausgabe = capsys.readouterr().out
+    assert "localhost" not in ausgabe
+    assert "Notebook" in ausgabe
+    assert "Port 5000" in ausgabe
+
+
+def test_t11_fallback_auf_fenster_ohne_iframe(popen, port_frei, colab_nur_fenster, monkeypatch, capsys):
+    """Fehlt ``serve_kernel_port_as_iframe``, wird das Fenster als Fallback genutzt."""
+    monkeypatch.delenv("PORT", raising=False)
+
+    assert start_colab.main() == 0
+
+    ausgabe = capsys.readouterr().out
+    assert colab_nur_fenster == [5000]
+    assert "Browserfenster" in ausgabe
+    assert "veraltet" in ausgabe
+    assert "localhost" not in ausgabe
+
+
+def test_t11_iframe_fehler_faellt_auf_fenster_zurueck(popen, port_frei, monkeypatch, capsys):
+    """Scheitert iframe, bleibt der Fenster-Aufruf als Fallback."""
+    fenster_aufrufe = []
+
+    def iframe_fehler(port):
+        raise RuntimeError("iframe nicht möglich")
+
+    _fake_colab(monkeypatch, iframe=iframe_fehler, fenster=fenster_aufrufe.append)
+    monkeypatch.delenv("PORT", raising=False)
+
+    assert start_colab.main() == 0
+
+    ausgabe = capsys.readouterr().out
+    assert fenster_aufrufe == [5000]
+    assert "Browserfenster" in ausgabe
 
 
 # --- T4 Port belegt -------------------------------------------------------

@@ -21,14 +21,27 @@ Manuell in einer Colab-Sitzung:
 ```
 
 ```python
-%cd /content/pmTool
-%run definitions/app/start_colab.py   # Umgebung + App starten (Port-Freigabe im Browser)
+%run /content/pmTool/definitions/app/start_colab.py   # Umgebung + App starten (App erscheint in der Zelle)
 ```
 
+Alternativ relativ — dann `%cd` in einer eigenen Zeile davor:
+
+```python
+%cd /content/pmTool
+%run definitions/app/start_colab.py
+```
+
+Ohne `%cd` schlägt der relative Pfad fehl (`File not found`), weil das
+Notebook-Verzeichnis in einer frischen Sitzung `/content` ist.
+
 Der Start **muss** als Kernel-Aufruf (`%run`) erfolgen: Colabs Port-Freigabe
-(`serve_kernel_port_as_window`) wirkt nur im Notebook-Kernel. Ein `!`-Befehl
+(`serve_kernel_port_as_iframe`) wirkt nur im Notebook-Kernel. Ein `!`-Befehl
 läuft als Unterprozess ohne Kernel-Kanal — dann bleibt nur die unbrauchbare
 Adresse `127.0.0.1:5000` stehen (das Skript nennt dann den Ausweg).
+
+Die App erscheint per **iframe in der Zelle**. Das veraltete
+`serve_kernel_port_as_window` liefert nur noch `https://localhost:5000/` (mit
+Deprecation-Warnung) und dient nur als Fallback.
 
 Schritt-für-Schritt-Anleitung inkl. Colab-Secrets und Telegram-Zelle: **[docs/colab-start.md](docs/colab-start.md)**.
 
@@ -45,7 +58,7 @@ Der Server lauscht nur lokal. Nützliche Optionen:
 | Aufruf | Wirkung |
 |---|---|
 | `bash start.sh` | lokal starten (`BUNDLE_ROOT=$PROJEKT/wissen`, Port 5000) |
-| `bash start.sh --colab` | startet nur den Server ohne Port-Freigabe (Unterprozess); in Colab stattdessen `%run definitions/app/start_colab.py` in einer Code-Zelle |
+| `bash start.sh --colab` | startet nur den Server ohne Port-Freigabe (Unterprozess); in Colab stattdessen `%run /content/pmTool/definitions/app/start_colab.py` in einer Code-Zelle |
 | `bash start.sh --dry-run` | Trockenlauf: zeigt nur, was getan würde (installiert/startet nichts; `verify.sh` wird dabei still übersprungen) |
 | `bash start.sh --skip-verify` | ohne Setup-Prüfung |
 | `bash start.sh --help` | Hilfe |
