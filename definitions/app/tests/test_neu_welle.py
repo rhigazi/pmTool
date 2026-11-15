@@ -53,6 +53,8 @@ def test_t2_frontmatter(bundle):
     assert frontmatter["title"] == "Wave 1 — MVP"
     assert frontmatter["status"] == "Offen"
     assert frontmatter["owner"] == "ai"
+    # A29: Wellen sind standardmäßig nicht freigegeben (Menschen-Recht).
+    assert frontmatter["freigabe"] is False
 
 
 @pytest.mark.parametrize("status_wert", status.UI_STATUS_WERTE)

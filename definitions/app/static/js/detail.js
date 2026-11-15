@@ -52,6 +52,15 @@ const FREIGABE_TEXT = "Freigegeben";
 const NICHT_FREIGEGEBEN_TEXT = "Nicht freigegeben";
 const FREIGABE_ERFOLG = "Aufgabe freigegeben.";
 const FREIGABE_ENTZOGEN = "Freigabe entzogen.";
+
+// A29: Wellen-Freigabe (zweite Stufe) und Sperrhinweis im Aufgaben-Detail.
+const WELLE_FREIGABE_ID = "detail-welle-freigabe";
+const WELLE_FREIGABE_STATUS_ID = "detail-welle-freigabe-status";
+const FREIGABE_HINWEIS_ID = "detail-freigabe-hinweis";
+const SPERRE_HINWEIS_ID = "detail-sperre-hinweis";
+const WELLE_FREIGABE_ERFOLG = "Welle freigegeben.";
+const WELLE_FREIGEGEBEN = "freigegeben";
+const WELLE_NICHT_FREIGEGEBEN = "nicht freigegeben (Standard)";
 const AUFGABEN_ORDNER = "aufgaben/";
 const WELLEN_ORDNER = "wellen/";
 
@@ -602,6 +611,92 @@ async function schreibeFreigabe(pfad, wert) {
   return true;
 }
 
+/** Status-Hinweis zu einem ungültigen ``freigabe``-Rohwert (falls geliefert). */
+function erstelleFreigabeHinweis(daten) {
+  const meldung =
+    typeof daten?.freigabe_hinweis === "string" ? daten.freigabe_hinweis.trim() : "";
+  if (!meldung) return null;
+
+  const hinweis = document.createElement("span");
+  hinweis.id = FREIGABE_HINWEIS_ID;
+  hinweis.classList.add("hinweis");
+  hinweis.textContent = meldung;
+  return hinweis;
+}
+
+/**
+ * Wellen-Freigabe im Wellen-Detail: Anzeige „Freigabe: …" plus ein Knopf über
+ * den Menschen-Kanal (``POST /api/freigabe``), Muster wie der Aufgaben-Knopf.
+ */
+function erstelleWellenFreigabeAnzeige(pfad, daten) {
+  const freigegeben = istFreigegeben(daten);
+
+  const bereich = document.createDocumentFragment();
+  const trenner = document.createElement("span");
+  trenner.textContent = " ";
+  const anzeige = document.createElement("span");
+  anzeige.id = WELLE_FREIGABE_STATUS_ID;
+  anzeige.textContent = freigegeben ? WELLE_FREIGEGEBEN : WELLE_NICHT_FREIGEGEBEN;
+
+  const knopf = document.createElement("button");
+  knopf.type = "button";
+  knopf.id = WELLE_FREIGABE_ID;
+  knopf.className = "knopf";
+  knopf.textContent = freigegeben ? "Freigabe entziehen" : "Welle freigeben";
+  knopf.addEventListener("click", async () => {
+    if (knopf.disabled) return;
+    knopf.disabled = true;
+    try {
+      await schreibeWellenFreigabe(pfad, !freigegeben);
+    } finally {
+      knopf.disabled = false;
+    }
+  });
+
+  const trennerKnopf = document.createElement("span");
+  trennerKnopf.textContent = " ";
+  bereich.append(trenner, anzeige, trennerKnopf, knopf);
+
+  const hinweis = erstelleFreigabeHinweis(daten);
+  if (hinweis) bereich.append(hinweis);
+  return bereich;
+}
+
+/** Setzt/entzieht die Wellen-Freigabe; Fehler zeigt `api.js`, die Ansicht bleibt. */
+async function schreibeWellenFreigabe(pfad, wert) {
+  loescheFehler();
+  loescheMeldung();
+
+  const ergebnis = await postJson("/api/freigabe", { path: pfad, wert });
+  if (ergebnis === null) return false;
+
+  zeigeMeldung(wert ? WELLE_FREIGABE_ERFOLG : FREIGABE_ENTZOGEN);
+  await ladeDetail({ unterpunkt: pfad });
+  return true;
+}
+
+/**
+ * Sperrhinweis (A29): sagt, welches Gate fehlt — Aufgabe, Welle oder beides.
+ * Erscheint nur, wenn der Server ``wirksam_freigegeben === false`` meldet.
+ */
+function erstelleSperrHinweis(daten) {
+  const hinweis = document.createElement("p");
+  hinweis.id = SPERRE_HINWEIS_ID;
+  hinweis.classList.add("hinweis");
+  hinweis.setAttribute("role", "status");
+
+  const welle = daten?.welle_freigabe;
+  const aufgabe = daten?.freigabe === true;
+  let grund = "Aufgabe nicht freigegeben.";
+  if (welle === false) {
+    grund = aufgabe
+      ? "Welle nicht freigegeben."
+      : "Aufgabe und Welle nicht freigegeben.";
+  }
+  hinweis.textContent = `Umsetzung gesperrt: ${grund}`;
+  return hinweis;
+}
+
 function erstelleKopf(pfad, daten, wellen) {
   const frontmatter =
     daten.frontmatter && typeof daten.frontmatter === "object" ? daten.frontmatter : {};
@@ -629,10 +724,15 @@ function erstelleKopf(pfad, daten, wellen) {
       erstelleWellenAuswahl(pfad, feld(frontmatter, "welle"), wellen),
     );
     anhaengenFeld(angaben, "Freigabe", erstelleFreigabeAnzeige(pfad, daten));
+  } else if (pfad.startsWith(WELLEN_ORDNER)) {
+    anhaengenFeld(angaben, "Freigabe:", erstelleWellenFreigabeAnzeige(pfad, daten));
   }
   kopf.append(angaben);
   if (istAufgabe(pfad, frontmatter) && daten?.neu === true) {
     kopf.append(erstelleNeuHinweis(daten));
+  }
+  if (istAufgabe(pfad, frontmatter) && daten?.wirksam_freigegeben === false) {
+    kopf.append(erstelleSperrHinweis(daten));
   }
   kopf.append(erstelleAktionen(pfad, status));
 

@@ -3,13 +3,14 @@ type: Task
 title: "A34: Unter-Aufgaben erstellen"
 description: Als Mensch muss ich in der Lage sein unter Aufgaben so eine Aufgabe zu
   erstellen
-task_status: in Planung
-phase: 2 Planung
+freigabe: true
+task_status: in Umsetzung
+phase: 3 Umsetzung
 priority: mittel
 assigned_to: coder
 welle: wellen/w3.md
 owner: ai
-aktuell: "PM: Planung fertig (10 AK, 50 Tests + 5 Szenarien, 4 Pakete) — Umsetzung nach A29-P1 (UI-Paket nach A29-P2/A33-B8)"
+aktuell: "coder: A34 Paket 1+2 (kennung.py + parent-Anlage) — Freigabe lt. Feature-Strecken-Vorgabe"
 ---
 
 # Ziel

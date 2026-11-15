@@ -4,12 +4,12 @@ title: "A29: Wellen abarbeiten"
 description: Wellen die eine Aufgabe zugeordnet wurden werden erst ab gearbeitet wenn
   die gesamte Welle freigegeben wurde
 freigabe: true
-task_status: in Umsetzung
-phase: 3 Umsetzung
+task_status: in Review
+phase: 5 Review
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: "coder: A29 Paket 1–3 (Wellen-Gate Backend/UI/Doku)"
+aktuell: "reviewer: Review A29 (Snapshot) | tester: S1–S5 | coder: A34-P1+2 + Batches parallel"
 ---
 
 # Ziel
@@ -147,4 +147,14 @@ Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das M
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-15 — coder (Umsetzung Paket 1 + 2 + 3)
+
+- **Ergebnis Paket 1 (Backend, G18):** `overview.details` liefert für Tasks `welle_freigabe` (`true`/`false`/`null`, immer vorhanden) und `wirksam_freigegeben` (bool, immer vorhanden) nach der UND-Regel `Aufgabe freigegeben AND (keine Welle OR Welle freigegeben)`; die Wellen-Datei wird **tolerant** gelesen (fehlend/unbekannt/kaputt/nicht `type: Welle` → `welle_freigabe: null`, Gate gesperrt, kein 500). Read-Modell für Wellen (`freigabe`/`freigabe_hinweis` in `/api/wellen`, `/api/overview`, `/api/file`) und `freigabe: false` bei `neu_welle.anlegen` kamen bereits aus A28 Paket 0 und sind jetzt belegt. Die Wellen-Freigabe läuft über den bestehenden `POST /api/freigabe` (kein neuer Endpunkt); KI-Kanal bleibt 403. Deckt AK-1, AK-2, AK-3, AK-7, AK-8 ab.
+- **Ergebnis Paket 2 (UI, G19):** `liste.js` — Marke „freigegeben"/„nicht freigegeben" für `typ === "Welle"` in der Titel-Zelle (bestehende Status-Pille, **vier** Spalten bleiben), kombinierbar mit der A28-„neu"-Marke über eine gemeinsame `erstelleMarke`; Aufgaben-/Übersichtszeilen unverändert. `detail.js` — im Wellen-Detail `dl`-Feld „Freigabe:" mit `#detail-welle-freigabe-status` („freigegeben"/„nicht freigegeben (Standard)") und genau ein Knopf `#detail-welle-freigabe` („Welle freigeben"/„Freigabe entziehen") über `POST /api/freigabe`, Meldungen „Welle freigegeben."/„Freigabe entzogen.", Reload, `disabled` per `try/finally`, Doppelklickschutz; `freigabe_hinweis` (ungültiger Rohwert) wird als Text im Feld gerendert (`#detail-freigabe-hinweis`). Aufgaben-Detail zeigt bei `wirksam_freigegeben === false` den Sperrhinweis `#detail-sperre-hinweis` (`class="hinweis"`, `role="status"`) mit dem passenden Grund (Welle / Aufgabe / beides); der A28-Freigabe-Knopf bleibt unabhängig bedienbar. Kein `index.html`/`style.css`-Eingriff, kein zusätzlicher Request. Deckt AK-4, AK-5, AK-6 ab.
+- **Ergebnis Paket 3 (Doku, G20):** `AGENTS.md` + `definitions/AGENTS.md` — Wellen-Gate im Regelwerk (Welle standardmäßig nicht freigegeben; UND-Gate vor jeder Coder-Beauftragung; Wellen-Freigabe als letzter Auslöser; Entzug stoppt keine laufende Umsetzung; KI setzt `freigabe` nie → 403). `wissen/projekt/phasen.md` — Phase 3b als **zwei Stufen** (Aufgabe + Welle) mit UND-Regel. `wissen/projekt/technische-spec.md` — Rechtezeile für die Wellen-Freigabe, `welle_freigabe`/`wirksam_freigegeben` im Read-Modell, Regelblock „Wellen-Gate" (inkl. „Wellen-Datei wird nur im Feld `freigabe` geschrieben"). Deckt AK-9 (T23/T24) ab.
+- **Belege:** TDD-Red-Green je Paket. Paket 1: `test_wellen_freigabe.py` **14 rot / 13 grün** → **27 grün** (T1–T12); additiv in `test_neu_welle.py` (`freigabe is False`). Paket 2: `test_freigabe_ui.py` **13 rot / 26 grün** → **39 grün** (T13–T22; 20 neue Fälle). Angrenzende Suiten (`test_freigabe_ui`, `test_welle_zuordnung`, `test_welle_spalte`, `test_arbeitsstand_ui`, `test_liste`, `test_detail`, `test_suche`, `test_wellen_freigabe`, `test_neu_welle`, `test_static`): **480 passed**. Gesamtsuite serialisiert (`python3 -m pytest definitions/app/tests -q -p no:randomly`): **1338 passed, 0 failed** (8:14 unter Parallel-Last).
+- **Bewusste Abweichungen/Grenzen:** (1) **T19-Requests:** Wellen-Detail = `/api/file` **+ `/api/aufgaben`** (A27-Wellen-Sicht), ausdrücklich ohne `/api/wellen`; Aufgaben-Detail = `/api/file` + `/api/wellen` (A27). Der Plan nennt für das Wellen-Detail nur `/api/file` — das war vor A27-AK-10; ein neuer Request entsteht durch A29 nicht. (2) **T12 „keine Migration"** ist als `neu_welle`-Default belegt; der `git diff` auf `wissen/wellen/` ist ein Review-Schritt (Tests fassen `wissen/` nie an). (3) `erstelleMarke` ist jetzt gemeinsam für „neu" und den Wellen-Freigabestatus (A28-Stelle erweitert); `test_welle_spalte.py` behält die realistischen `neu: false`-Fixtures aus A28 (noch im Arbeitsbaum, nicht im A28-Commit). (4) `freigabe_hinweis` wird im Wellen-Detail gerendert (T21); im Aufgaben-Feld bleibt die A28-Anzeige unverändert.
+- **Offene Punkte:** Moli-Szenarien **S1–S5** (tester); Review/Testphase als Folgeauftrag; `bash definitions/verify.sh .` nicht separat gelaufen (Parallelbetrieb, A26-Rücklauf an `setup.sh`). Keine Commits.
+

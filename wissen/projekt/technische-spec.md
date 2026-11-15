@@ -109,6 +109,7 @@ Es gibt **kein zweites Statusmodell in den Dateien**: Die sechs UI-Status sind e
 | `owner` umschalten | ✅ | ✅ |
 | Status → `Klarung`, `Geschlossen` | ✅ | ✅ |
 | `freigabe` setzen/entziehen (Menschen-Recht) | ✅ | ❌ (**403** — nur Projektleitung) |
+| `freigabe` einer **Welle** setzen/entziehen (zweite Stufe) | ✅ | ❌ (**403** — nur Projektleitung) |
 | Pipeline-Statuswechsel (`task_status`/`phase`) | ❌ | ✅ (Projektmanager, documenter) |
 | `index.md` / `features.md` / `log.md` pflegen | ❌ | ✅ (Projektmanager, documenter) |
 
@@ -120,7 +121,7 @@ Als **reserviert** gelten `index.md`, `log.md` und `features.md` (KI-Dateien lau
 | Methode & Pfad | Zweck | Payload / Rückgabe |
 |---|---|---|
 | `GET /api/overview` | Alle Punkte für Listenansicht | Liste: `path, typ, titel, status(6), owner, zuletzt_geaendert, welle?, hinweis?, arbeitsrolle?, arbeitsrolle_label?, arbeitsstatus?, freigabe?, freigabe_hinweis?, neu?` |
-| `GET /api/file?path=` | Dateiinhalt + Frontmatter (Detailansicht) | `{frontmatter, markdown, nachtraege[], arbeitsrolle?, arbeitsrolle_label?, arbeitsstatus?, freigabe?, freigabe_hinweis?, neu?, kennung?, naechste_kennung?}` |
+| `GET /api/file?path=` | Dateiinhalt + Frontmatter (Detailansicht) | `{frontmatter, markdown, nachtraege[], arbeitsrolle?, arbeitsrolle_label?, arbeitsstatus?, freigabe?, freigabe_hinweis?, neu?, kennung?, naechste_kennung?, welle_freigabe?, wirksam_freigegeben?}` |
 | `POST /api/nachtrag` | Nachtrag anfügen | `{path, text}` → aktualisierte Datei |
 | `POST /api/task` | Neue Aufgabe anlegen | `{titel, ziel, akzeptanz[], prioritaet, welle?}` → Pfad der neuen Datei |
 | `POST /api/welle` | Neue Welle anlegen | `{titel, ziel, status, owner}` → Pfad |
@@ -129,6 +130,7 @@ Als **reserviert** gelten `index.md`, `log.md` und `features.md` (KI-Dateien lau
 | `GET /api/wellen` / `GET /api/aufgaben` | Rohdaten je Navigationspunkt | Listen (gleiches Feldschema wie `/api/overview`) |
 
 - **Freigabe (Menschen-Recht):** Das boolesche Frontmatter-Feld `freigabe` liefert die Lese-API top-level für `typ in ("Task", "Welle")`; nur ein exaktes `true` gilt als freigegeben (fail-closed). Ein vorhandener, aber ungültiger Rohwert (z. B. `"true"`, `1`) ergibt `freigabe: false` plus `freigabe_hinweis`. Geschrieben wird ausschließlich über `POST /api/freigabe` (Projektleitung); `POST /api/meta` und `meta.setzen` verweigern `freigabe` mit **403** ohne Schreibvorgang — auch bei `false`.
+- **Wellen-Gate (abgeleitet, nur lesend):** Für Aufgaben liefert `GET /api/file` `welle_freigabe` (`true`/`false`/`null`, immer vorhanden) und `wirksam_freigegeben` (bool, immer vorhanden). Regel: `wirksam_freigegeben = Aufgabe freigegeben AND (keine Welle zugeordnet OR Welle freigegeben)`; eine fehlende, unbekannte oder nicht freigegebene Welle setzt `welle_freigabe` auf `false`/`null` und sperrt (fail-closed). Der Status steht in der Wellenliste als Marke in der Titel-Zelle und im Wellen-Detail als Feld samt Knopf; die Wellen-Datei wird ausschließlich im Feld `freigabe` geschrieben (`# Aufgaben` bleibt unverändert). Kein neuer Endpunkt — `POST /api/freigabe` aus A28 wird wiederverwendet.
 - **Kennungs-Signale (abgeleitet, nur lesend):** `neu` (Aufgaben ohne gültige Kennung — Titel `^A<N>:` und Dateiname `a<N>-…` müssen übereinstimmen, Unterkennungen wie `A34.001` eingeschlossen), `kennung` (aus dem Titel, z. B. `A28`) und `naechste_kennung` (Hinweis, Maximum aus Titeln und Dateinamen + 1, keine Reservierung) liefert nur `GET /api/file` bzw. `GET /api/overview`/`GET /api/aufgaben` für `typ: Task`. Nicht-Tasks tragen keines dieser Felder; dafür gibt es **keinen neuen Endpunkt**.
 - **Arbeitsstatus (abgeleitet, nur lesend):** `arbeitsrolle`, `arbeitsrolle_label` und `arbeitsstatus` werden beim Lesen aus dem Frontmatter-Feld `aktuell` abgeleitet (`<Rolle>: <Text>`) und **top-level** ausgeliefert — nur für Einträge mit `typ: Task`; Nicht-Tasks und Aufgaben ohne belegbares `aktuell` tragen keines der Felder (fehlend = keine Anzeige). Aufgaben mit UI-Status „Geschlossen" liefern keine Arbeitsstatus-Felder. `frontmatter.aktuell` bleibt unverändert roh erhalten; es gibt **keinen neuen Endpunkt** und keinen Schreibpfad (Single Source of Truth: `aktuell`).
 

@@ -8,6 +8,9 @@ const ZULETZT_ANZAHL = 5;
 const KEINE_ANGABE = "—";
 // A28: Marke für Aufgaben ohne gültige Kennung (``neu`` aus der Lese-API).
 const MARKE_NEU = "neu";
+// A29: Freigabe-Status der Wellen in der Titel-Zelle (keine neue Spalte).
+const MARKE_FREIGEGEBEN = "freigegeben";
+const MARKE_NICHT_FREIGEGEBEN = "nicht freigegeben";
 const LEER_TABELLE = "Keine Einträge.";
 const LEER_TREFFER = "Keine Treffer.";
 const LEER_KLARUNG = "Keine offenen Rückfragen.";
@@ -279,16 +282,32 @@ function erstelleWelleZelle(eintrag) {
   return zelle;
 }
 
-/** Titel-Zelle; Aufgaben ohne Kennung tragen zusätzlich die Marke „neu". */
-function erstelleTitelZelle(eintrag) {
-  const titel = eintrag?.titel || KEINE_ANGABE;
-  if (eintrag?.neu !== true) return erstelleZelle(titel);
-
-  const zelle = document.createElement("td");
+/** Marke in der Titel-Zelle (bestehende Status-Pille, keine neue Spalte). */
+function erstelleMarke(text) {
   const marke = document.createElement("span");
   marke.classList.add("status");
-  marke.textContent = MARKE_NEU;
-  zelle.append(document.createTextNode(titel), document.createTextNode(" "), marke);
+  marke.textContent = text;
+  return marke;
+}
+
+/**
+ * Titel-Zelle mit optionalen Marken: „neu" für Aufgaben ohne Kennung (A28),
+ * „freigegeben"/„nicht freigegeben" für Wellen (A29).
+ */
+function erstelleTitelZelle(eintrag) {
+  const titel = eintrag?.titel || KEINE_ANGABE;
+  const marken = [];
+  if (eintrag?.neu === true) marken.push(MARKE_NEU);
+  if (eintrag?.typ === "Welle") {
+    marken.push(eintrag?.freigabe === true ? MARKE_FREIGEGEBEN : MARKE_NICHT_FREIGEGEBEN);
+  }
+  if (marken.length === 0) return erstelleZelle(titel);
+
+  const zelle = document.createElement("td");
+  zelle.append(document.createTextNode(titel));
+  for (const text of marken) {
+    zelle.append(document.createTextNode(" "), erstelleMarke(text));
+  }
   return zelle;
 }
 

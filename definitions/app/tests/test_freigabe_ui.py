@@ -137,6 +137,20 @@ globalThis.fetch = async (pfad, optionen = {}) => {
   };
 };
 
+// Marken (span) der Titel-Zelle je Zeile, mit Text.
+const markenTexte = (id) =>
+  sammle(bei(id))
+    .filter((knoten) => knoten.marke === "tr" && knoten.dataset.path)
+    .map((zeile) => ({
+      path: zeile.dataset.path,
+      marken: sammle(zeile.kinder[0])
+        .filter((knoten) => knoten.marke === "span")
+        .map((knoten) => ({
+          text: knoten.textContent,
+          status: knoten.classList.contains("status"),
+        })),
+    }));
+
 // Marken der Titel-Zelle je Zeile.
 const zeilen = (id) =>
   sammle(bei(id))
@@ -225,7 +239,7 @@ globalThis.fetch = async (pfad, optionen = {}) => {
 };
 
 function knopfZustand() {
-  const knopf = bei("detail-freigabe");
+  const knopf = bei("detail-freigabe") ?? bei("detail-welle-freigabe");
   return knopf ? knopf.disabled : null;
 }
 """
@@ -692,3 +706,419 @@ def test_rahmen_dateien_bleiben_ohne_a28_markup():
     assert "detail-freigabe" in detail
     assert "detail-neu-hinweis" in detail
     assert "/api/freigabe" in detail
+
+
+# --- A29 Paket 2: Wellen-Freigabe ---------------------------------------
+
+WELLE_1 = "wellen/w1.md"
+WELLE_2 = "wellen/w2.md"
+SPERRE = "detail-sperre-hinweis"
+
+
+def _wellen_eintrag(pfad: str, titel: str, freigabe_wert: bool | None = None, **felder) -> dict:
+    eintrag = {
+        "path": pfad,
+        "titel": titel,
+        "typ": "Welle",
+        "status": "Offen",
+        "owner": "ai",
+        "zuletzt_geaendert": "2026-11-15T10:00:00",
+    }
+    if freigabe_wert is not None:
+        eintrag["freigabe"] = freigabe_wert
+    eintrag.update(felder)
+    return eintrag
+
+
+def _wellen_datei(freigabe_wert: bool | None = None, **felder) -> dict:
+    frontmatter = {"type": "Welle", "title": "Welle 1: Fixture", "status": "Offen", "owner": "ai"}
+    daten = _datei(frontmatter, "# Ziel\n\nFixture-Welle.\n")
+    if freigabe_wert is not None:
+        daten["freigabe"] = freigabe_wert
+        frontmatter["freigabe"] = freigabe_wert
+    daten.update(felder)
+    return daten
+
+
+def _task_mit_gate(freigabe_wert: bool, welle_freigabe, wirksam: bool) -> dict:
+    daten = _datei({"type": "Task", "title": "A1: Mini-Aufgabe", "task_status": "in Umsetzung"})
+    daten.update(
+        {
+            "freigabe": freigabe_wert,
+            "welle_freigabe": welle_freigabe,
+            "wirksam_freigegeben": wirksam,
+        }
+    )
+    return daten
+
+
+@ohne_node
+def test_t13_marke_in_der_wellenliste():
+    ergebnis = listen_lauf(
+        r"""
+await liste.ladeWellen();
+const erste = markenTexte("tabelle-wellen");
+const kopf = kopfzeilen("tabelle-wellen");
+await liste.ladeWellen();
+return { erste, kopf, zweite: markenTexte("tabelle-wellen"), aufrufe: aufrufe.length };
+""",
+        listen_antwort(
+            [
+                _wellen_eintrag(WELLE_1, "Welle 1", True),
+                _wellen_eintrag(WELLE_2, "Welle 2", False),
+            ],
+            "/api/wellen",
+        ),
+    )
+
+    assert ergebnis["kopf"] == ["Titel", "Status", "owner", "zuletzt geändert"]
+    assert ergebnis["erste"] == [
+        {"path": WELLE_1, "marken": [{"text": "freigegeben", "status": True}]},
+        {"path": WELLE_2, "marken": [{"text": "nicht freigegeben", "status": True}]},
+    ]
+    # Zweiter Aufruf: keine zweite Marke, ein Request je Ladevorgang.
+    assert [len(zeile["marken"]) for zeile in ergebnis["zweite"]] == [1, 1]
+    assert ergebnis["aufrufe"] == 2
+
+
+@ohne_node
+def test_t14_abgrenzung_und_xss():
+    xss = _wellen_eintrag(WELLE_1, HTML_PAYLOAD, True)
+    ohne_feld = _wellen_eintrag(WELLE_2, "Welle 2")
+    ergebnis = listen_lauf(
+        r"""
+const ausfuehrungen = [];
+globalThis.alert = (wert) => ausfuehrungen.push(String(wert));
+await liste.ladeWellen();
+const wellen = markenTexte("tabelle-wellen");
+const texte = sammle(bei("tabelle-wellen"))
+  .filter((knoten) => knoten.marke === "td")
+  .map((knoten) => knoten.textContent);
+await liste.ladeAufgaben();
+const aufgaben = markenTexte("tabelle-aufgaben");
+await liste.ladeUebersicht();
+return {
+  wellen,
+  texte,
+  aufgaben,
+  uebersicht: markenTexte("tabelle"),
+  marken: marken(bei("ansicht-wellen")),
+  ausfuehrungen,
+};
+""",
+        {
+            "/api/wellen": {"status": 200, "koerper": [xss, ohne_feld]},
+            "/api/aufgaben": {
+                "status": 200,
+                "koerper": [_aufgabe(AUFGABE_2, "A1: Aufgabe", neu=True)],
+            },
+            "/api/overview": {
+                "status": 200,
+                "koerper": [_aufgabe(AUFGABE_2, "A1: Aufgabe", neu=True)],
+            },
+        },
+    )
+
+    assert ergebnis["wellen"] == [
+        {"path": WELLE_1, "marken": [{"text": "freigegeben", "status": True}]},
+        {"path": WELLE_2, "marken": [{"text": "nicht freigegeben", "status": True}]},
+    ]
+    assert HTML_PAYLOAD in ergebnis["texte"][0]
+    assert "img" not in ergebnis["marken"]
+    assert "script" not in ergebnis["marken"]
+    assert ergebnis["ausfuehrungen"] == []
+    # Aufgabenliste/Übersicht: nur die A28-„neu"-Marke, keine Wellen-Freigabe.
+    assert ergebnis["aufgaben"] == [
+        {"path": AUFGABE_2, "marken": [{"text": "neu", "status": True}]}
+    ]
+    assert ergebnis["uebersicht"] == [
+        {"path": AUFGABE_2, "marken": [{"text": "neu", "status": True}]}
+    ]
+
+
+@ohne_node
+@pytest.mark.parametrize(
+    "freigabe_wert,anzeige,knopf",
+    [
+        (False, "nicht freigegeben (Standard)", "Welle freigeben"),
+        (None, "nicht freigegeben (Standard)", "Welle freigeben"),
+        (True, "freigegeben", "Freigabe entziehen"),
+    ],
+)
+def test_t15_wellen_detail_anzeige_und_knopf(freigabe_wert, anzeige, knopf):
+    ergebnis = detail_lauf(
+        r"""
+await detail.ladeDetail({ unterpunkt: "wellen/w1.md" });
+const zustand = bei("detail-welle-freigabe-status");
+const knopf = bei("detail-welle-freigabe");
+return {
+  text: bei("detail").textContent,
+  zustand: zustand?.textContent ?? null,
+  knopfText: knopf?.textContent ?? null,
+  knopfMarke: knopf?.marke ?? null,
+  aufgabenKnopf: bei("detail-freigabe") !== null,
+};
+""",
+        _wellen_datei(freigabe_wert),
+    )
+
+    assert f"Freigabe: {anzeige}" in ergebnis["text"]
+    assert ergebnis["zustand"] == anzeige
+    assert ergebnis["knopfText"] == knopf
+    assert ergebnis["knopfMarke"] == "button"
+    # Kein Aufgaben-Freigabe-Knopf im Wellen-Detail.
+    assert ergebnis["aufgabenKnopf"] is False
+
+
+@ohne_node
+def test_t15_aufgaben_detail_ohne_wellen_knopf():
+    ergebnis = detail_lauf(
+        r"""
+await detail.ladeDetail({ unterpunkt: "aufgaben/a1.md" });
+return {
+  wellenKnopf: bei("detail-welle-freigabe") !== null,
+  aufgabenKnopf: bei("detail-freigabe") !== null,
+};
+""",
+        _task_mit_gate(True, None, True),
+        wellen=[_wellen_eintrag(WELLE_1, "Welle 1", True)],
+    )
+
+    assert ergebnis["wellenKnopf"] is False
+    assert ergebnis["aufgabenKnopf"] is True
+
+
+@ohne_node
+def test_t16_welle_freigeben():
+    ergebnis = detail_lauf(
+        r"""
+await detail.ladeDetail({ unterpunkt: "wellen/w1.md" });
+const knopf = bei("detail-welle-freigabe");
+await ausloesen(knopf, "click");
+return {
+  posts: aufrufe
+    .filter((eintrag) => eintrag.methode === "POST")
+    .map((eintrag) => ({
+      pfad: eintrag.endpunkt,
+      nutzlast: eintrag.nutzlast,
+      gesperrt: eintrag.gesperrt,
+    })),
+  meldung: { sichtbar: !bei("meldung").hidden, text: bei("meldung").textContent },
+  zustand: bei("detail-welle-freigabe-status")?.textContent ?? null,
+  knopfText: bei("detail-welle-freigabe")?.textContent ?? null,
+};
+""",
+        _wellen_datei(False),
+    )
+
+    assert ergebnis["posts"] == [
+        {"pfad": "/api/freigabe", "nutzlast": {"path": WELLE_1, "wert": True}, "gesperrt": True}
+    ]
+    assert ergebnis["meldung"] == {"sichtbar": True, "text": "Welle freigegeben."}
+    assert ergebnis["zustand"] == "freigegeben"
+    assert ergebnis["knopfText"] == "Freigabe entziehen"
+
+
+@ohne_node
+def test_t17_welle_freigabe_entziehen():
+    ergebnis = detail_lauf(
+        r"""
+await detail.ladeDetail({ unterpunkt: "wellen/w1.md" });
+await ausloesen(bei("detail-welle-freigabe"), "click");
+return {
+  posts: aufrufe
+    .filter((eintrag) => eintrag.methode === "POST")
+    .map((eintrag) => eintrag.nutzlast),
+  meldung: bei("meldung").textContent,
+  zustand: bei("detail-welle-freigabe-status")?.textContent ?? null,
+  knopfText: bei("detail-welle-freigabe")?.textContent ?? null,
+};
+""",
+        _wellen_datei(True),
+    )
+
+    assert ergebnis["posts"] == [{"path": WELLE_1, "wert": False}]
+    assert ergebnis["meldung"] == "Freigabe entzogen."
+    assert ergebnis["zustand"] == "nicht freigegeben (Standard)"
+    assert ergebnis["knopfText"] == "Welle freigeben"
+
+
+@ohne_node
+def test_t18_fehlerpfad_und_doppelklick():
+    ergebnis = detail_lauf(
+        r"""
+await detail.ladeDetail({ unterpunkt: "wellen/w1.md" });
+const vorher = bei("detail-welle-freigabe-status")?.textContent ?? null;
+const knopf = bei("detail-welle-freigabe");
+const erstes = ausloesen(knopf, "click");
+const gesperrtWaehrend = knopf.disabled;
+const zweites = ausloesen(knopf, "click");
+if (freigeben) freigeben();
+await Promise.all([erstes, zweites]);
+return {
+  vorher,
+  gesperrtWaehrend,
+  nachher: bei("detail-welle-freigabe-status")?.textContent ?? null,
+  posts: aufrufe.filter((eintrag) => eintrag.methode === "POST").length,
+  dateiLadungen: aufrufe.filter((eintrag) => eintrag.endpunkt === "/api/file").length,
+  fehler: { sichtbar: !bei("fehler").hidden, text: bei("fehler").textContent },
+  bedienbar: bei("detail-welle-freigabe")?.disabled === false,
+};
+""",
+        _wellen_datei(False),
+        freigabe_status=403,
+        freigabe_fehler="Freigabe ist ein Menschen-Recht.",
+        gate=True,
+    )
+
+    assert ergebnis["gesperrtWaehrend"] is True
+    assert ergebnis["posts"] == 1
+    assert ergebnis["fehler"] == {"sichtbar": True, "text": "Freigabe ist ein Menschen-Recht."}
+    assert ergebnis["vorher"] == ergebnis["nachher"] == "nicht freigegeben (Standard)"
+    assert ergebnis["dateiLadungen"] == 1
+    assert ergebnis["bedienbar"] is True
+
+
+@ohne_node
+def test_t19_requests_ohne_zusatz():
+    welle = detail_lauf(
+        r"""
+await detail.ladeDetail({ unterpunkt: "wellen/w1.md" });
+return { aufrufe: aufrufe.map((eintrag) => eintrag.endpunkt) };
+""",
+        _wellen_datei(False),
+        aufgaben=[_aufgabe(AUFGABE_2, "A1", welle=WELLE_1)],
+    )
+    assert welle["aufrufe"] == ["/api/file", "/api/aufgaben"]
+
+    aufgabe = detail_lauf(
+        r"""
+await detail.ladeDetail({ unterpunkt: "aufgaben/a1.md" });
+return { aufrufe: aufrufe.map((eintrag) => eintrag.endpunkt) };
+""",
+        _task_mit_gate(True, True, True),
+        wellen=[_wellen_eintrag(WELLE_1, "Welle 1", True)],
+    )
+    assert aufgabe["aufrufe"] == ["/api/file", "/api/wellen"]
+
+
+@ohne_node
+@pytest.mark.parametrize(
+    "freigabe_wert,wellen_freigabe,wirksam,erwartet",
+    [
+        (True, False, False, "Umsetzung gesperrt: Welle nicht freigegeben."),
+        (False, True, False, "Umsetzung gesperrt: Aufgabe nicht freigegeben."),
+        (False, False, False, "Umsetzung gesperrt: Aufgabe und Welle nicht freigegeben."),
+        (True, True, True, None),
+        (True, None, True, None),
+    ],
+)
+def test_t20_sperrhinweis_im_aufgaben_detail(
+    freigabe_wert, wellen_freigabe, wirksam, erwartet
+):
+    ergebnis = detail_lauf(
+        r"""
+await detail.ladeDetail({ unterpunkt: "aufgaben/a1.md" });
+const hinweis = bei("detail-sperre-hinweis");
+return {
+  text: hinweis?.textContent ?? null,
+  role: hinweis?.getAttribute("role") ?? null,
+  klasse: hinweis?.klassen() ?? [],
+  aufgabenKnopf: bei("detail-freigabe") !== null,
+  aufgabenKnopfDisabled: bei("detail-freigabe")?.disabled ?? null,
+};
+""",
+        _task_mit_gate(freigabe_wert, wellen_freigabe, wirksam),
+        wellen=[_wellen_eintrag(WELLE_1, "Welle 1", wellen_freigabe)],
+    )
+
+    assert ergebnis["text"] == erwartet
+    if erwartet is not None:
+        assert ergebnis["role"] == "status"
+        assert "hinweis" in ergebnis["klasse"]
+    # Der A28-Freigabe-Knopf bleibt unabhängig bedienbar.
+    assert ergebnis["aufgabenKnopf"] is True
+    assert ergebnis["aufgabenKnopfDisabled"] is False
+
+
+@ohne_node
+def test_t20_kein_sperrhinweis_bei_nicht_tasks():
+    for pfad, datei in (
+        (WELLE_1, _wellen_datei(False)),
+        (PROJEKT, _datei({"type": "Projekt", "title": "Phasen"})),
+    ):
+        ergebnis = detail_lauf(
+            f"""
+await detail.ladeDetail({{ unterpunkt: {json.dumps(pfad)} }});
+return {{ hinweis: bei("detail-sperre-hinweis") !== null }};
+""",
+            datei,
+        )
+        assert ergebnis["hinweis"] is False
+
+
+@ohne_node
+def test_t21_xss_im_freigabe_hinweis():
+    ergebnis = detail_lauf(
+        f"""
+const ausfuehrungen = [];
+globalThis.alert = (wert) => ausfuehrungen.push(String(wert));
+await detail.ladeDetail({{ unterpunkt: "wellen/w1.md" }});
+const hinweis = bei("detail-freigabe-hinweis");
+return {{
+  text: hinweis?.textContent ?? null,
+  marken: marken(bei("detail")),
+  ausfuehrungen,
+}};
+""",
+        _wellen_datei(False, freigabe_hinweis=HTML_PAYLOAD),
+    )
+
+    assert ergebnis["text"] == HTML_PAYLOAD
+    assert "img" not in ergebnis["marken"]
+    assert "script" not in ergebnis["marken"]
+    assert ergebnis["ausfuehrungen"] == []
+
+
+@ohne_node
+@pytest.mark.parametrize(
+    "daten,erwartet",
+    [
+        (None, "Einträge konnten nicht geladen werden."),
+        ({}, "Einträge haben ein unerwartetes Format."),
+    ],
+)
+def test_t21_wellenliste_fail_loud(daten, erwartet):
+    ergebnis = listen_lauf(
+        r"""
+await liste.ladeWellen();
+return {
+  wellen: bei("tabelle-wellen").textContent,
+  aufgaben: bei("tabelle-aufgaben").textContent,
+  tabellen: sammle(bei("tabelle-wellen")).filter((knoten) => knoten.marke === "table").length,
+};
+""",
+        listen_antwort(daten, "/api/wellen"),
+    )
+
+    assert ergebnis["wellen"] == erwartet
+    assert ergebnis["tabellen"] == 0
+    assert ergebnis["aufgaben"] == ""
+
+
+def test_t22_rahmen_dateien_unveraendert():
+    for datei in (INDEX_HTML, STYLE_CSS):
+        quelle = lies(datei)
+        assert "detail-welle-freigabe" not in quelle
+        assert SPERRE not in quelle
+
+    liste = lies(LISTE_JS)
+    for senke in ("innerHTML", "insertAdjacentHTML", "document.write(", "eval("):
+        assert senke not in liste
+    assert "freigegeben" in liste
+
+    detail = lies(DETAIL_JS)
+    for senke in ("innerHTML", "insertAdjacentHTML", "document.write(", "eval("):
+        assert senke not in detail
+    assert "detail-welle-freigabe" in detail
+    assert SPERRE in detail

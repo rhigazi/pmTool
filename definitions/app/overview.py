@@ -97,6 +97,7 @@ def details(pfad: str) -> dict:
         if kennung:
             daten["kennung"] = kennung
         daten["naechste_kennung"] = _naechste_kennung()
+        _ergaenze_gate(daten, frontmatter)
     _ergaenze_freigabe(daten, frontmatter)
     return daten
 
@@ -206,6 +207,37 @@ def _hat_frontmatter_block(pfad: str) -> bool:
             return datei.readline().strip() == "---"
     except (OSError, UnicodeDecodeError):
         return False
+
+
+def _ergaenze_gate(daten: dict, frontmatter: dict) -> None:
+    """Wirksame Freigabe (A29): Aufgabe **und** – falls zugeordnet – ihre Welle.
+
+    ``welle_freigabe`` ist ``None``, wenn keine Welle zugeordnet ist oder die
+    Wellen-Datei fehlt/unbekannt/keine Welle ist (dann ist der Gate gesperrt).
+    """
+    wellen_freigabe, gate_offen = _wellen_gate(_text(frontmatter.get("welle")))
+    daten["welle_freigabe"] = wellen_freigabe
+    daten["wirksam_freigegeben"] = freigabe.ist_freigegeben(frontmatter) and gate_offen
+
+
+def _wellen_gate(pfad: str | None) -> tuple[bool | None, bool]:
+    """Liefert ``(welle_freigabe, gate_offen)``; ohne Welle ist der Gate offen."""
+    if not pfad:
+        return None, True
+
+    wellen_freigabe = _wellen_freigabe(pfad)
+    return wellen_freigabe, wellen_freigabe is True
+
+
+def _wellen_freigabe(pfad: str) -> bool | None:
+    """Freigabe der zugeordneten Welle; ``None`` bei fehlender/fremder Datei."""
+    try:
+        frontmatter, _ = okf_bundle.lesen_tolerant(pfad)
+    except (OSError, UnicodeDecodeError, FileNotFoundError, okf_bundle.BundlePfadFehler):
+        return None
+    if _text(frontmatter.get("type")) != TYP_WELLE:
+        return None
+    return freigabe.ist_freigegeben(frontmatter)
 
 
 def _ist_neu(pfad: str, titel: str | None) -> bool:

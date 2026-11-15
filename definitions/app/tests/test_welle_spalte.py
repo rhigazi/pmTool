@@ -48,6 +48,9 @@ def _aufgabe(pfad: str, titel: str, status: str = "In Arbeit", **felder) -> dict
         "status": status,
         "owner": "ai",
         "zuletzt_geaendert": "2026-11-15T10:00:00",
+        # A28: Die Lese-API liefert ``neu`` für Aufgaben; diese Fixtures tragen
+        # eine gültige Kennung (Titel und Dateiname passen) → keine Marke.
+        "neu": False,
     }
     eintrag.update(felder)
     return eintrag
