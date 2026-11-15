@@ -155,6 +155,24 @@ export function formatiereZeitstempel(wert) {
   }).format(datum);
 }
 
+/**
+ * Formatiert den abgeleiteten Arbeitsstatus als „<Label>: <Text>".
+ * Fehlt eines der Teile, steht nur das andere; ohne Angabe bleibt es leer
+ * (dann entsteht keine Zeile). Unbekannte Rollen kommen unverändert an.
+ */
+export function formatiereArbeitsstand(quelle) {
+  if (quelle === null || typeof quelle !== "object" || Array.isArray(quelle)) return "";
+
+  const label = textWert(quelle.arbeitsrolle_label) || textWert(quelle.arbeitsrolle);
+  const inhalt = textWert(quelle.arbeitsstatus);
+  if (label && inhalt) return `${label}: ${inhalt}`;
+  return label || inhalt;
+}
+
+function textWert(wert) {
+  return typeof wert === "string" ? wert.trim() : "";
+}
+
 /** Sortiert absteigend nach „zuletzt geändert", Tie-Breaker `path`. */
 export function sortiereNachAenderung(eintraege) {
   if (!Array.isArray(eintraege)) return [];
@@ -195,6 +213,15 @@ function erstelleStatusZelle(eintrag) {
 
   if (eintrag?.hinweis) {
     zelle.append(document.createTextNode(` (${eintrag.hinweis})`));
+  }
+
+  // Arbeitsstatus (A30): nur Aufgaben, nur bei ableitbarer Angabe.
+  const arbeitsstand = eintrag?.typ === "Task" ? formatiereArbeitsstand(eintrag) : "";
+  if (arbeitsstand) {
+    const zeile = document.createElement("div");
+    zeile.classList.add("arbeitsstand");
+    zeile.textContent = arbeitsstand;
+    zelle.append(zeile);
   }
   return zelle;
 }

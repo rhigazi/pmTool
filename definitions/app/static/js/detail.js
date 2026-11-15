@@ -6,7 +6,7 @@ import {
   zeigeFehler,
   zeigeMeldung,
 } from "./api.js";
-import { erstelleTabelle } from "./liste.js";
+import { erstelleTabelle, formatiereArbeitsstand } from "./liste.js";
 
 const CONTAINER_ID = "detail";
 const OWNER_AUSWAHL_ID = "detail-owner";
@@ -543,6 +543,9 @@ function erstelleKopf(pfad, daten, wellen) {
   const angaben = document.createElement("dl");
   anhaengenFeld(angaben, "Typ", feld(frontmatter, "type") || KEINE_ANGABE);
   anhaengenFeld(angaben, "Status", erstelleStatusAnzeige(status, hinweis));
+  // Arbeitsstatus (A30): abgeleitet aus `aktuell`, nur wenn vorhanden.
+  const arbeitsstand = formatiereArbeitsstand(daten);
+  if (arbeitsstand) anhaengenFeld(angaben, "Arbeitsstatus", arbeitsstand);
   anhaengenFeld(angaben, "owner", erstelleOwnerAuswahl(pfad, ermittleOwner(frontmatter)));
   if (istAufgabe(pfad, frontmatter)) {
     anhaengenFeld(
