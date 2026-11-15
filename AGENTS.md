@@ -44,6 +44,7 @@ Diese Regeln gelten für alle OpenCode-Sessions in diesem Projekt.
 - Nach abgeschlossener Arbeit kurze Zusammenfassung der Änderungen geben.
 - **Sicherungs-Push nach grünen Tests:** Sobald der Tester einen Stand positiv getestet hat (alle Tests grün), werden die geänderten Dateien sofort committed und nach GitHub gepusht — damit bei einem Container-/Sitzungs-Reset kein nachweislich funktionierender Stand verloren geht.
 - **Nutzer-Aufgaben aus der App erkennen:** Aufgaben, die über die App oder direkt in `wissen/aufgaben/` angelegt werden, muss ich zuverlässig sehen und übernehmen. Prüfpflicht bei jedem Rundenwechsel, vor jeder Aufgabenvergabe und bei Statusmeldungen: `git status` und `wissen/aufgaben/` auf neue Dateien prüfen (Merkmale: Dateiname ohne `aNN-`-Präfix, `task_status: offen`, `owner: ai`). Neue Aufgaben werden sofort geplant (`planner`) und beauftragt und erscheinen in der nächsten Statusmeldung.
+- **Aufgaben-Kennung ist eindeutig und steht im Titel:** Sobald eine Aufgabe eine Kennung erhält (A1, A2, …), wird der Titel auf `A<N>: <Titel>` gesetzt — die Kennung führt den Titel an, damit Aufgaben ohne Textlesen eindeutig identifizierbar und per Suche auffindbar sind. Gilt auch beim Umbenennen der Datei (`a<N>-<slug>.md`) und für per App angelegte Aufgaben.
 
 ## Code-Stil & Technik
 
