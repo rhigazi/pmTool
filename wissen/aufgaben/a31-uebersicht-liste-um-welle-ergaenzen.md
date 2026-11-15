@@ -9,7 +9,7 @@ priority: hoch
 assigned_to: coder
 welle: wellen/w2.md
 owner: ai
-aktuell: "reviewer: Review A31 (Snapshot) | tester: UI-Szenarien | coder: A28 läuft parallel"
+aktuell: "reviewer: FREIGEGEBEN (K1–K3/H1–H6 → A33 + Doku) — tester: S1–S4 läuft | coder: A28-P2+3"
 ---
 
 # Ziel
