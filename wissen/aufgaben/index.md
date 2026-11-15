@@ -1,6 +1,10 @@
 # Aufgaben
 
-Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in [/projekt/phasen.md](/projekt/phasen.md) definiert. **Stand 2026-11-14: MVP abnahmefähig** — alle Aufgaben A1–A20 sind abgeschlossen, offen sind nur die Post-MVP-Vormerkungen A21/A22.
+Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in [/projekt/phasen.md](/projekt/phasen.md) definiert. **Stand 2026-11-15: MVP abnahmefähig** — die Aufgaben A1–A20 sind abgeschlossen, A23 ist in Umsetzung, offen sind außerdem die Post-MVP-Vormerkungen A21/A22.
+
+# Laufende Aufgaben
+
+* [A23: Feature-Liste](a23-feature-liste.md) - Menüpunkt „Feature List": Liste aller Features mit Status, Klick auf ein Feature zeigt die zugehörigen Aufgaben (offen / in Bearbeitung / erledigt) — **in Umsetzung** (Phase 3)
 
 # Abgeschlossene Aufgaben
 
