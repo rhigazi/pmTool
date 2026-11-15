@@ -156,6 +156,42 @@ opencode
 - Sessions immer aus `/content/pmTool` heraus starten, damit relative Pfade
   (`tools/`, `wissen/`, `definitions/`) stimmen.
 
+## Neues Projekt beginnen (optional)
+
+Soll die Instanz **ohne** das mitgelieferte Projektwissen starten, setzt
+`tools/neues_projekt.py` das Bundle `wissen/` auf die OKF-Vorlage
+`definitions/wissen-vorlage/` zurück. Drei Zellen, in dieser Reihenfolge:
+
+```python
+%cd /content/pmTool
+!python3 tools/neues_projekt.py       # Plan: Löschziel, Backup-Pfad, Vorlage — ändert nichts
+```
+
+```python
+!cd /content/pmTool && python3 tools/neues_projekt.py --ja
+```
+
+```python
+!cd /content/pmTool && bash definitions/verify.sh .
+```
+
+Danach wie gewohnt starten (Schritt 2) — die App zeigt ein leeres Projekt ohne
+Aufgaben und Wellen. In einem per `setup.sh` installierten Zielprojekt liegt das
+Werkzeug derzeit **nicht** (offener Punkt A26: Spiegelung nach `definitions/tools/`);
+dort den Reset in der Quell-Instanz ausführen oder das Skript manuell übernehmen.
+
+> **Achtung:** `--ja` löscht das gesamte Projekt-Wissen in `wissen/` — inklusive
+> versteckter Dateien, Nachträgen und Entscheidungen. Vorher entsteht automatisch
+> ein Backup `wissen-backup-YYYYMMDD-HHMMSS.tar.gz` im Repo-Root. Schlägt das
+> Backup fehl, wird nichts gelöscht. Das Backup ist danach die **einzige** Kopie
+> des alten Wissens: herunterladen oder an einen sicheren Ort verschieben, bevor
+> die Runtime endet (Colab-Dateien sind flüchtig).
+
+Details: Ohne `--ja` passiert nichts (Exit 0). `--backup PFAD` überschreibt das
+Ziel, muss aber innerhalb des Repo-Roots liegen; ein vorhandenes Backup wird nie
+überschrieben (Suffix `-2`, `-3`, …). Fehlt die Vorlage, bricht das Skript ab,
+nennt die fehlende Datei und löscht nichts.
+
 ## 5) Erster Check
 
 ```python
@@ -219,5 +255,7 @@ Runtime nur einmal frei).
 %run /content/pmTool/definitions/app/start_colab.py   # Server + App im neuen Browser-Tab (Kernel-Aufruf, absoluter Pfad)
 # Secrets-Zelle aus Schritt 3 ausführen (falls Telegram gewünscht)
 !bash definitions/verify.sh .         # Setup-Check
+# Optional: leeres Projekt statt mitgeliefertem Wissen
+# !cd /content/pmTool && python3 tools/neues_projekt.py --ja
 # neues Terminal: cd /content/pmTool && opencode
 ```

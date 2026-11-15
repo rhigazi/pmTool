@@ -4,7 +4,7 @@ Browserbasierte Oberfläche für **eine Person**, die ein OKF-Projekt in Mensch-
 
 Die App ist ein **Tracker**. Die eigentliche Projektarbeit läuft im OpenCode-CLI-Chat: der Projektmanager-Agent steuert `planner`, `coder`, `reviewer`, `tester` und `documenter`; die Oberfläche macht den Stand sichtbar und erlaubt die menschlichen Eingriffe (Nachtrag, „Klarung", „Geschlossen", owner umschalten).
 
-- **Status:** MVP abnahmefähig (alle Aufgaben A1–A20 abgeschlossen, Gesamtsuite 772 grün)
+- **Status:** MVP abnahmefähig (alle Aufgaben A1–A20 abgeschlossen, Gesamtsuite 862 grün — Stand A24; die endgültige Zahl folgt nach A23/A25)
 - **Projektstand & Historie:** [docs/uebergabeprotokoll.md](docs/uebergabeprotokoll.md), [wissen/log.md](wissen/log.md)
 - **Projektwissen:** [wissen/index.md](wissen/index.md)
 
@@ -112,7 +112,7 @@ Alles liegt im OKF-Bundle **[wissen/](wissen/index.md)** — Markdown mit YAML-F
 ## Entwicklung & Tests
 
 ```bash
-python3 -m pytest definitions/app/tests -q   # Gesamtsuite (aktuell 772 passed)
+python3 -m pytest definitions/app/tests -q   # Gesamtsuite (aktuell 862 passed, Stand A24)
 bash definitions/verify.sh .                 # Umgebungs-Check → Exit 0 = vollständig
 ```
 
@@ -133,6 +133,25 @@ bash definitions/verify.sh /pfad/zum/projekt         # Installation prüfen (Exi
 Optionen von `setup.sh`: `--wissen`, `--global` (Subagenten nach `~/.config/opencode/agents/`, Skills nach `~/.agents/skills/`, optional `moli`), `--force`. Vorhandene Dateien werden ohne `--force` nie überschrieben.
 
 Die **mitverteilte Vorlagen-README** liegt in [definitions/README.md](definitions/README.md) — sie beschreibt die Installation in Zielprojekten und wird hier bewusst nicht dupliziert.
+
+## Neues Projekt beginnen
+
+Ein frischer Klon bringt das Projektwissen des Vorbilds mit. Für ein eigenes, leeres Projekt setzt `tools/neues_projekt.py` das Bundle `wissen/` auf die OKF-Vorlage `definitions/wissen-vorlage/` zurück:
+
+```bash
+python3 tools/neues_projekt.py        # 1. Plan: Löschziel, Backup-Pfad, Vorlage — ändert nichts
+python3 tools/neues_projekt.py --ja   # 2. ausführen: erst Backup, dann Reset
+bash definitions/verify.sh .          # 3. Umgebungs-Check → Exit 0 = vollständig
+bash start.sh                         # 4. App startet mit leerem Projekt
+```
+
+Danach enthält `wissen/` exakt die Vorlage (`index.md`, `features.md`, `log.md`, `aufgaben/`, `entscheidungen/`, `projekt/`) — die App zeigt keine Aufgaben und keine Wellen; das Projekt wird über die App bzw. den Projektmanager neu angelegt. In Colab ist Schritt 4 stattdessen `%run /content/pmTool/definitions/app/start_colab.py`.
+
+> **Achtung:** `--ja` löscht das **gesamte Projekt-Wissen** in `wissen/`, inklusive versteckter Dateien, Nachträgen und Entscheidungen. Vorher entsteht automatisch ein Backup `wissen-backup-YYYYMMDD-HHMMSS.tar.gz` im Repo-Root; schlägt das Backup fehl, wird **nichts** gelöscht. Das Backup ist danach die einzige Kopie dieses Wissens — sichern oder an einen sicheren Ort verschieben.
+
+Details: Ohne `--ja` wird ausschließlich der Plan ausgegeben (Exit 0, Dateisystem unverändert). `--backup PFAD` legt das Backup-Ziel fest, muss aber innerhalb des Repo-Roots liegen. Fehlt oder unvollständig ist die Vorlage, bricht das Skript ab und nennt die fehlende Datei — ohne zu löschen. Ein zweiter Lauf direkt nach einem Reset ist idempotent (neues Backup, gleiches Ergebnis).
+
+Das Werkzeug gehört zum Repo-Root (`tools/`) und wird derzeit **nicht** von `setup.sh` in Zielprojekte verteilt — diese Verteilungslücke ist als [A26](wissen/aufgaben/a26-verteilung-und-suite-konflikt.md) vorgemerkt.
 
 ## Telegram-Benachrichtigung
 

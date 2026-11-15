@@ -24,7 +24,7 @@ tags: [features, steuerung]
   * **Abgeschlossen:** [A2](aufgaben/a2-status-mapping.md) `status.py` (44 Tests, Test bestanden, Doku)
   * **In Umsetzung:** [A23](aufgaben/a23-feature-liste.md) Feature-Liste: Menüpunkt + Feature-Status + zugehörige Aufgaben
   * **In Umsetzung: A25 Suche in der Listenansicht** — [A25](aufgaben/a25-suche.md): Suchfeld über der Tabelle in allen drei Listen (Übersicht, Wellen, Aufgaben); mehrere Wörter = UND, Umlaut-/ß-tolerant, „zuletzt geändert" nicht durchsuchbar, „Filter zurücksetzen" leert auch die Suche. Läuft **parallel zu A23** (G11 vs. G10, keine Dateiüberschneidung; PM-Festlegung 2026-11-15). Phase 2 (Volltextsuche über Inhalte) bleibt Vormerkung.
-  * **In Planung:** [A24](aufgaben/a24-neues-projekt.md) Neues Projekt/Reset: `tools/neues_projekt.py` setzt `wissen/` auf die Vorlage zurück (Plan-Vorschau ohne `--ja`, Backup, Verify-Nachweis)
+  * **In Doku:** [A24](aufgaben/a24-neues-projekt.md) Neues Projekt/Reset: `tools/neues_projekt.py` setzt `wissen/` auf die Vorlage zurück (Plan-Vorschau ohne `--ja`, Backup, Verify-Nachweis) — Code fertig, 24 Tests grün, Review/Testphase gebündelt offen; Verteilungslücke und Root-Suite-Konflikt → [A26](aufgaben/a26-verteilung-und-suite-konflikt.md)
   * **Offen:** nur noch **MVP-Abnahme durch die Projektleitung**; danach Post-MVP: [A22](aufgaben/a22-e2e-regression.md) (E2E-Regression), A21 (Desktop-Modus) und die Post-MVP/Aufräum-Punkte (siehe unten). Abgeschlossen sind: Bestätigungs-Review (A1/A5/A7/A9/A15/A19), A13-/A14-Review, Testphase 2, Kleinbefunde-Takt und A17-Abnahmelauf.
   * **Vorgemerkt:** **A21 „Desktop-Modus/Lokal-Betrieb"** — Nummer reserviert, noch keine Aufgaben-Datei; pywebview-Desktop-Modus nach MVP (Entscheidung der Projektleitung 2026-11-14)
 
@@ -60,7 +60,8 @@ tags: [features, steuerung]
 
 * Test-/Abnahme-Instanz: eigene Colab-Runtime mit frischem GitHub-Klon und eigenem Klon-Pfad möglich. **Offen:** Zwei Instanzen in derselben Runtime kollidieren auf Port 5000 — die Doku empfiehlt eine eigene Runtime je Instanz.
 
-* Root-Suite `pytest -q` bricht am doppelten Testdateinamen `test_telegram_send.py` (`tools/tests/` vs. `definitions/tools/tests/`) — vom `tester` bestätigt; kleine eigene Aufgabe (umbenennen oder pytest-`ignore`).
+* [A26](aufgaben/a26-verteilung-und-suite-konflikt.md) Werkzeug-Verteilung + Root-Suite-Konflikt: `neues_projekt.py` nach `definitions/tools/` spiegeln und die doppelten Testdateinamen (`test_telegram_send.py`, künftig auch `test_neues_projekt.py`) auflösen — offen, Umsetzung nach A23/A25.
+* Root-Suite `pytest -q` bricht am doppelten Testdateinamen `test_telegram_send.py` (`tools/tests/` vs. `definitions/tools/tests/`) — vom `tester` bestätigt; **übernommen in [A26](aufgaben/a26-verteilung-und-suite-konflikt.md)** (2026-11-15).
 * Doppelte Sektionsnummer „8)" in `setup.sh --global` — **behoben** (Nummerierung durchgehend 1–10; `docs/uebergabeprotokoll.md` mitgezogen).
 * Doku-Kosmetik A18 — **erledigt** (2026-11-14): `--dry-run`-Hinweis zu `verify.sh` (`docs/colab-start.md` + `start.sh`), `BUNDLE_ROOT`-Wortlaut (`$PROJEKT/wissen`, absolut), Reihenfolge Telegram-Secrets-Zelle vereinheitlicht (einheitlich nach `bash start.sh --colab`, Schritt 3).
 * Detail-Endpunkt: unlesbare Datei → 500 statt neutraler Meldung (für A9-Review/A17 vormerken).

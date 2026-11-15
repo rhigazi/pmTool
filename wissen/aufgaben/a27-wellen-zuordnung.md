@@ -1,0 +1,181 @@
+---
+type: Task
+title: "A27: Wellen-Zuordnung (nachträglich zuordnen, filtern, Wellen-Sicht)"
+description: Aufgaben nachträglich einer Welle zuordnen, umsortieren und die Zuordnung entfernen (Detail-Dropdown über POST /api/meta), Aufgaben nach Welle filtern (Listen) und die Aufgaben einer Welle im Wellen-Detail aus dem welle-Feld ableiten.
+task_status: in Planung
+phase: 2 Planung
+priority: hoch
+assigned_to: coder
+feature: /features/okf-projekt-manager-spa.md
+owner: ai
+---
+
+# Ziel
+
+Wellen sind Priorisierungs-Töpfe („was wird in welchem MVP umgesetzt"). Beim Anlegen einer Aufgabe gibt es das Welle-Feld bereits (A13); es fehlt die **nachträgliche** Zuordnung, die Sicht auf die Töpfe und das Filtern nach Topf.
+
+A27 liefert drei Bausteine:
+
+1. **Detailansicht (Aufgaben):** Wellen-Auswahl (alle Wellen aus `GET /api/wellen` + „keine") im Frontmatter-Kopf, die beim Wechsel sofort speichert, eine Erfolgsmeldung zeigt, bei Fehler den alten Wert wiederherstellt und die Detailansicht neu lädt.
+2. **API:** `POST /api/meta` akzeptiert zusätzlich `welle` (Pfad der Wellen-Datei, Konvention aus A13). Nur existierende `wellen/<x>.md` sind zulässig; leer/`null` entfernt die Zuordnung; alles andere ist ein **Eingabefehler (400)** — kein Rechte-403, kein neuer Endpunkt.
+3. **Sichten:** Wellen-Filter in der Übersicht und in der Aufgabenliste (kombinierbar mit Status/owner und der Suche aus A25) sowie ein Abschnitt „Aufgaben dieser Welle" im Wellen-Detail, das die Zuordnung **aus dem `welle`-Feld** ableitet (Join über `GET /api/aufgaben`).
+
+# Akzeptanzkriterien
+
+- **AK-1 (Detail-Dropdown, PM 1):** In der Detailansicht einer Aufgabe (`type: Task` oder Pfad `aufgaben/…`) steht im Frontmatter-Kopf ein Feld „Welle" mit Auswahlfeld; Optionen: „keine" zuerst, dann alle Wellen aus `GET /api/wellen` in API-Reihenfolge als `Titel (Pfad)` (bei fehlendem Titel nur `Pfad`), Wert = `path` der Wellen-Datei. Vorausgewählt ist der aktuelle `welle`-Wert der Datei.
+- **AK-2 (Zuordnen/Wechseln, PM 1):** Auswahl einer Welle speichert sofort per `POST /api/meta` mit `{path, welle: "<wellen-pfad>"}`; nach Erfolg erscheint die Meldung „Welle gespeichert." und die Detailansicht zeigt die neue Zuordnung. Ein Wechsel von Welle A auf Welle B ersetzt den Wert (genau ein `welle`-Schlüssel im Frontmatter, kein Duplikat).
+- **AK-3 (Entfernen, PM 1/2):** Auswahl „keine" sendet `welle: null`, entfernt die Zuordnung, meldet „Welle entfernt." und zeigt anschließend „keine". Das Entfernen ist idempotent: bei einer Aufgabe ohne `welle` bleibt die Datei unverändert (kein Schreibvorgang, weiterhin 200).
+- **AK-4 (Fehlerverhalten Detail, PM 1):** Bei Serverfehler (400/403/404/500) bleibt die Datei unverändert, die Fehlermeldung aus `api.js` ist sichtbar und das Auswahlfeld springt auf den vorherigen Wert zurück. Während eines laufenden Requests ist das Feld gesperrt (kein Doppel-Schreibvorgang).
+- **AK-5 (API-Validierung, PM 2):** `welle` ist ein normales Metadaten-Feld: akzeptiert wird ausschließlich ein existierender Pfad der Form `wellen/<name>.md` (getrimmt; führende/abschließende Leerzeichen werden entfernt). `null`, `""` und reine Leerzeichen entfernen die Zuordnung. Unbekannte/nicht existierende Wellen, Pfade außerhalb `wellen/`, Traversal, Nicht-Strings, reservierte Ziele (`wellen/index.md`) → **`EingabeFehler` = HTTP 400**, Datei byte-identisch, verständliche deutsche Meldung ohne Pfad-/OS-Details.
+- **AK-6 (Fail-Closed-Reihenfolge, PM 2):** Die bestehende Reihenfolge bleibt: reservierte Zieldatei → `owner`-Whitelist → `status`-Whitelist → `welle`-Prüfung → Zielpfad-/Dateiprüfung → Lesen → genau ein atomarer Schreibvorgang. Ein verbotener Status/ein verbotener owner liefert weiterhin **403**, auch wenn `welle` zusätzlich ungültig ist oder die Zieldatei fehlt. `welle` wird **nicht** in die Status-/owner-Whitelist gepresst (keine 403-Klasse).
+- **AK-7 (Kein neuer Endpunkt, PM 2):** Die Endpunktliste bleibt unverändert (`/api/overview`, `/api/file`, `/api/aufgaben`, `/api/wellen`, `/api/nachtrag`, `/api/task`, `/api/welle`, `/api/meta`). `/api/welle` bleibt „Welle anlegen"; die Zuordnung läuft ausschließlich über `/api/meta`. `overview.py` bleibt unverändert (es liefert `welle` bereits).
+- **AK-8 (Wellen-Filter Liste, PM 3):** In der Übersicht und in der Aufgabenliste existiert ein Filter „Welle" (Dropdown „Alle" + Wellen, Wert = `path`, Label `Titel (Pfad)`), das **dynamisch** in das bestehende Filterformular eingehängt wird (kein `index.html`-Markup). Es filtert auf Gleichheit des `welle`-Feldes; „Alle" zeigt den Vollbestand. Die Wellenliste selbst bekommt **keinen** Wellen-Filter (dort ist das Feld bedeutungslos).
+- **AK-9 (Kombinierbarkeit, PM 3):** Der Wellen-Filter ist mit Status-Filter, owner-Filter und der Suche (A25) **UND**-verknüpft; „Filter zurücksetzen" leert Status, owner, Suche und Welle. Ohne Wellen-Auswahl bleibt das Ergebnis der Filterlogik unverändert (A11/A25-Regression).
+- **AK-10 (Wellen-Sicht, PM 4):** Das Wellen-Detail (`#/detail/wellen/<x>.md`) zeigt den Abschnitt „Aufgaben dieser Welle (n)" mit einer Tabelle (Titel, Status, owner, zuletzt geändert) über genau die Aufgaben aus `GET /api/aufgaben`, deren `welle`-Feld dem Wellen-Pfad entspricht. Ohne Treffer: „Keine Aufgaben dieser Welle." Aufgabendetails und andere Dateien zeigen den Abschnitt nicht.
+- **AK-11 (Single Source of Truth, PM 4):** Die Aufgabenliste einer Welle wird ausschließlich aus dem `welle`-Feld abgeleitet. Die Wellen-Datei wird dabei **nie geschrieben**; `# Aufgaben` bleibt der A5-Initialstand (OKF-Lesbarkeit) und wird nicht synchronisiert. Nach einer Zuordnungsänderung stimmt die Wellen-Sicht beim nächsten Laden (Join-Beleg über `/api/aufgaben`).
+- **AK-12 (A13 unverändert, PM 5):** `formulare.js`, `neu_aufgabe.py` und das Erstellverhalten (Welle bei Anlage) bleiben unverändert; der A13-Weg funktioniert weiter. `app.js`, `api.js`, `index.html`, `style.css` bleiben unverändert.
+- **AK-13 (Sicherheit/Robustheit):** XSS-sicher wie A11–A14 (nur `textContent`/`createElement`, `classList`, keine HTML-Senke), fail-loud bei `null`/Nicht-Array-Antworten (kein stilles Leer-Ergebnis), deutsche Meldungen ohne Pfade/OS-Details, keine JS-Exception bei fehlenden/fremden Feldtypen.
+
+# Testfälle (TDD)
+
+**Zuordnung AK → Testfälle:**
+**AK-1** → T19, T20, T24, T27. **AK-2** → T1, T2, T3, T21. **AK-3** → T4, T5, T4b, T22. **AK-4** → T23, T27. **AK-5** → T6–T11, T17. **AK-6** → T12, T13, T16. **AK-7** → T18, T32. **AK-8** → T28, T29, T31, T32, T33. **AK-9** → T30, T31. **AK-10** → T34, T35, T38. **AK-11** → T2, T36. **AK-12** → T40. **AK-13** → T25, T26, T33, T35, T37.
+
+Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das Minimum implementieren. Jede Testnummer ist ein eigener pytest-Fall. Backend-Tests liegen in `tests/test_api_schreiben.py` (PM-Vorgabe: frei) bzw. `tests/test_meta.py` / `tests/test_okf_bundle.py`; alle neuen Frontend-Tests in der **neuen** Datei `tests/test_welle_zuordnung.py` (Baselines `test_liste.py`, `test_detail.py`, `test_suche.py`, `test_features.py` bleiben unverändert scharf — Muster A25).
+
+**A. API-Schreiben: zuordnen, wechseln, entfernen (AK-2, AK-3, AK-11)**
+
+- **T1 Welle setzen:** `POST /api/meta {"path": "aufgaben/a1.md", "welle": "wellen/w1.md"}` → 200, `mimetype application/json`, Antwort `{path, frontmatter}` mit `frontmatter.welle == "wellen/w1.md"`, Datei enthält genau eine Zeile `welle: wellen/w1.md`, Body-SHA256 vor/nach identisch.
+- **T2 Join-Beleg:** Nach T1 liefert `GET /api/aufgaben` für `aufgaben/a1.md` das Feld `welle == "wellen/w1.md"`; `GET /api/overview` ebenso (keine Änderung an `overview.py` nötig).
+- **T3 Welle wechseln:** Nach T1 `{"welle": "wellen/w2.md"}` (Fixture w2 im Test-Bundle anlegen) → 200, `frontmatter.welle == "wellen/w2.md"`, im Frontmatter genau **ein** `welle`-Schlüssel (`text.count("\nwelle:") == 1`), Body unverändert.
+- **T4 Entfernen mit `null`:** Ausgangslage mit gesetzter Welle → `{"welle": null}` → 200, `welle` fehlt im Frontmatter, `GET /api/overview`-Eintrag hat kein `welle`-Feld, Body unverändert.
+- **T4b Entfernen ist idempotent:** Aufgabe ohne `welle` + `{"welle": null}` → 200, Datei byte-identisch (kein Schreibvorgang; Nachweis über Hash und `okf_bundle.set_meta`-Spy oder mtime).
+- **T5 Entfernen mit leerem Wert:** parametrisiert `""`, `"   "`, `"\t\n"` → jeweils 200, `welle` fehlt, Body unverändert.
+
+**B. API-Validierung (AK-5, AK-6, AK-7)**
+
+- **T6 Unbekannte Welle:** `{"welle": "wellen/gibtsnicht.md"}` → 400, `error` nicht leer, Datei-SHA256 unverändert.
+- **T7 Fremder Ordner:** `{"welle": "aufgaben/a1.md"}`, `{"welle": "features.md"}` → jeweils 400, Datei unverändert.
+- **T8 Traversal/Absolut:** `"../wellen/w1.md"`, `"wellen/../aufgaben/a1.md"`, `"/etc/passwd"`, `"wellen/%2e%2e/aufgaben/a1.md"` → jeweils 400, nichts außerhalb des Bundles verändert (`_aussen`-Vergleich wie in `test_api_schreiben.py`).
+- **T9 Reserviertes Wellen-Ziel:** `{"welle": "wellen/index.md"}` → **400** (nicht 403), Datei unverändert. Begründung: `welle` ist Eingabefeld, kein Rechtepfad.
+- **T10 Form-/Typfehler:** `42`, `true`, `[]`, `{}`, `"wellen/"`, `"wellen"`, `"wellen/w1"`, `"wellen/w1.txt"`, `"wellen/w1.md/"` → jeweils 400, Datei unverändert.
+- **T11 Trim:** `" wellen/w1.md "` und `"\nwellen/w1.md\t"` → 200, gespeichert wird der getrimmte Pfad.
+- **T12 Whitelist vor welle (Fail-Closed):** `{"status": "Testing", "welle": "wellen/gibtsnicht.md"}` → **403**; `{"owner": "x", "welle": "wellen/gibtsnicht.md"}` → **403**; jeweils Datei unverändert. Bestehender Fall `test_n2_verbotener_status_vor_fehlender_datei_ist_403` bleibt grün.
+- **T13 Reihenfolge welle vor Zieldatei:** `{"path": "gibtsnicht.md", "welle": "wellen/w1.md"}` → **404** (Zieldatei fehlt); `{"path": "gibtsnicht.md", "welle": "wellen/gibtsnicht.md"}` → **400** (Wellen-Prüfung zuerst). Kein Dateianlage in beiden Fällen.
+- **T14 Kombination in einem Schreibvorgang:** `{"owner": "mensch", "status": "Klarung", "welle": "wellen/w1.md"}` → 200; `owner`, `task_status: in Klärung` und `welle` in einem Zug gesetzt (Spy: `okf_bundle.set_meta` genau einmal), Body unverändert.
+- **T15 Keine setzbaren Felder bleibt 400:** `{"unbekannt": "x"}`, `{"owner": null}` → 400 (K2-Verhalten unverändert).
+- **T16 Reservierte Zieldatei:** `{"path": "features.md", "welle": "wellen/w1.md"}` → 403, Datei unverändert.
+- **T17 Modul-Ebene `meta.setzen`:** Ohne Flask geprüft: `welle` ist weder in `OWNER_WERTE` noch in `STATUS_WERTE`; ungültige Welle → `EingabeFehler` (kein `RechteFehler`); `welle=None` entfernt; `welle` nicht übergeben lässt das Feld unberührt; Datei ohne `welle` + `None` → unverändert, kein Fehler.
+- **T18 Endpunkt-Inventar:** `ENDPUNKTE` in `test_api_schreiben.py` unverändert; `POST /api/welle` legt weiterhin eine Welle an (`{titel, ziel, status, owner}`) und akzeptiert **kein** `welle`-Feld als Zuordnung; `POST /api/meta` ist der einzige Zuordnungsweg.
+
+**C. Detailansicht: Dropdown, Speichern, Fehler (AK-1, AK-2, AK-3, AK-4, AK-13)**
+
+- **T19 Montage und Optionen:** `ladeDetail({unterpunkt: "aufgaben/a1.md"})` mit Stub (`/api/file` + `/api/wellen` mit 2 Wellen: `wellen/w1.md` „Welle 1: Fixture", `wellen/w2.md` ohne Titel) → im `dl` des Kopfes ein Feld „Welle" mit `select#detail-welle`; Optionen genau `["", "wellen/w1.md", "wellen/w2.md"]`; Texte `["keine", "Welle 1: Fixture (wellen/w1.md)", "wellen/w2.md"]`; `value` = aktueller `welle`-Wert (`""`, wenn keiner).
+- **T20 Nur Aufgaben:** Detail einer Welle (`wellen/w1.md`) und einer Projektdatei (`projekt/phasen.md`) → **kein** `#detail-welle`, **kein** `GET /api/wellen` (Request-Zähler), Detail rendert unverändert.
+- **T21 Speichern beim Wechsel:** Auswahl auf `wellen/w1.md`, `change` auslösen → genau ein `POST /api/meta` mit Body `{path: "aufgaben/a1.md", welle: "wellen/w1.md"}`; Meldung „Welle gespeichert." sichtbar; nach dem Neuladen zeigt das Feld die neue Welle; `GET /api/aufgaben` (Server-Test) liefert sie.
+- **T22 Entfernen im UI:** Auswahl auf `""`, `change` → genau ein `POST /api/meta` mit `{path, welle: null}` (Feld vorhanden, Wert `null` — nicht weggelassen); Meldung „Welle entfernt."; Feld zeigt „keine".
+- **T23 Fehlerpfad:** Stub antwortet 400 (`{error: "…"}`) → Fehlerbereich zeigt die Servermeldung, Feld springt auf den alten Wert zurück, kein weiterer POST, Datei unverändert (Server-Test mit erzwungenem 400).
+- **T24 Unbekannte Welle fail-loud:** Aufgabe mit `welle: "wellen/geloescht.md"`, Welle nicht in `/api/wellen` → Option `wellen/geloescht.md (unbekannt)` ist vorausgewählt, Inline-Hinweis „Welle „wellen/geloescht.md" ist unbekannt; bitte eine Welle wählen oder „keine" setzen."; kein Wurf, kein automatischer POST. (Analog A12-3.)
+- **T25 XSS:** Wellen-Titel `<img src=x onerror=alert(1)>` erscheint als Text in der Option (kein `img`-Knoten); `welle`-Wert `<script>alert(1)</script>` im Frontmatter wird als Text/Hinweis gerendert; kein `alert`, keine HTML-Senke in `detail.js`.
+- **T26 Fail-loud Wellenliste:** `/api/wellen` liefert `null` → Fehlerbereich + Inline-Hinweis „Wellen konnten nicht geladen werden.", Detailinhalt (Titel/Markdown/Nachtrag) bleibt sichtbar, kein leeres Auswahlfeld ohne Hinweis; Nicht-Array (`{}`/`42`) → „Wellen haben ein unerwartetes Format."
+- **T27 Doppelklick/Parallelwechsel:** Zwei `change`-Ereignisse während eines laufenden POST → genau ein Schreibvorgang; Feld ist während des Requests `disabled` und danach wieder bedienbar (auch im Fehlerfall, `try/finally`).
+
+**D. Listenfilter (AK-8, AK-9, AK-13)**
+
+- **T28 Montage/Idempotenz:** Nach `ladeUebersicht()` existiert genau ein `select` mit `label` „Welle" in `div.filter-feld`, eingehängt im bestehenden `#filter` **vor** `#filter-zuruecksetzen`; Optionen `[Alle, …Wellen]`; zweiter Aufruf erzeugt kein zweites Feld, Auswahl und Knoten bleiben erhalten. Analog `ladeAufgaben()` (`#filter-aufgaben`, id `filter-welle-aufgaben`). In der Wellenansicht: kein Feld, kein zusätzlicher `/api/wellen`-Request. `index.html` enthält weiterhin kein `filter-welle`-Markup.
+- **T29 Filterlogik:** `filtereEintraege(eintraege, {welle})`: Treffer nur bei exakter Gleichheit mit `eintrag.welle`; `""`/`null`/`undefined` → Vollbestand; Einträge ohne `welle` erscheinen nur bei „Alle"; Eingabe-Array wird nicht mutiert (Pfadliste vor/nach identisch). (Optionale Erweiterung „ohne": `welle: "ohne"` trifft Einträge ohne `welle` — nur wenn der PM sie freigibt, siehe offene Fragen.)
+- **T30 Kombination:** `{status: "Offen", owner: "ai", suche: "a2", welle: "wellen/w1.md"}` → Schnittmenge aller vier Bedingungen; Suche `""` + Welle + Status ergibt exakt das A11-Ergebnis für diese Teilmenge; Reihenfolge bleibt die Eingabereihenfolge.
+- **T31 DOM-Filter und Reset:** Auswahl `wellen/w1.md` → Tabelle enthält genau die zugeordneten Zeilen (Zeilenzahl + `data-path`), Kopfzeile unverändert, **kein** zusätzlicher Request; „Filter zurücksetzen" setzt Welle (und Suche/Status/owner) auf leer und zeichnet den Vollbestand; Wellen-Filter ohne Treffer → „Keine Einträge." (bzw. „Keine Treffer.", wenn zusätzlich eine Suche gesetzt ist — A25-T13 bleibt gültig).
+- **T32 Fail-loud Wellenliste:** `/api/wellen` liefert `null` → Fehlerbereich zeigt die Meldung, das Wellen-Feld ist deaktiviert und enthält nur „Alle", die Tabelle zeigt weiterhin den Vollbestand (kein stilles Wegfiltern); Nicht-Array → Formatmeldung, gleiches Verhalten.
+- **T33 XSS im Filter:** Wellen-Titel `<img src=x onerror=alert(1)>` → Optionstext literal, kein `img`-Knoten, kein `alert`.
+
+**E. Wellen-Sicht (AK-10, AK-11, AK-13)**
+
+- **T34 Ableitung/Anzeige:** Wellen-Detail `wellen/w1.md` mit `/api/aufgaben`-Fixture (3 Aufgaben: 2× `welle: "wellen/w1.md"`, 1× `welle: "wellen/w2.md"`, 1× ohne) → Abschnitt „Aufgaben dieser Welle (2)", Tabelle mit genau den 2 passenden Zeilen (`data-path` geprüft), Spalten Titel/Status/owner/zuletzt geändert, Klickziel über `data-path` (Router-Delegation bleibt nutzbar).
+- **T35 Leer/fail-loud:** Keine Aufgabe mit dieser Welle → „Keine Aufgaben dieser Welle." (kein leerer Tabellenkörper); `/api/aufgaben` `null` → „Aufgaben konnten nicht geladen werden."; Nicht-Array → „Aufgaben haben ein unerwartetes Format."; der restliche Detailinhalt bleibt sichtbar.
+- **T36 Keine Doppelpflege:** Wellen-Datei-SHA256 vor/nach `ladeDetail` und nach einer Zuordnungsänderung (via `/api/meta`) identisch; `# Aufgaben` unverändert; nach der Änderung listet das neu geladene Wellen-Detail die Aufgabe in der neuen Welle und nicht mehr in der alten.
+- **T37 XSS in der Wellen-Sicht:** Aufgabentitel `<img src=x onerror=alert(1)>` wird als Text in der Tabelle gerendert (kein `img`-Knoten, kein `alert`).
+- **T38 Abgrenzung:** Aufgaben-Detail (`aufgaben/a1.md`) und andere Dateien → kein Abschnitt, **kein** `GET /api/aufgaben`; Wellen-Detail → kein `GET /api/wellen` (Request-Budget: Aufgabe = file + wellen, Welle = file + aufgaben, sonst = file).
+
+**F. Regression (AK-12)**
+
+- **T39 Baselines:** `test_liste.py`, `test_detail.py`, `test_suche.py`, `test_features.py`, `test_formulare.py`, `test_static.py`, `test_meta.py`, `test_api_lesen.py` bleiben unverändert grün; die Gesamtsuite wächst nur um `test_welle_zuordnung.py` und die neuen Fälle in `test_api_schreiben.py`/`test_meta.py`/`test_okf_bundle.py`; `bash definitions/verify.sh .` → Exit 0.
+- **T40 A13 unverändert:** `git diff` zeigt keine Änderung an `static/js/formulare.js`, `neu_aufgabe.py`, `neu_welle.py`, `app.js`, `api.js`, `index.html`, `style.css`; `test_formulare.py` grün; das Anlegen mit Welle schreibt weiterhin `welle: <pfad>` ins Frontmatter.
+
+**UI-Szenarien für den `tester` (Moli-Browser, laufende App gegen Test-Bundle):**
+
+- **S1 Zuordnen:** Aufgabenliste → Aufgabe öffnen → Feld „Welle" → Welle wählen → Meldung „Welle gespeichert.", Auswahl bleibt, keine Konsolenfehler; zurück zur Liste → Aufgabe zeigt die Zuordnung im Filter „Welle".
+- **S2 Umsortieren:** Dieselbe Aufgabe auf eine andere Welle stellen → genau eine Zuordnung, in der alten Wellen-Sicht verschwunden, in der neuen sichtbar.
+- **S3 Entfernen:** „keine" wählen → Meldung „Welle entfernt.", Feld zeigt „keine", Aufgabe erscheint in keiner Wellen-Sicht.
+- **S4 Filtern:** Aufgabenliste → Welle wählen → nur zugeordnete Aufgaben; zusätzlich Status/owner und Suchbegriff setzen → Schnittmenge; „Filter zurücksetzen" → Vollbestand.
+- **S5 Wellen-Sicht:** Wellenliste → Welle öffnen → Abschnitt „Aufgaben dieser Welle (n)" mit den richtigen Aufgaben; Aufgabe anklicken → Aufgaben-Detail öffnet.
+- **S6 Fehler/XSS:** `welle` per Netzwerk auf `wellen/gibtsnicht.md` setzen → sichtbare Fehlermeldung, Auswahl springt zurück, Datei unverändert; Welle mit HTML-Titel anlegen → Darstellung als Text, kein Dialog.
+- **S7 Leerzustand:** Welle ohne Aufgaben öffnen → „Keine Aufgaben dieser Welle.", Seite bleibt bedienbar.
+
+# Kontext
+
+- **Anforderung (Projektleitung, 2026-11-15):** „Ich sehe keine Möglichkeit, Aufgaben einer bestimmten Welle zuzuordnen. Wellen sind Priorisierungs-Töpfe: was wird in welchem MVP umgesetzt." Beim Anlegen (A13-Formular) existiert das Welle-Feld bereits — fehlt ist die **nachträgliche** Zuordnung/Umsortierung und die Sicht auf die Töpfe.
+- **PM-Vorgaben (verbindlich, 2026-11-15):**
+  1. Detailansicht: Wellen-Auswahl (alle Wellen aus `GET /api/wellen` + „keine"), Speichern analog owner-Umschalter, Erfolgsmeldung, Listen-Daten aktualisieren; `welle`-Wert = Pfad der Wellen-Datei (Konvention aus A13).
+  2. `POST /api/meta` akzeptiert zusätzlich `welle`; nur existierende `wellen/<x>.md` oder leer/`null`; ungültig → **400**, keine Rechte-403; Fail-Closed-Reihenfolge (Whitelist status/owner vor Pfad-Check) bleibt; `welle` nicht in die Whitelist pressen; **kein neuer Endpunkt**.
+  3. Listenansicht: Wellen-Filter („Alle + Wellen"), kombinierbar mit Status-/owner-Filter **und** Suche (A25) — Konfliktgruppe zu A25 beachten (geteilte Datei `liste.js`).
+  4. Wellen-Sicht: Aufgaben **aus dem `welle`-Feld ableiten** (Join über `/api/aufgaben`), keine zweite Pflege von `# Aufgaben`; Einordnung der Anzeige ist Planervorschlag mit Begründung.
+  5. A13 bleibt unverändert; A23 (Feature-Liste) und A25 (Suche) laufen; Reihenfolge und Konfliktgruppen realistisch planen (API-Anteil `meta.py`/`server.py`/`test_api_schreiben.py` ist frei; UI-Anteil `detail.js`/`liste.js` teilt sich mit A25).
+  6. TDD-Testfälle je AK plus Randfälle (wechseln, entfernen, ungültig → 400 + Datei unverändert, unbekannte/fehlende Aufgabe, Filterkombinationen, Wellen-Detail, XSS/fail-loud, Testisolation).
+- **Ist-Stand im Code (geprüft 2026-11-15):**
+  - `overview.py` `_eintrag` liefert `welle` bereits (getrimmter String, sonst Feld weggelassen) → **keine Änderung an `overview.py`**, `/api/overview`, `/api/aufgaben`, `/api/wellen` sind als Datenquelle ausreichend.
+  - `meta.setzen(pfad, owner=None, status=None)` prüft `owner`/`status` gegen Whitelists, dann `pruefe_zieldatei`, dann `lesen` und schreibt einmalig über `okf_bundle.set_meta`.
+  - `okf_bundle.set_meta(pfad, updates)` kann Werte **ersetzen/anhängen, aber keine Schlüssel löschen** (`None` würde `welle: null` schreiben).
+  - `server.api_meta` reicht nur `owner`/`status` weiter und verwirft `None`-Werte; „Keine setzbaren Felder" → 400.
+  - `detail.js`: owner-Auswahl ist das Muster (`select` in `dl`, `change`-Handler, `speichereMeta` mit Erfolgsmeldung und Neuladen, unbekannter Wert als eigener Eintrag + Hinweis); `ladeDetail` lädt heute nur `/api/file`.
+  - `liste.js`: `ANSICHTEN`-Map, `filtereEintraege`/`waehleAnzeige`, statische Filter in `index.html`, Reset-Handler. A25 erweitert Signatur und Montage (Suchfeld **außerhalb** des Formulars) — A27 baut darauf auf und erweitert die Signatur um `welle`.
+- **Umsetzungsentscheidungen (TDD-relevant, reversibel):**
+  - **API-Signatur `meta.setzen`:** Sentinel statt `None`, damit „nicht übergeben" und „entfernen" unterscheidbar sind: `setzen(pfad, owner=None, status=None, welle=_NICHT_GESETZT)`. Reihenfolge im Code = AK-6. `_pruefe_welle(wert)` liefert `("setzen", pfad)` oder `("entfernen", None)`.
+  - **Zulässigkeit einer Welle:** `wert` ist String, getrimmt, endet auf `.md` (case-insensitiv), erstes Pfadsegment ist `wellen`, genau **ein** Segment nach `wellen/` (Wellen liegen flach, A5), `okf_bundle.resolve_path` erfolgreich (Traversal → 400), nicht `okf_bundle.ist_reserviert(...)` (sonst 400 statt 403), Ziel ist eine existierende Datei. **Bewusste Grenze:** `type: Welle` im Frontmatter wird **nicht** erzwungen — die Pfadform ist die Konvention (A13), eine Typprüfung würde Altdateien ohne `type` blockieren. Offener Punkt für den PM.
+  - **Entfernen ohne Rückstand:** `okf_bundle.set_meta(pfad, updates, entfernen=())` wird **additiv** um einen optionalen Parameter erweitert (Default leer → alle A1-Tests unverändert). `meta.setzen` übergibt bei „entfernen" `entfernen=("welle",)`; es bleibt **ein** atomarer Schreibvorgang (T14). Begründung: kein `welle: null`-Rückstand in der Datei, dieselbe Semantik wie „Feld fehlt" im Overview (A8/A25-Filter). *Rückfallebene, falls der PM keine Kernänderung will:* `welle: null` schreiben (funktional gleich, aber Datei enthält eine Nullzeile) — dann entfällt die `okf_bundle`-Änderung und T17/T4 prüfen `welle: null` statt „Schlüssel fehlt".
+  - **`server.api_meta`:** `owner`/`status` weiterhin nur bei `is not None` übernehmen; `welle` übernehmen, **wenn der Schlüssel vorhanden ist** (auch `null`), damit „entfernen" ankommt. Danach wie bisher: keine Ziele → 400. `unbekannte` Felder bleiben ignoriert (K2-Verhalten).
+  - **Detail-Dropdown nur für Aufgaben:** Bedingung `feld(type) == "Task"` **oder** Pfad beginnt mit `aufgaben/` (robust für Altbestand). Welle/Projekt/Log bekommen kein Feld, damit auch keinen zusätzlichen Request. Optionstext `Titel (Pfad)` wie A13 (Duplikat-tauglich), `""` = „keine"; unbekannter Wert als `Pfad (unbekannt)` + Inline-Hinweis (Muster A12-3) statt stillem Verschlucken.
+  - **Payload:** `erstelleMetaPayload(pfad, { owner, status, welle })` — `welle` mit Sondersemantik: `null` → `daten.welle = null` (entfernen); nicht-leerer String → gesetzt; `undefined`/`""` → weggelassen (bestehende owner/status-Semantik unverändert, A12-Tests bleiben grün).
+  - **Erfolgs-/Fehlerpfad:** ein `speichereMeta`-Aufruf wie beim owner-Umschalter; Erfolgstexte „Welle gespeichert." / „Welle entfernt."; bei Fehler `select.value` zurück auf den Anzeigewert; Feld während des Requests `disabled` (Muster A12-2, `try/finally`).
+  - **Listen-Daten aktualisieren:** Nach dem Speichern wird `ladeDetail` neu aufgerufen; die Listen laden beim Zurücknavigieren ohnehin frisch (`ladeListe` holt jeden Ansichtswechsel neu, `datenProAnsicht` ist nur ein Ansichts-Cache). Deshalb **keine** neue Cache-Invalidierung und keine Kopplung `detail.js` → `liste.js`-Lader. Der Join-Beleg läuft über die API (T2/T21).
+  - **Wellen-Filter dynamisch, nicht in `index.html`:** Ein `div.filter-feld` mit `label` + `select` wird beim Laden **vor** `#filter-zuruecksetzen` ins bestehende Formular eingehängt (Muster A25-Montage, idempotent, ein Feld je Ansicht; IDs `filter-welle` bzw. `filter-welle-aufgaben`, in `ANSICHTEN` ergänzt). Begründung: `index.html` bleibt unangetastet (A10-/A13-/A25-Linie), kein Konflikt mit A23 (G10: `index.html`, `style.css`), `style.css` bleibt unverändert. Die Optionen kommen aus `GET /api/wellen` (zusätzlicher Request nur in Übersicht/Aufgaben, parallel zum Listen-Request). Fehler → Feld deaktiviert mit nur „Alle" + Meldung (fail-loud, Tabelle bleibt vollständig).
+  - **Filter-Semantik:** `welle` = exakte Pfadgleichheit; „Alle" = leerer Wert; die Option „ohne Welle" (`welle: "ohne"` → Einträge ohne `welle`) ist als **optionales** Extra geplant (T29), weil genau das die PM-Frage „was ist noch keinem Topf zugeordnet" beantwortet — Freigabe siehe offene Fragen. Keine Fuzzy-/Titel-Zuordnung, kein `Titel (Pfad)`-Parsing.
+  - **Wellen-Sicht im Wellen-Detail (Planervorschlag, Begründung):** Der Abschnitt „Aufgaben dieser Welle" gehört in die A12-Detailansicht, wenn der Pfad mit `wellen/` beginnt. Begründung: (a) die Welle **ist** der Topf — das Detail ist der natürliche Kontext, kein neuer Navigationspunkt; (b) kein neuer Endpunkt und keine neue Route (keine `app.js`-/`index.html`-Änderung); (c) die Wellenliste verlinkt bereits per Zeilenklick ins Detail; (d) der Join ist ein reiner Client-Filter auf `/api/aufgaben` (bereits vorhandene Daten), also keine Doppelpflege; (e) die Tabelle kann `erstelleTabelle` aus `liste.js` wiederverwenden (Status-/owner-Spalten, Klarung-Hervorhebung, `data-path` → Klick öffnet die Aufgabe). Alternative „eigene Stelle" (eigene Ansicht/Route) würde `app.js` + `index.html` + `style.css` anfassen (Konflikt G10) und mehr Code erzeugen — verworfen.
+  - **Single Source of Truth:** `# Aufgaben` in der Wellen-Datei bleibt A5-Initialstand für OKF-Lesbarkeit und wird **nicht** synchronisiert (kein Schreiben der Wellen-Datei durch die App). Dokumentierte Folge: Die Sektion kann veralten; maßgeblich ist das `welle`-Feld. **Offene Erweiterung (Post-MVP):** Synchronisation der Linkliste (z. B. beim Speichern) — bewusst nicht Teil von A27.
+  - **A13-Asymmetrie (bewusst nicht angefasst):** Beim Anlegen validiert `neu_aufgabe._verweis` das `welle`-Feld nur als String, nicht als existierende Wellen-Datei. A27 verschärft nur den Update-Pfad (PM-Vorgabe). Folge: Eine neu angelegte Aufgabe kann eine unbekannte Welle tragen; das Detail zeigt sie fail-loud als „(unbekannt)". Eine Angleichung wäre eine eigene Aufgabe (Vormerkung).
+  - **Frontend-Regeln wie A11–A14:** XSS-sicher (`textContent`/`createElement`, keine HTML-Senken), `classList` statt `className`, `getJson`/`postJson` aus `api.js`, deutsche Meldungen ohne Pfade/OS-Details, fail-loud bei Nicht-Array.
+- **Konfliktgruppen (neu, G13/G14):** Die Nummern G10–G12 sind historisch doppelt belegt (A15/A23, A16/A25, A17) — deshalb neue Nummern:
+  - **G13 „Wellen-Zuordnung Backend":** `meta.py`, `server.py`, `okf_bundle.py` (nur additiver `entfernen`-Parameter), `tests/test_api_schreiben.py`, `tests/test_meta.py`, `tests/test_okf_bundle.py`. **Aktuell frei** — keine laufende Aufgabe berührt diese Dateien (A23 → G10, A25 → G11, A24/A26 → `tools/`, A22 → `tests/test_e2e.py`). Dieser Teil kann **sofort** parallel zu A23/A25 laufen.
+  - **G14 „Wellen-Zuordnung Frontend":** `static/js/detail.js`, `static/js/liste.js`, `tests/test_welle_zuordnung.py` (neu). `detail.js` ist frei; **`liste.js` gehört aktuell A25 (G11)** → der UI-Teil darf erst nach A25 (Review-frei/merged) begonnen werden. `index.html`/`style.css` bleiben unverändert → **kein** Konflikt mit A23 (G10).
+  - **Innerhalb A27:** Backend (G13) und Frontend (G14) sind disjunkt und können nacheinander vom selben `coder` umgesetzt werden; **nicht** parallel an zwei Coder vergeben (gemeinsame Test-Suite, gleiche Aufgabe).
+- **Reihenfolge-Empfehlung:** (1) **A27-Backend jetzt** (G13, unabhängig von A23/A25, zwei Commits: `meta`/`server` + `okf_bundle`) — damit ist die Zuordnung per API sofort möglich und A25 wird nicht blockiert. (2) **A27-Frontend nach A25** (G14, `liste.js` übernehmen, `welle` in die von A25 erweiterte Signatur `{status, owner, suche, welle}` einfügen, Suchfeld-Montage unangetastet lassen). (3) Doku/Features durch `documenter`. Falls der PM maximale Parallelität will, ist die **Aufteilung in A27a (Backend) und A27b (Frontend)** möglich; als eine Aufgabe mit zwei Arbeitspaketen bleibt der Zusammenhang (gleiche AK, gleicher Kontext) erhalten — Empfehlung: **eine Aufgabe, zwei Pakete, ein Coder**.
+- **Abhängigkeiten:** A8 (`welle` in der Lese-API), A9 (`POST /api/meta`), A11 (`liste.js`, Filter/Leer-/Fehlerlogik), A12 (`detail.js`, owner-Muster), A13 (Pfad-Konvention `welle`), A25 (nur Frontend-Teil: geteilte Datei und erweiterte Filter-Signatur). A23 ist **keine** Voraussetzung (disjunkte Dateimengen, solange `index.html`/`style.css` unberührt bleiben).
+- **Teststrategie und -isolation:** Neue Frontend-Tests in `tests/test_welle_zuordnung.py` (Begründung wie A25: `test_liste.py`/`test_detail.py`/`test_suche.py` bleiben unveränderte Baselines, `test_features.py` gehört A23). Harness: Mini-DOM aus `test_detail.py`/`test_suche.py` übernehmen und um `insertBefore`/`parentElement`/`disabled`/`select`-Optionen erweitern (vierte Kopie; Konsolidierung bleibt [A14-6], nicht Teil dieser Aufgabe). API-Tests erweitern `test_api_schreiben.py`, Modultests `test_meta.py`, Kern-Erweiterung `test_okf_bundle.py`. Alle Läufe gegen das `bundle`-Fixture aus `conftest.py` (`tmp_path`-Kopie von `fixtures/bundle_min`) und zusätzliche, im Test erzeugte Dateien unter `tmp_path` — **niemals** gegen `wissen/` oder `/content/pmTool/wissen`. Fixture-Lücke: `bundle_min` hat nur `wellen/w1.md`; `w2` und ggf. eine Aufgabe mit `welle` werden im Test temporär angelegt.
+- **Risiken/Grenzen:** (a) Merge-Konflikt in `liste.js`, falls A27-Frontend vor A25-Abschluss startet → daher serialisieren; (b) `okf_bundle`-Erweiterung ist ein Eingriff in das Fundament (G1-Nachlauf) — additiv und default-kompatibel, mit eigenen Tests; Rückfallebene `welle: null` (siehe oben); (c) zusätzlicher `GET /api/wellen` in der Detailansicht — bei vielen Wellen unkritisch, aber Test-Stubs müssen den Request kennen; (d) gelöschte Wellen-Datei hinterlässt bei Aufgaben einen toten Verweis → fail-loud als „(unbekannt)", keine automatische Bereinigung; (e) Altbestand mit `welle: "w3"` (ohne Pfad) erscheint nur unter „Alle", nicht in der Wellen-Sicht — Erwartungsmanagement (A13-Konvention ist Pfad); (f) keine Synchronisation von `# Aufgaben` → Divergenz möglich (dokumentiert, Post-MVP).
+- **Offene Fragen an den PM:** siehe unten im Absatz „Offene Fragen". Standardentscheidungen für die Umsetzung sind im Plan festgelegt (jeweils mit Begründung), damit der `coder` nicht blockiert.
+
+## Offene Fragen (Standardentscheidung in Klammern, nicht blockierend)
+
+1. **Filteroption „ohne Welle"** („welche Aufgaben sind noch keinem Topf zugeordnet") — aufnehmen? *(Standard: ja, T29; falls nein, entfällt nur diese Option.)*
+2. **Nur Aufgaben zuordnen** oder auch andere Dokumente (z. B. eine Welle einer Welle)? *(Standard: nur `type: Task` bzw. `aufgaben/…`.)*
+3. **Entfernen:** `welle`-Schlüssel löschen (okf_bundle-Erweiterung) oder `welle: null` stehen lassen? *(Standard: löschen; Rückfallebene `null`.)*
+4. **Typprüfung der Welle:** reicht Pfad `wellen/*.md` + Existenz, oder muss `type: Welle` im Frontmatter stehen? *(Standard: Pfad + Existenz, keine Typprüfung.)*
+5. **Mehrere Wellen je Aufgabe** (heute genau eine, skalares Feld)? *(Standard: genau eine, keine Listenform.)*
+6. **Wellen-Filter auch in der Wellenliste** (dort immer leer)? *(Standard: nein.)*
+
+# Betroffene Dateien
+
+- `definitions/app/meta.py` — `setzen(..., welle=_NICHT_GESETZT)`, `_pruefe_welle`, Reihenfolge Whitelist → welle → Zieldatei, `entfernen=("welle",)` (T1–T17).
+- `definitions/app/server.py` — `api_meta` reicht `welle` auch bei `null` durch (nur diese Zeilen; keine neue Route, T18).
+- `definitions/app/okf_bundle.py` — `set_meta(pfad, updates, entfernen=())` additiv; Schlüssel-Löschung im selben atomaren Schreibvorgang (T4/T14).
+- `definitions/app/static/js/detail.js` — `#detail-welle` (nur Aufgaben), Wellen-Optionen via `/api/wellen`, Speichern/Entfernen, Erfolgs-/Fehlermeldungen, Rückfall auf alten Wert, Abschnitt „Aufgaben dieser Welle" im Wellen-Detail (T19–T27, T34–T38).
+- `definitions/app/static/js/liste.js` — **nach A25**: `welle` in `filtereEintraege`/`waehleAnzeige`/`wendeFilterAn`, dynamische Montage des Wellen-Filters in Übersicht/Aufgaben, Optionen aus `/api/wellen`, Reset-Erweiterung, IDs in `ANSICHTEN` (T28–T33).
+- `definitions/app/tests/test_api_schreiben.py` — T1–T16, T18.
+- `definitions/app/tests/test_meta.py` — T17 (Modul-Ebene, kein 403 für `welle`).
+- `definitions/app/tests/test_okf_bundle.py` — Löschpfad in `set_meta` (Schlüssel weg, Body byte-identisch, fehlender Schlüssel = No-op, CRLF/Reihenfolge erhalten).
+- `definitions/app/tests/test_welle_zuordnung.py` (neu) — T19–T40 inkl. Mini-DOM-Harness (aus `test_detail.py`/`test_suche.py` übernommen, um `insertBefore`/`select`/`disabled` erweitert) und Fetch-Stab mit Request-Zähler; Fixtures mit XSS-Payloads, unbekannter Welle, fehlenden Feldern.
+- **Nicht geändert:** `definitions/app/static/index.html`, `definitions/app/static/style.css` (angestrebt: unverändert), `definitions/app/static/js/app.js`, `definitions/app/static/js/api.js`, `definitions/app/static/js/formulare.js`, `definitions/app/static/js/features.js`, `definitions/app/overview.py`, `definitions/app/status.py`, `definitions/app/neu_aufgabe.py`, `definitions/app/neu_welle.py`, `definitions/app/tests/test_liste.py`, `test_detail.py`, `test_suche.py`, `test_features.py`, `test_formulare.py`, `test_static.py`.
+
+# Ergebnisse
+
+Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.

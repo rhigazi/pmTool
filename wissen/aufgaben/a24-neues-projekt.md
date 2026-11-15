@@ -2,8 +2,8 @@
 type: Task
 title: "A24: Neues Projekt beginnen (wissen/ zurücksetzen)"
 description: "`python3 tools/neues_projekt.py` löscht `wissen/` und ersetzt es durch die saubere OKF-Vorlage `definitions/wissen-vorlage/` — mit Plan-Vorschau, Backup und Verify-Nachweis."
-task_status: offen
-phase: 2 Planung
+task_status: in Doku
+phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
 feature: /features/okf-projekt-manager-spa.md
@@ -52,8 +52,25 @@ Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das M
 
 - `tools/neues_projekt.py` (neu)
 - `tools/tests/test_neues_projekt.py` (neu)
-- Doku: `README.md` + `docs/colab-start.md`, Abschnitt „Neues Projekt beginnen" (nachgelagert, `documenter`)
+- Doku: `README.md` + `docs/colab-start.md`, Abschnitt „Neues Projekt beginnen" — 2026-11-15 vom `documenter` ergänzt
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-15 — coder (Umsetzung, Stand: in Doku)
+
+- **Ergebnis:** `tools/neues_projekt.py` (358 Zeilen) und `tools/tests/test_neues_projekt.py` (24 Tests) umgesetzt. TDD-Verlauf: **4 Tests rot → 24 grün**. Umgesetztes Verhalten:
+  - **Plan ohne `--ja`:** Ausgabe mit Projektpfad, Umfang von `wissen/` und Vorlage, Backup-Ziel, Löschhinweis; Exit 0 und **nichts verändert** (Datei-Baum-Hash vor/nach identisch).
+  - **Backup Pflicht:** `wissen-backup-YYYYMMDD-HHMMSS.tar.gz` im Repo-Root (per `--backup` überschreibbar); Namenskollision → Suffix `-2`, `-3`, … (kein Überschreiben). Backup-Fehler ⇒ **kein Löschen**; ein halb fertiges Archiv wird entfernt.
+  - **Vorlage-Vorabprüfung:** fehlende/unvollständige/leere Vorlage → Exit ≠ 0, die fehlende Datei wird benannt, keine Löschung.
+  - **Reset:** Inhalt von `wissen/` inkl. versteckter Dateien wird ersetzt; `__pycache__`/`.pytest_cache`/`*.pyc` werden aus der Vorlage gefiltert, keine temporären Verzeichnisse bleiben zurück.
+  - **Atomarer Tausch:** neuer Baum `.wissen-neu-*` neben `wissen/`, Tausch per `os.replace`, Rollback bei Fehler (kein Halbzustand).
+  - **Pfad-Checks analog `okf_bundle`:** realpath-Containment im Repo-Root, keine Symlinks als Ziel, kein Schreiben in Vorlage oder `wissen/`.
+- **Belege:** `python3 -m pytest tools/tests/test_neues_projekt.py -q` → **24 passed**. E2E: Reset + `bash definitions/verify.sh .` → Exit 0 (Test mit App-Stub wegen Rekursionsschutz; der Vollnachweis — Reset, Verify, App-Start mit leerem Projekt — wurde manuell auf einer echten Repo-Kopie gefahren). Idempotenz belegt: zweiter `--ja`-Lauf erneut Exit 0, `wissen/` entspricht weiterhin exakt der Vorlage. App-Suite zum A24-Zeitpunkt: **862** (inkl. der parallel laufenden A23-Tests).
+- **PM-Entscheidungen (2026-11-15):**
+  - **(a)** Die Backup-Restriktion „nur innerhalb Repo-Root" bleibt (Spec-konform); sie ist als bewusste Grenze dokumentiert (Backup landet immer im Projekt, nie auf einem Fremdpfad).
+  - **(b)** `main(argv=None, root=None)` bleibt als Testinjektion erhalten (Tests laufen gegen `/tmp/opencode/…`, ohne CLI-Parsing zu duplizieren).
+  - **(c)** **Verteilungslücke** (Skript fehlt in `definitions/tools/`, `setup.sh` verteilt es nicht) wird nicht in A24 nachgezogen, sondern zusammen mit dem alten Root-Suite-Konflikt (doppelte `test_telegram_send.py`) als [A26](a26-verteilung-und-suite-konflikt.md) bereinigt.
+- **Befunde:** Ein `pytest -q` im Repo-Root ist derzeit generell nicht lauffähig (Collection-Konflikt `test_telegram_send.py`, belegt: 924 collected, 1 error) — unabhängig von A24, aber durch das künftige Spiegeln von `test_neues_projekt.py` verschärft → A26.
+- **Offene Punkte:** Review und Testphase laufen gebündelt nach (Status deshalb `in Doku`, nicht `zur Abnahme`); A26 (Verteilung + Root-Suite).
