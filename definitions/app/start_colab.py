@@ -5,10 +5,19 @@ Prüft/installiert die Laufzeitpakete ``flask`` und ``pyyaml`` nur bei Bedarf,
 startet ``server.py`` als Subprozess auf dem Bundle und gibt den Port über die
 eingebaute Colab-Funktion im Browser frei. Ohne Colab wird die lokale URL
 ausgegeben. Das Bundle wird ausschließlich lesend verwendet.
+
+Die Port-Freigabe funktioniert nur im Notebook-Kernel, deshalb ist der
+Kernel-Aufruf der vorgesehene Weg::
+
+    %run definitions/app/start_colab.py
+
+Ein Start als Unterprozess (``!python3 start_colab.py``) hat keinen
+Kernel-Kanal; das Skript erklärt dann, wie die Freigabe nachzuholen ist.
 """
 
 from __future__ import annotations
 
+import builtins
 import importlib.util
 import os
 import socket
@@ -26,6 +35,13 @@ HOST = "0.0.0.0"
 
 # (pip-Paket, Importname) — geprüft wird der Importname.
 PAKETE = (("flask", "flask"), ("pyyaml", "yaml"))
+
+HINWEIS_PORT_FREIGABE = (
+    "Port-Freigabe nur aus einer Notebook-Zelle möglich — bitte "
+    "`%run definitions/app/start_colab.py` in einer Code-Zelle ausführen "
+    "(alternativ in laufender Sitzung: "
+    "`from google.colab import output; output.serve_kernel_port_as_window({port})`)."
+)
 
 
 def main() -> int:
@@ -55,8 +71,12 @@ def main() -> int:
 
     if _oeffne_colab_fenster(port):
         print(f"Colab-Fenster für Port {port} geöffnet: {url}", flush=True)
+    elif _colab_output() is not None:
+        # Colab-Laufzeit vorhanden, aber kein Kernel-Kanal: Freigabe nachholbar.
+        print(f"Port-Freigabe nicht verfügbar — Server läuft unter {url}", flush=True)
+        print(HINWEIS_PORT_FREIGABE.format(port=port), flush=True)
     else:
-        print(f"Colab-Port-Freigabe nicht verfügbar — bitte im Browser öffnen: {url}", flush=True)
+        print(f"Lokaler Modus (kein Colab) — bitte im Browser öffnen: {url}", flush=True)
     return 0
 
 
@@ -113,20 +133,47 @@ def _starte_server(port: int) -> subprocess.Popen:
     return subprocess.Popen([sys.executable, str(SERVER)], env=umgebung)
 
 
-def _oeffne_colab_fenster(port: int) -> bool:
-    """Gibt den Port in Colab frei; ``False``, wenn die Freigabe nicht verfügbar ist."""
+def _colab_output():
+    """``google.colab.output``, falls vorhanden, sonst ``None``."""
     try:
         from google.colab import output  # nur in Colab vorhanden
     except ImportError:
+        return None
+    return output
+
+
+def _oeffne_colab_fenster(port: int) -> bool:
+    """Gibt den Port über den Kernel-Kanal frei; ``False``, wenn das nicht geht.
+
+    ``serve_kernel_port_as_window`` wirkt nur im Notebook-Kernel — im
+    Unterprozess fehlt der Kanal und der Aufruf scheitert.
+    """
+    output = _colab_output()
+    if output is None:
+        return False
+
+    freigabe = getattr(output, "serve_kernel_port_as_window", None)
+    if freigabe is None:
+        print("google.colab.output bietet serve_kernel_port_as_window nicht an.", file=sys.stderr)
         return False
 
     try:
-        output.serve_kernel_port_as_window(port)
+        freigabe(port)
     except Exception as fehler:
         print(f"Colab-Port-Freigabe fehlgeschlagen: {fehler}", file=sys.stderr)
         return False
     return True
 
 
+def _laeuft_im_kernel() -> bool:
+    """``True``, wenn der Code im Notebook-Kernel läuft (dort gibt es einen Kernel-Kanal)."""
+    get_ipython = getattr(builtins, "get_ipython", None)
+    return get_ipython is not None and get_ipython() is not None
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    # Im Kernel (``%run``) kein ``sys.exit``: ein SystemExit bliebe dort als Fehlerzeile stehen.
+    if _laeuft_im_kernel():
+        main()
+    else:
+        sys.exit(main())

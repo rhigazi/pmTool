@@ -4,6 +4,7 @@ Alle externen Wirkungen sind gemockt: Colab-Port-Freigabe, ``subprocess`` und
 die Portprüfung. Ein echter ``server.py``-Prozess wird nie gestartet.
 """
 
+import builtins
 import hashlib
 import socket
 import subprocess
@@ -65,6 +66,36 @@ def ohne_colab(monkeypatch):
         monkeypatch.setitem(sys.modules, name, None)
 
 
+def _fake_colab(monkeypatch, freigabe):
+    """Registriert ein Fake-``google.colab.output`` mit ``freigabe`` als Port-Funktion."""
+    modul_google = types.ModuleType("google")
+    modul_colab = types.ModuleType("google.colab")
+    modul_output = types.ModuleType("google.colab.output")
+    if freigabe is not None:
+        modul_output.serve_kernel_port_as_window = freigabe
+    modul_google.colab = modul_colab
+    modul_colab.output = modul_output
+    monkeypatch.setitem(sys.modules, "google", modul_google)
+    monkeypatch.setitem(sys.modules, "google.colab", modul_colab)
+    monkeypatch.setitem(sys.modules, "google.colab.output", modul_output)
+
+
+@pytest.fixture()
+def colab_ohne_kernel(monkeypatch):
+    """Colab-Laufzeit vorhanden, aber ohne Kernel-Kanal (Aufruf im Unterprozess)."""
+
+    def ohne_kanal(port):
+        raise RuntimeError("no kernel channel")
+
+    _fake_colab(monkeypatch, ohne_kanal)
+
+
+@pytest.fixture()
+def colab_ohne_funktion(monkeypatch):
+    """``google.colab`` ohne ``serve_kernel_port_as_window``."""
+    _fake_colab(monkeypatch, None)
+
+
 def _baum_hash(wurzel: Path) -> str:
     """Hash über Pfade und Inhalte aller Dateien (ohne ``__pycache__``)."""
     pruefer = hashlib.sha256()
@@ -115,8 +146,52 @@ def test_t3_ohne_colab_exit_null_und_url(popen, port_frei, ohne_colab, monkeypat
     monkeypatch.delenv("PORT", raising=False)
 
     assert start_colab.main() == 0
-    assert "http://localhost:5000" in capsys.readouterr().out
+    ausgabe = capsys.readouterr().out
+    assert "http://localhost:5000" in ausgabe
+    assert "%run" not in ausgabe
     assert len(popen.aufrufe) == 1
+
+
+# --- T9 Port-Freigabe scheitert ohne Kernel-Kanal (A16) -------------------
+
+
+def test_t9_unterprozess_meldet_handlungsanweisung(popen, port_frei, colab_ohne_kernel, monkeypatch, capsys):
+    """Ohne Kernel-Kanal (z. B. Unterprozess) nennt die Ausgabe den Ausweg."""
+    monkeypatch.delenv("PORT", raising=False)
+
+    assert start_colab.main() == 0
+
+    ausgabe = capsys.readouterr().out
+    assert "%run definitions/app/start_colab.py" in ausgabe
+    assert "serve_kernel_port_as_window" in ausgabe
+    assert "http://localhost:5000" in ausgabe
+    assert len(popen.aufrufe) == 1
+
+
+def test_t9_colab_ohne_funktion_meldet_handlungsanweisung(popen, port_frei, colab_ohne_funktion, monkeypatch, capsys):
+    monkeypatch.delenv("PORT", raising=False)
+
+    assert start_colab.main() == 0
+
+    ausgabe = capsys.readouterr().out
+    assert "%run definitions/app/start_colab.py" in ausgabe
+    assert "serve_kernel_port_as_window" in ausgabe
+    assert len(popen.aufrufe) == 1
+
+
+# --- T10 Kernel-Erkennung (A16) ------------------------------------------
+
+
+def test_t10_kernel_erkennung_ohne_kernel(monkeypatch):
+    monkeypatch.delattr(builtins, "get_ipython", raising=False)
+
+    assert start_colab._laeuft_im_kernel() is False
+
+
+def test_t10_kernel_erkennung_im_kernel(monkeypatch):
+    monkeypatch.setattr(builtins, "get_ipython", lambda: object(), raising=False)
+
+    assert start_colab._laeuft_im_kernel() is True
 
 
 # --- T4 Port belegt -------------------------------------------------------

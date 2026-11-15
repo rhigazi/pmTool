@@ -4,8 +4,8 @@ Kurzanleitung, um das Projekt in einer **frischen Colab-Sitzung** wieder lauffä
 zu bekommen: Repository klonen, Server starten, Telegram konfigurieren,
 OpenCode-CLI öffnen.
 
-Alle Befehle laufen in Colab-Zellen (`!` = Shell-Befehl, `%cd` = Verzeichniswechsel).
-Projektwurzel ist **`/content/pmTool`**.
+Alle Befehle laufen in Colab-Zellen (`!` = Shell-Befehl, `%cd` = Verzeichniswechsel,
+`%run` = Skript im Kernel ausführen). Projektwurzel ist **`/content/pmTool`**.
 
 ## 1) Repository klonen
 
@@ -18,32 +18,56 @@ Nur nötig, wenn `/content/pmTool` in der Sitzung noch nicht existiert.
 Bereits vorhanden? Dann direkt `%cd /content/pmTool` und mit Schritt 2 weitermachen.
 
 `start.sh` liegt als Repo-Werkzeug direkt in der Projektwurzel (neben
-`definitions/`) und wird von `setup.sh` **nicht** in Zielprojekte verteilt —
-es prüft genau dieses Repository und wird direkt nach `git clone` + `cd pmTool`
-ausgeführt.
+`definitions/`) und wird von `setup.sh` **nicht** in Zielprojekte verteilt.
+Es prüft genau dieses Repository und ist für den **lokalen** Start gedacht;
+in Colab übernimmt `%run definitions/app/start_colab.py` (Schritt 2).
 
 ## 2) Umgebung wiederherstellen und Server starten
 
+Die Port-Freigabe von Colab (`serve_kernel_port_as_window`) wirkt **nur im
+Notebook-Kernel**. Deshalb wird das Startskript als Kernel-Aufruf gestartet —
+nicht als Shell-Befehl:
+
 ```python
-!bash start.sh --colab
+%cd /content/pmTool
+%run definitions/app/start_colab.py
+```
+
+Dasselbe ohne Magie (falls `%run` in der Zelle nicht möglich ist):
+
+```python
+import os, sys
+os.chdir("/content/pmTool")
+sys.path.insert(0, "definitions/app")
+import start_colab
+start_colab.main()
 ```
 
 Das Skript erledigt der Reihe nach:
 
-1. prüft `python3`,
-2. prüft die Projektstruktur (`wissen/`, `definitions/`),
-3. installiert **nur bei Bedarf** `flask`, `pyyaml`, `pytest`,
-4. prüft die Telegram-Konfiguration (`config.json`),
-5. führt `definitions/verify.sh` aus (Warnungen blockieren den Start nicht;
-   bei `--dry-run` still übersprungen),
-6. ruft `python3 definitions/app/start_colab.py` auf → Server auf Port 5000 und
-   Freigabe des Ports im Colab-Browserfenster.
+1. prüft `python3` (in Colab vorhanden),
+2. installiert **nur bei Bedarf** `flask` und `pyyaml` (per `pip`),
+3. startet `definitions/app/server.py` als Subprozess auf Port 5000
+   (Bundle `wissen/` wird nur lesend verwendet),
+4. gibt den Port im Kernel frei → Browserfenster mit der App.
 
-Alternativen:
+**Warum nicht `!bash start.sh --colab` oder `!python3 …`?** Ein `!`-Befehl läuft
+als Unterprozess ohne Kernel-Kanal. Dort findet `google.colab` zwar statt, der
+Aufruf der Freigabe schlägt aber fehl — sichtbar wird nur
+`127.0.0.1:5000`/`172.x:5000`, das im Browser nicht erreichbar ist. Das Skript
+erkennt das und gibt die Handlungsanweisung aus:
+
+```python
+from google.colab import output
+output.serve_kernel_port_as_window(5000)   # in laufender Sitzung nachholen
+```
+
+`start.sh` selbst bleibt für den lokalen Start zuständig:
 
 | Aufruf | Wirkung |
 |---|---|
 | `bash start.sh` | lokal: Server auf `http://localhost:5000`, `BUNDLE_ROOT=$PROJEKT/wissen` (absolut gesetzt, `PROJEKT` = Projektroot) |
+| `bash start.sh --colab` | startet nur den Server über `definitions/app/start_colab.py` **ohne** Port-Freigabe (Unterprozess) — in Colab stattdessen den Kernel-Aufruf oben verwenden |
 | `bash start.sh --skip-verify` | ohne Setup-Prüfung (schneller) |
 | `bash start.sh --dry-run` | zeigt nur, was getan würde (installiert/startet nichts; `verify.sh` wird dabei still übersprungen) |
 | `bash start.sh --help` | Hilfe |
@@ -113,8 +137,8 @@ optional (z. B. nicht installierte globale Skills → `bash definitions/setup.sh
 ```python
 !git clone https://github.com/rhigazi/pmTool
 %cd /content/pmTool
-!bash start.sh --colab          # Server + Browserfenster
+%run definitions/app/start_colab.py   # Server + Browserfenster (Kernel-Aufruf!)
 # Secrets-Zelle aus Schritt 3 ausführen (falls Telegram gewünscht)
-!bash definitions/verify.sh .   # Setup-Check
+!bash definitions/verify.sh .         # Setup-Check
 # neues Terminal: cd /content/pmTool && opencode
 ```

@@ -17,10 +17,18 @@ Der einfachste Weg ist das mitgelieferte Notebook **[PMTool.ipynb](PMTool.ipynb)
 Manuell in einer Colab-Sitzung:
 
 ```bash
-git clone https://github.com/rhigazi/pmTool
-cd pmTool
-bash start.sh --colab          # Umgebung + App starten (Port-Freigabe im Browser)
+!git clone https://github.com/rhigazi/pmTool
 ```
+
+```python
+%cd /content/pmTool
+%run definitions/app/start_colab.py   # Umgebung + App starten (Port-Freigabe im Browser)
+```
+
+Der Start **muss** als Kernel-Aufruf (`%run`) erfolgen: Colabs Port-Freigabe
+(`serve_kernel_port_as_window`) wirkt nur im Notebook-Kernel. Ein `!`-Befehl
+läuft als Unterprozess ohne Kernel-Kanal — dann bleibt nur die unbrauchbare
+Adresse `127.0.0.1:5000` stehen (das Skript nennt dann den Ausweg).
 
 Schritt-für-Schritt-Anleitung inkl. Colab-Secrets und Telegram-Zelle: **[docs/colab-start.md](docs/colab-start.md)**.
 
@@ -37,7 +45,7 @@ Der Server lauscht nur lokal. Nützliche Optionen:
 | Aufruf | Wirkung |
 |---|---|
 | `bash start.sh` | lokal starten (`BUNDLE_ROOT=$PROJEKT/wissen`, Port 5000) |
-| `bash start.sh --colab` | Colab-Modus: startet `definitions/app/start_colab.py` mit Port-Freigabe |
+| `bash start.sh --colab` | startet nur den Server ohne Port-Freigabe (Unterprozess); in Colab stattdessen `%run definitions/app/start_colab.py` in einer Code-Zelle |
 | `bash start.sh --dry-run` | Trockenlauf: zeigt nur, was getan würde (installiert/startet nichts; `verify.sh` wird dabei still übersprungen) |
 | `bash start.sh --skip-verify` | ohne Setup-Prüfung |
 | `bash start.sh --help` | Hilfe |
