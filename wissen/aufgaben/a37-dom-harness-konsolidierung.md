@@ -26,6 +26,7 @@ Noch keine Einträge — der `planner` ergänzt die Testfälle.
 
 - Ausgegliedert aus [A33](a33-kleinbefunde-aufräum-takt.md) (PM-Entscheidung 2026-11-15).
 - **Reihenfolge:** nach A29 (alle Testdateien stabil); nutzt `dom_helfer.py` aus A30.
+- **Nachtrag (A28-Review, K3):** Beim Umstellen auch die Harness-Lücke beheben, der `detail.js` aktuell ausweicht (`document.createTextNode` fehlt im A12-Harness → Produktivcode nutzt leeres `span` mit `" "` als Trenner, `detail.js:585-588`); `dom_helfer.py` kann `createTextNode` — nach dem Umstieg den Produktivcode-Weg rückgängig machen (Trenner sauber) und `test_detail.py` schärfen.
 - Aufwand laut A33-Plan: 5–8 h.
 
 # Betroffene Dateien

@@ -4,12 +4,12 @@ title: "A28: Benachrichtigung bei neuer Aufgabe"
 description: Wenn eine neue Aufgabe angelegt wird, muss die KI ist automatisch wahrnehmen
   können um die Planung durchzuführen. Die Aufgabe wird erst begonnen wenn der Aufga…
 freigabe: true
-task_status: in Review
-phase: 5 Review
+task_status: in Nachbesserung
+phase: 4 Nachbesserung
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: "reviewer: Review A28 (Snapshot) | tester: Freigabe-Szenarien | coder: A29 läuft parallel"
+aktuell: "PM: Freigaben stellvertretend für die Projektleitung nachgetragen (Menschen-Kanal, Datei-Edit). coder: Rücklauf Welle A (W2/W3/K5/K7) — Welle B (W1/K1/K2) nach A34/B8"
 welle: wellen/w2.md
 ---
 
