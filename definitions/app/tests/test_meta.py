@@ -291,3 +291,70 @@ def test_verzeichnis_als_ziel_ist_abgelehnt(bundle):
 
     assert (bundle / "verz.md").is_dir()
     assert list((bundle / "verz.md").iterdir()) == []
+
+
+# --- A27: Wellen-Zuordnung (modulnah, ohne Flask) --------------------------
+
+
+def _aufgabe_mit_welle(bundle, welle: str = WELLE) -> None:
+    (bundle / AUFGABE).write_text(
+        "---\n"
+        "type: Task\n"
+        'title: "A1: Mini-Aufgabe"\n'
+        "task_status: offen\n"
+        f"welle: {welle}\n"
+        "---\n\n"
+        "# Ziel\n\nFixture-Ziel für Tests.\n",
+        encoding="utf-8",
+    )
+
+
+def test_t17_welle_ist_keine_rechteklasse():
+    assert "welle" not in meta.OWNER_WERTE
+    assert "welle" not in meta.STATUS_WERTE
+
+
+@pytest.mark.parametrize(
+    "welle",
+    ["wellen/gibtsnicht.md", "aufgaben/a1.md", "features.md", "../wellen/w1.md", 42, True],
+)
+def test_t17_ungueltige_welle_ist_eingabefehler(bundle, welle):
+    hash_vorher = _datei_hash(bundle, AUFGABE)
+
+    with pytest.raises(okf_bundle.EingabeFehler) as fehler:
+        meta.setzen(AUFGABE, welle=welle)
+
+    assert not isinstance(fehler.value, meta.RechteFehler)
+    assert str(fehler.value).strip()
+    assert _datei_hash(bundle, AUFGABE) == hash_vorher
+
+
+def test_t17_welle_entfernen_und_nicht_uebergeben(bundle):
+    _aufgabe_mit_welle(bundle)
+
+    frontmatter = meta.setzen(AUFGABE, welle=None)
+    assert "welle" not in frontmatter
+
+    _aufgabe_mit_welle(bundle)
+    # Ohne ``welle``-Argument bleibt das Feld unberührt.
+    frontmatter = meta.setzen(AUFGABE, owner="mensch")
+    assert frontmatter["welle"] == WELLE
+
+
+def test_t17_welle_entfernen_ohne_feld_ist_kein_schreibvorgang(bundle, monkeypatch):
+    aufrufe = []
+    monkeypatch.setattr(okf_bundle, "set_meta", lambda *a, **k: aufrufe.append((a, k)))
+    hash_vorher = _datei_hash(bundle, AUFGABE)
+
+    frontmatter = meta.setzen(AUFGABE, welle=None)
+
+    assert aufrufe == []
+    assert "welle" not in frontmatter
+    assert _datei_hash(bundle, AUFGABE) == hash_vorher
+
+
+def test_t17_welle_setzen_schreibt_getrimmt(bundle):
+    frontmatter = meta.setzen(AUFGABE, welle=f"  {WELLE}  ")
+
+    assert frontmatter["welle"] == WELLE
+    assert okf_bundle.lesen(AUFGABE)[0]["welle"] == WELLE

@@ -2,11 +2,11 @@
 type: Task
 title: "A27: Wellen-Zuordnung (nachträglich zuordnen, filtern, Wellen-Sicht)"
 description: Aufgaben nachträglich einer Welle zuordnen, umsortieren und die Zuordnung entfernen (Detail-Dropdown über POST /api/meta), Aufgaben nach Welle filtern (Listen) und die Aufgaben einer Welle im Wellen-Detail aus dem welle-Feld ableiten.
-task_status: in Umsetzung
-phase: 3 Umsetzung
+task_status: in Review
+phase: 5 Review
 priority: hoch
 assigned_to: coder
-aktuell: "coder: Umsetzung Paket 1 (Backend welle-Meta) + Paket 2 (Frontend)"
+aktuell: "reviewer: Review Paket 1+2 | tester: S1–S7 (Harness)"
 feature: /features/okf-projekt-manager-spa.md
 owner: ai
 ---
@@ -179,4 +179,15 @@ Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das M
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-15 — coder (Umsetzung Paket 1 + Paket 2, Stand: in Umsetzung)
+
+- **Ergebnis Paket 1 (Backend, G13):** `meta.setzen(pfad, owner=None, status=None, welle=_NICHT_GESETZT)` mit Sentinel („nicht übergeben" ≠ „entfernen"); neue `_pruefe_welle` → `("setzen", pfad)` / `("entfernen", None)`, `_wellen_pfad` akzeptiert ausschließlich `wellen/<name>.md` (getrimmt, genau zwei Segmente, `.md` case-insensitiv, nicht reserviert, `resolve_path` erfolgreich, Datei existiert) und wirft sonst `EingabeFehler` (400, **kein** `RechteFehler`). Prüfreihenfolge unverändert fail-closed: reserviert → owner → status → welle → Zieldatei → lesen → **ein** `set_meta`. `server.api_meta` reicht `welle` auch als `null` durch (nur diese Zeilen, keine neue Route); `okf_bundle.set_meta(pfad, updates, entfernen=())` löscht Schlüssel samt Wertblock additiv im selben atomaren Schreibvorgang (Default leer). Deckt AK-2/AK-3/AK-5/AK-6/AK-7 ab, `overview.py` unverändert.
+- **Ergebnis Paket 2 (Frontend, G14):** `detail.js`: Feld „Welle" (`select#detail-welle`) im Frontmatter-Kopf **nur** bei Aufgaben (`type: Task` oder `aufgaben/…`), Optionen „keine" + `Titel (Pfad)` aus `GET /api/wellen`, unbekannter Wert als `Pfad (unbekannt)` + Inline-Hinweis (A12-3-Muster), Speichern/Entfernen sofort per `POST /api/meta` („Welle gespeichert." / „Welle entfernt.", `welle: null` beim Entfernen), Feld während des Requests `disabled` (`try/finally`), Rollback auf den Anzeigewert bei Fehler, fail-loud bei `null`/Nicht-Array der Wellenliste (Fehlerbereich + Hinweis, Feld gesperrt). Wellen-Detail (`wellen/…`) zeigt den Abschnitt „Aufgaben dieser Welle (n)" aus `GET /api/aufgaben` (Join über das `welle`-Feld, Tabelle via `erstelleTabelle` inkl. `data-path`), leer: „Keine Aufgaben dieser Welle.", Fehler/Format fail-loud; die Wellen-Datei wird nie geschrieben. `liste.js`: `welle` in `filtereEintraege`/`waehleAnzeige` (exakte Pfadgleichheit, „ohne" = Einträge ohne Zuordnung), dynamische, idempotente Montage des Wellen-Filters je Ansicht (`filter-welle` / `filter-welle-aufgaben`) **vor** „Filter zurücksetzen", UND-verknüpft mit Status/owner/Suche, Reset leert auch die Welle, **kein** Wellen-Filter in der Wellenliste. A25-Kleinbefunde behoben: (1) Montage prüft `isConnected` und ersetzt verwaiste Felder, (2) doppelter Leerzustand auf der Übersicht beseitigt (der Top-5-Block trägt keinen eigenen „Keine Einträge."-Text mehr).
+- **Bewusste Abweichung (1):** Die Wellen-Optionen des **Listen**-Filters werden aus den bereits geladenen Listen abgeleitet (Übersicht: alle Einträge unter `wellen/` — inhaltlich und in der Reihenfolge identisch zu `GET /api/wellen`; Aufgabenliste: bekannter Bestand aus der Übersicht plus die in Aufgaben referenzierten Pfade) und im Modul zwischengespeichert — **kein zusätzlicher `/api/wellen`-Request**. Grund: die A25-Baseline `test_suche.py` prüft die Request-Listen von `ladeUebersicht()`/`ladeAufgaben()` exakt und muss unverändert grün bleiben; ein Parallel-Request hätte 10 Zusicherungen gebrochen. Folge: bei direktem Deep-Link auf `#/aufgaben` ohne vorher geladene Übersicht erscheinen die dort referenzierten Wellen als Pfad-Label (Titel erst nach Übersichts-/Wellen-Besuch). Im normalen Ablauf (App startet auf der Übersicht) sind die Optionen vollständig. Dadurch entfällt der in T32 geplante Fall „`/api/wellen` liefert `null` bei intakter Liste"; ersatzweise fail-loud getestet: fehlerhafte **Listen**-Antwort ⇒ Wellen-Feld deaktiviert, nur „Alle", Liste zeigt Fehler-/Formatzustand (T32 angepasst).
+- **Bewusste Abweichung (2):** Zusätzliche Filteroption „ohne Welle" (`welle: "ohne"`) gemäß Standardentscheidung zu offener Frage 1 — sie beantwortet „was ist noch keinem Topf zugeordnet"; die Option steht nach den Wellen, die Wellen-Einträge selbst bleiben „Alle + Wellen". Falls der PM sie nicht will, entfällt nur diese eine Option + `passtZurWelle`-Zweig.
+- **Bewusste Grenze:** `type: Welle` im Frontmatter der Zieldatei wird nicht erzwungen (Pfad + Existenz, wie geplant); die Detailansicht gewinnt die Zuordnung nicht automatisch zurück, wenn eine Welle gelöscht wird (fail-loud „(unbekannt)").
+- **Belege:** Red-Green je Paket. Paket 1: `test_okf_bundle.py` 5 rot → 0, `test_meta.py` 9 rot → 0, `test_api_schreiben.py` 13 rot → 0 (T1–T18). Paket 2: `test_welle_zuordnung.py` neu, 36 rot → **43 grün** (T19–T40 + beide A25-Befunde, inkl. echtem Server für T36). Gesamtsuite serialisiert: `python3 -m pytest definitions/app/tests -q` → **1039 passed** (0 failed; zweimal grün, 5:08 unter Parallel-Last, 4:00 im zweiten Lauf). Neue Tests insgesamt 98 (39 API + 10 `meta` + 6 `okf_bundle` + 43 UI). Baselines `test_liste.py`, `test_detail.py`, `test_suche.py`, `test_formulare.py`, `test_static.py`, `test_features.py` unverändert grün; `index.html`/`style.css`/`app.js`/`api.js`/`formulare.js`/`neu_aufgabe.py`/`overview.py` per `git status` unberührt.
+- **Offene Punkte:** Moli-Szenarien **S1–S7** (tester); `bash definitions/verify.sh .` nicht separat gelaufen (Parallel-Umbau an `definitions/setup.sh` durch A26). Keine Commits.
+

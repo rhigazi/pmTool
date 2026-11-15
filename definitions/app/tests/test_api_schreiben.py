@@ -9,6 +9,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+import okf_bundle
 import server
 
 AUFGABE = "aufgaben/a1.md"
@@ -499,3 +500,303 @@ def test_n2_verbotener_status_vor_fehlender_datei_ist_403(client, bundle):
     assert antwort.status_code == 403
     assert antwort.get_json()["error"]
     assert not (bundle / "gibtsnicht.md").exists()
+
+
+# --- A27: Wellen-Zuordnung über POST /api/meta ----------------------------
+
+WELLE_2 = "wellen/w2.md"
+WELLE_2_INHALT = (
+    "---\n"
+    "type: Welle\n"
+    'title: "Welle 2: Zweite Fixture"\n'
+    "status: Offen\n"
+    "owner: ai\n"
+    "---\n\n"
+    "# Ziel\n\nZweite Fixture-Welle.\n\n"
+    "# Aufgaben\n"
+)
+
+
+def _welle_zwei_anlegen(bundle) -> None:
+    (bundle / WELLE_2).write_text(WELLE_2_INHALT, encoding="utf-8")
+
+
+def _welle_entfernen(client, pfad: str = AUFGABE):
+    return client.post("/api/meta", json={"path": pfad, "welle": None})
+
+
+def _body_hash(bundle, pfad: str) -> str:
+    return _hash(okf_bundle.lesen(pfad)[1])
+
+
+def test_t1_welle_setzen(client, bundle):
+    body_vorher = _body_hash(bundle, AUFGABE)
+
+    antwort = client.post("/api/meta", json={"path": AUFGABE, "welle": WELLE})
+
+    assert antwort.status_code == 200
+    assert antwort.mimetype == "application/json"
+    daten = antwort.get_json()
+    assert daten["path"] == AUFGABE
+    assert daten["frontmatter"]["welle"] == WELLE
+    zeilen = [zeile for zeile in _lies(bundle, AUFGABE).splitlines() if zeile.startswith("welle:")]
+    assert zeilen == [f"welle: {WELLE}"]
+    assert _body_hash(bundle, AUFGABE) == body_vorher
+
+
+def test_t2_join_beleg_ueber_lese_api(client, bundle):
+    client.post("/api/meta", json={"path": AUFGABE, "welle": WELLE})
+
+    aufgaben = {eintrag["path"]: eintrag for eintrag in client.get("/api/aufgaben").get_json()}
+    assert aufgaben[AUFGABE]["welle"] == WELLE
+
+    uebersicht = {eintrag["path"]: eintrag for eintrag in client.get("/api/overview").get_json()}
+    assert uebersicht[AUFGABE]["welle"] == WELLE
+
+
+def test_t3_welle_wechseln(client, bundle):
+    _welle_zwei_anlegen(bundle)
+    client.post("/api/meta", json={"path": AUFGABE, "welle": WELLE})
+    body_vorher = _body_hash(bundle, AUFGABE)
+
+    antwort = client.post("/api/meta", json={"path": AUFGABE, "welle": WELLE_2})
+
+    assert antwort.status_code == 200
+    assert antwort.get_json()["frontmatter"]["welle"] == WELLE_2
+    inhalt = _lies(bundle, AUFGABE)
+    assert inhalt.count("\nwelle:") == 1
+    assert f"welle: {WELLE_2}" in inhalt
+    assert _body_hash(bundle, AUFGABE) == body_vorher
+
+
+def test_t4_entfernen_mit_null(client, bundle):
+    client.post("/api/meta", json={"path": AUFGABE, "welle": WELLE})
+    body_vorher = _body_hash(bundle, AUFGABE)
+
+    antwort = _welle_entfernen(client)
+
+    assert antwort.status_code == 200
+    assert "welle" not in antwort.get_json()["frontmatter"]
+    assert "welle" not in _lies(bundle, AUFGABE)
+    uebersicht = {eintrag["path"]: eintrag for eintrag in client.get("/api/overview").get_json()}
+    assert "welle" not in uebersicht[AUFGABE]
+    assert _body_hash(bundle, AUFGABE) == body_vorher
+
+
+def test_t4b_entfernen_ist_idempotent(client, bundle, monkeypatch):
+    aufrufe = []
+    original = okf_bundle.set_meta
+
+    def zaehlend(*args, **kwargs):
+        aufrufe.append(args)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(okf_bundle, "set_meta", zaehlend)
+    hash_vorher = _datei_hash(bundle, AUFGABE)
+    mtime_vorher = (bundle / AUFGABE).stat().st_mtime_ns
+
+    antwort = _welle_entfernen(client)
+
+    assert antwort.status_code == 200
+    assert aufrufe == []
+    assert _datei_hash(bundle, AUFGABE) == hash_vorher
+    assert (bundle / AUFGABE).stat().st_mtime_ns == mtime_vorher
+
+
+@pytest.mark.parametrize("leer", ["", "   ", "\t\n"])
+def test_t5_entfernen_mit_leerem_wert(client, bundle, leer):
+    client.post("/api/meta", json={"path": AUFGABE, "welle": WELLE})
+    body_vorher = _body_hash(bundle, AUFGABE)
+
+    antwort = client.post("/api/meta", json={"path": AUFGABE, "welle": leer})
+
+    assert antwort.status_code == 200
+    assert "welle" not in antwort.get_json()["frontmatter"]
+    assert "welle" not in _lies(bundle, AUFGABE)
+    assert _body_hash(bundle, AUFGABE) == body_vorher
+
+
+def test_t6_unbekannte_welle_ist_400(client, bundle):
+    hash_vorher = _datei_hash(bundle, AUFGABE)
+
+    antwort = client.post("/api/meta", json={"path": AUFGABE, "welle": "wellen/gibtsnicht.md"})
+
+    assert antwort.status_code == 400
+    assert antwort.get_json()["error"].strip()
+    assert _datei_hash(bundle, AUFGABE) == hash_vorher
+
+
+@pytest.mark.parametrize("welle", ["aufgaben/a1.md", "features.md", "index.md", "log.md"])
+def test_t7_fremder_ordner_ist_400(client, bundle, welle):
+    hash_vorher = _datei_hash(bundle, AUFGABE)
+
+    antwort = client.post("/api/meta", json={"path": AUFGABE, "welle": welle})
+
+    assert antwort.status_code == 400
+    assert antwort.get_json()["error"].strip()
+    assert _datei_hash(bundle, AUFGABE) == hash_vorher
+
+
+@pytest.mark.parametrize(
+    "welle",
+    [
+        "../wellen/w1.md",
+        "wellen/../aufgaben/a1.md",
+        "/etc/passwd",
+        "wellen/%2e%2e/aufgaben/a1.md",
+    ],
+)
+def test_t8_traversal_ist_400(client, bundle, welle):
+    aussen_vorher = _aussen(bundle)
+    hash_vorher = _datei_hash(bundle, AUFGABE)
+
+    antwort = client.post("/api/meta", json={"path": AUFGABE, "welle": welle})
+
+    assert antwort.status_code == 400
+    assert antwort.get_json()["error"].strip()
+    assert _aussen(bundle) == aussen_vorher
+    assert _datei_hash(bundle, AUFGABE) == hash_vorher
+
+
+def test_t9_reserviertes_wellen_ziel_ist_400(client, bundle):
+    ziel = bundle / "wellen/index.md"
+    ziel.write_text("---\ntype: Welle\ntitle: Index\n---\n\n# Ziel\n", encoding="utf-8")
+    vorher = ziel.read_bytes()
+    hash_vorher = _datei_hash(bundle, AUFGABE)
+
+    antwort = client.post("/api/meta", json={"path": AUFGABE, "welle": "wellen/index.md"})
+
+    assert antwort.status_code == 400
+    assert antwort.get_json()["error"].strip()
+    assert ziel.read_bytes() == vorher
+    assert _datei_hash(bundle, AUFGABE) == hash_vorher
+
+
+@pytest.mark.parametrize(
+    "welle",
+    [42, True, [], {}, "wellen/", "wellen", "wellen/w1", "wellen/w1.txt", "wellen/w1.md/"],
+)
+def test_t10_form_und_typfehler_sind_400(client, bundle, welle):
+    hash_vorher = _datei_hash(bundle, AUFGABE)
+
+    antwort = client.post("/api/meta", json={"path": AUFGABE, "welle": welle})
+
+    assert antwort.status_code == 400
+    assert antwort.get_json()["error"].strip()
+    assert _datei_hash(bundle, AUFGABE) == hash_vorher
+
+
+@pytest.mark.parametrize("welle", [" wellen/w1.md ", "\nwellen/w1.md\t"])
+def test_t11_welle_wird_getrimmt(client, bundle, welle):
+    antwort = client.post("/api/meta", json={"path": AUFGABE, "welle": welle})
+
+    assert antwort.status_code == 200
+    assert antwort.get_json()["frontmatter"]["welle"] == WELLE
+    assert f"welle: {WELLE}" in _lies(bundle, AUFGABE)
+
+
+@pytest.mark.parametrize(
+    "daten",
+    [
+        {"status": "Testing", "welle": "wellen/gibtsnicht.md"},
+        {"owner": "x", "welle": "wellen/gibtsnicht.md"},
+    ],
+)
+def test_t12_whitelist_vor_welle_ist_403(client, bundle, daten):
+    hash_vorher = _datei_hash(bundle, AUFGABE)
+
+    antwort = client.post("/api/meta", json={"path": AUFGABE, **daten})
+
+    assert antwort.status_code == 403
+    assert antwort.get_json()["error"].strip()
+    assert _datei_hash(bundle, AUFGABE) == hash_vorher
+
+
+def test_t13_welle_vor_zieldatei(client, bundle):
+    assert not (bundle / "gibtsnicht.md").exists()
+
+    fehlende_datei = client.post(
+        "/api/meta", json={"path": "gibtsnicht.md", "welle": WELLE}
+    )
+    ungueltige_welle = client.post(
+        "/api/meta", json={"path": "gibtsnicht.md", "welle": "wellen/gibtsnicht.md"}
+    )
+
+    assert fehlende_datei.status_code == 404
+    assert ungueltige_welle.status_code == 400
+    assert not (bundle / "gibtsnicht.md").exists()
+
+
+def test_t14_kombination_in_einem_schreibvorgang(client, bundle, monkeypatch):
+    aufrufe = []
+    original = okf_bundle.set_meta
+
+    def zaehlend(*args, **kwargs):
+        aufrufe.append((args, kwargs))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(okf_bundle, "set_meta", zaehlend)
+    body_vorher = _body_hash(bundle, AUFGABE)
+
+    antwort = client.post(
+        "/api/meta",
+        json={"path": AUFGABE, "owner": "mensch", "status": "Klarung", "welle": WELLE},
+    )
+
+    assert antwort.status_code == 200
+    assert len(aufrufe) == 1
+    assert aufrufe[0][0][1] == {
+        "owner": "mensch",
+        "task_status": "in Klärung",
+        "welle": WELLE,
+    }
+    frontmatter = antwort.get_json()["frontmatter"]
+    assert frontmatter["owner"] == "mensch"
+    assert frontmatter["task_status"] == "in Klärung"
+    assert frontmatter["welle"] == WELLE
+    assert _body_hash(bundle, AUFGABE) == body_vorher
+
+
+@pytest.mark.parametrize("daten", [{"unbekannt": "x"}, {"owner": None}, {"welle_x": None}])
+def test_t15_keine_setzbaren_felder_ist_400(client, bundle, daten):
+    hash_vorher = _datei_hash(bundle, AUFGABE)
+
+    antwort = client.post("/api/meta", json={"path": AUFGABE, **daten})
+
+    assert antwort.status_code == 400
+    assert antwort.get_json()["error"].strip()
+    assert _datei_hash(bundle, AUFGABE) == hash_vorher
+
+
+def test_t16_reservierte_zieldatei_ist_403(client, bundle):
+    hash_vorher = _datei_hash(bundle, "features.md")
+
+    antwort = client.post("/api/meta", json={"path": "features.md", "welle": WELLE})
+
+    assert antwort.status_code == 403
+    assert antwort.get_json()["error"].strip()
+    assert _datei_hash(bundle, "features.md") == hash_vorher
+
+
+def test_t18_endpunkt_inventar_und_welle_anlegen(client, bundle):
+    assert ENDPUNKTE == ("/api/nachtrag", "/api/task", "/api/welle", "/api/meta")
+
+    regeln = {regel.rule for regel in client.application.url_map.iter_rules()}
+    assert {
+        "/",
+        "/api/overview",
+        "/api/file",
+        "/api/aufgaben",
+        "/api/wellen",
+        "/api/nachtrag",
+        "/api/task",
+        "/api/welle",
+        "/api/meta",
+    } <= regeln
+
+    antwort = client.post("/api/welle", json=_welle_daten(welle=WELLE))
+
+    assert antwort.status_code == 200
+    pfad = antwort.get_json()["path"]
+    assert pfad.startswith("wellen/")
+    assert "welle:" not in _lies(bundle, pfad)

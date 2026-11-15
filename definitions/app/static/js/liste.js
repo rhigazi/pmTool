@@ -10,6 +10,12 @@ const LEER_KLARUNG = "Keine offenen Rückfragen.";
 const LADE_FEHLER = "Einträge konnten nicht geladen werden.";
 const FORMAT_FEHLER = "Einträge haben ein unerwartetes Format.";
 
+// Wellen-Filter: „Alle" (leer) plus die Wellen des geladenen Bestands.
+const WELLE_OHNE = "ohne";
+const WELLE_ALLE_TEXT = "Alle";
+const WELLE_OHNE_TEXT = "ohne Welle";
+const WELLEN_ORDNER = "wellen/";
+
 // Übersicht, Wellen und Aufgaben teilen sich dieselbe Listendarstellung.
 const ANSICHTEN = {
   uebersicht: {
@@ -18,6 +24,7 @@ const ANSICHTEN = {
     formular: "filter",
     status: "filter-status",
     owner: "filter-owner",
+    welle: "filter-welle",
     suche: "suche-uebersicht",
     zuruecksetzen: "filter-zuruecksetzen",
   },
@@ -27,6 +34,7 @@ const ANSICHTEN = {
     formular: "filter-wellen",
     status: "filter-wellen-status",
     owner: "filter-wellen-owner",
+    welle: null,
     suche: "suche-wellen",
     zuruecksetzen: "filter-wellen-zuruecksetzen",
   },
@@ -36,6 +44,7 @@ const ANSICHTEN = {
     formular: "filter-aufgaben",
     status: "filter-aufgaben-status",
     owner: "filter-aufgaben-owner",
+    welle: "filter-welle-aufgaben",
     suche: "suche-aufgaben",
     zuruecksetzen: "filter-aufgaben-zuruecksetzen",
   },
@@ -43,6 +52,10 @@ const ANSICHTEN = {
 
 const datenProAnsicht = new Map();
 const initialisierteFilter = new Set();
+
+// Wellen-Metadaten aus bereits geladenen Daten (kein zusätzlicher Request):
+// die Übersicht enthält alle Wellen, die Aufgabenliste referenziert sie.
+let bekannteWellen = [];
 
 // Durchsuchbare Felder aus `/api/overview`; „zuletzt geändert" gehört bewusst
 // nicht dazu (Datumsrecherche ist nicht Teil der Anforderung).
@@ -77,10 +90,14 @@ function passtZurSuche(eintrag, begriffe) {
 }
 
 /**
- * Filtert Einträge nach UI-Status, owner und Suchbegriffen; leere Werte
- * bedeuten „alle". `owner: "ohne"` trifft Einträge ohne Zuständigkeit.
+ * Filtert Einträge nach UI-Status, owner, Suchbegriffen und Welle; leere Werte
+ * bedeuten „alle". `owner: "ohne"` trifft Einträge ohne Zuständigkeit,
+ * `welle: "ohne"` Einträge ohne Wellen-Zuordnung.
  */
-export function filtereEintraege(eintraege, { status = "", owner = "", suche = "" } = {}) {
+export function filtereEintraege(
+  eintraege,
+  { status = "", owner = "", suche = "", welle = "" } = {},
+) {
   if (!Array.isArray(eintraege)) return [];
 
   const begriffe = suchbegriffe(suche);
@@ -88,10 +105,18 @@ export function filtereEintraege(eintraege, { status = "", owner = "", suche = "
   return eintraege.filter((eintrag) => {
     if (!passtZurSuche(eintrag, begriffe)) return false;
     if (status && eintrag?.status !== status) return false;
+    if (!passtZurWelle(eintrag, welle)) return false;
     if (!owner) return true;
     if (owner === "ohne") return !eintrag?.owner;
     return eintrag?.owner === owner;
   });
+}
+
+/** Wellen-Filter: exakte Pfadgleichheit; „ohne" trifft Einträge ohne ``welle``. */
+function passtZurWelle(eintrag, welle) {
+  if (!welle) return true;
+  if (welle === WELLE_OHNE) return !eintrag?.welle;
+  return eintrag?.welle === welle;
 }
 
 /**
@@ -99,11 +124,14 @@ export function filtereEintraege(eintraege, { status = "", owner = "", suche = "
  * Leerzustand. Eine Antwort, die kein Array ist, wird als Formatfehler gemeldet
  * statt als leere Liste getarnt.
  */
-export function waehleAnzeige(daten, { status = "", owner = "", suche = "" } = {}) {
+export function waehleAnzeige(
+  daten,
+  { status = "", owner = "", suche = "", welle = "" } = {},
+) {
   if (daten === null) return { art: "fehler", text: LADE_FEHLER, eintraege: [] };
   if (!Array.isArray(daten)) return { art: "fehler", text: FORMAT_FEHLER, eintraege: [] };
 
-  const eintraege = filtereEintraege(daten, { status, owner, suche });
+  const eintraege = filtereEintraege(daten, { status, owner, suche, welle });
   if (eintraege.length === 0) {
     // „Keine Treffer." nur bei gesetztem Suchbegriff und vorhandenen Daten;
     // sonst bleibt es beim A11-Leerzustand „Keine Einträge.".
@@ -229,11 +257,10 @@ function erstelleHinweis(text) {
 function zeichneTabelle(bereich, eintraege) {
   if (!bereich) return;
 
+  // Kein eigener Leerzustand: den trägt bereits die Haupttabelle, sonst
+  // erscheint „Keine Einträge." doppelt auf der Übersicht (A25-Befund 2).
   bereich.replaceChildren();
-  if (eintraege.length === 0) {
-    bereich.append(erstelleHinweis(LEER_TABELLE));
-    return;
-  }
+  if (eintraege.length === 0) return;
   bereich.append(erstelleTabelle(eintraege));
 }
 
@@ -294,7 +321,8 @@ function montiereSuche(basis) {
   if (!tabelle?.parentElement) return null;
 
   const vorhanden = document.getElementById(konfiguration.suche);
-  if (vorhanden) return vorhanden;
+  // Ein verwaistes Feld (Container neu aufgebaut) wird ersetzt (A25-Befund 1).
+  if (vorhanden && vorhanden.isConnected !== false) return vorhanden;
 
   const bereich = document.createElement("div");
   bereich.classList.add("filter");
@@ -316,6 +344,118 @@ function montiereSuche(basis) {
   return eingabe;
 }
 
+/** Wellen-Einträge aus dem geladenen Bestand (Präfix `wellen/`, wie `/api/wellen`). */
+function wellenAusBestand(daten) {
+  if (!Array.isArray(daten)) return [];
+  return daten.filter(
+    (eintrag) => typeof eintrag?.path === "string" && eintrag.path.startsWith(WELLEN_ORDNER),
+  );
+}
+
+/** In Aufgaben referenzierte Wellen-Pfade (ohne Titel — Anzeige dann als Pfad). */
+function wellenAusVerweisen(daten) {
+  if (!Array.isArray(daten)) return [];
+  const gefunden = [];
+  for (const eintrag of daten) {
+    const pfad = typeof eintrag?.welle === "string" ? eintrag.welle.trim() : "";
+    if (!pfad) continue;
+    if (!gefunden.some((kandidat) => kandidat.path === pfad)) gefunden.push({ path: pfad });
+  }
+  return gefunden;
+}
+
+function fuehreWellenZusammen(...quellen) {
+  const ergebnis = [];
+  for (const quelle of quellen) {
+    for (const eintrag of quelle) {
+      const pfad = typeof eintrag?.path === "string" ? eintrag.path.trim() : "";
+      if (!pfad) continue;
+      const index = ergebnis.findIndex((kandidat) => kandidat.path === pfad);
+      if (index === -1) ergebnis.push({ ...eintrag, path: pfad });
+      else if (!ergebnis[index].titel && eintrag?.titel) ergebnis[index] = { ...eintrag, path: pfad };
+    }
+  }
+  return ergebnis;
+}
+
+/**
+ * Wellen für eine Ansicht: die Übersicht liefert alle Wellen, die Aufgabenliste
+ * ergänzt den bekannten Bestand um die in den Aufgaben referenzierten Pfade.
+ */
+function ermittleWellen(basis, daten) {
+  const ausBestand = wellenAusBestand(daten);
+  if (basis === "uebersicht") {
+    bekannteWellen = ausBestand;
+    return ausBestand;
+  }
+  return fuehreWellenZusammen(bekannteWellen, ausBestand, wellenAusVerweisen(daten));
+}
+
+function erstelleOption(wert, beschriftung) {
+  const option = document.createElement("option");
+  option.value = wert;
+  option.textContent = beschriftung;
+  return option;
+}
+
+function fuelleWellenAuswahl(auswahl, wellen) {
+  const optionen = [erstelleOption("", WELLE_ALLE_TEXT), erstelleOption(WELLE_OHNE, WELLE_OHNE_TEXT)];
+  for (const eintrag of wellen) {
+    const titel = typeof eintrag?.titel === "string" ? eintrag.titel.trim() : "";
+    // Pfad im Label, damit Titel-Duplikate unterscheidbar bleiben (A13).
+    optionen.push(erstelleOption(eintrag.path, titel ? `${titel} (${eintrag.path})` : eintrag.path));
+  }
+  auswahl.replaceChildren(...optionen);
+}
+
+/**
+ * Hängt den Wellen-Filter je Ansicht idempotent in das bestehende Filterformular
+ * ein (vor „Filter zurücksetzen"); `index.html` bleibt ohne Markup. Die Optionen
+ * stammen aus den bereits geladenen Listen — kein zusätzlicher Request.
+ */
+function montiereWellenFilter(basis, daten) {
+  const konfiguration = ANSICHTEN[basis];
+  const feldId = konfiguration.welle;
+  if (!feldId) return null;
+
+  const formular = document.getElementById(konfiguration.formular);
+  const zuruecksetzen = document.getElementById(konfiguration.zuruecksetzen);
+  if (!formular || !zuruecksetzen) return null;
+
+  let auswahl = document.getElementById(feldId);
+  if (auswahl && auswahl.isConnected === false) auswahl = null;
+  if (!auswahl) {
+    const reihe = document.createElement("div");
+    reihe.classList.add("filter-feld");
+    const beschriftung = document.createElement("label");
+    beschriftung.htmlFor = feldId;
+    beschriftung.textContent = "Welle";
+    auswahl = document.createElement("select");
+    auswahl.id = feldId;
+    auswahl.setAttribute("aria-label", "Welle");
+    reihe.append(beschriftung, auswahl);
+    formular.insertBefore(reihe, zuruecksetzen);
+    auswahl.addEventListener("change", () => wendeFilterAn(basis));
+  }
+
+  const vorher = auswahl.value;
+  if (Array.isArray(daten)) {
+    fuelleWellenAuswahl(auswahl, ermittleWellen(basis, daten));
+    auswahl.disabled = false;
+  } else {
+    // Fail-loud: ohne Daten wird nicht still weggefiltert, nur „Alle" bleibt.
+    auswahl.replaceChildren(erstelleOption("", WELLE_ALLE_TEXT));
+    auswahl.disabled = true;
+  }
+  auswahl.value = optionenEnthaelt(auswahl, vorher) ? vorher : "";
+  return auswahl;
+}
+
+function optionenEnthaelt(auswahl, wert) {
+  if (!wert) return true;
+  return Array.from(auswahl.options ?? []).some((option) => option.value === wert);
+}
+
 function wendeFilterAn(basis) {
   if (!datenProAnsicht.has(basis)) return;
 
@@ -324,7 +464,10 @@ function wendeFilterAn(basis) {
   const status = document.getElementById(konfiguration.status)?.value ?? "";
   const owner = document.getElementById(konfiguration.owner)?.value ?? "";
   const suche = document.getElementById(konfiguration.suche)?.value ?? "";
-  const anzeige = waehleAnzeige(daten, { status, owner, suche });
+  const welle = konfiguration.welle
+    ? document.getElementById(konfiguration.welle)?.value ?? ""
+    : "";
+  const anzeige = waehleAnzeige(daten, { status, owner, suche, welle });
 
   const bereich = document.getElementById(konfiguration.tabelle);
   if (!bereich) return;
@@ -353,6 +496,8 @@ function initialisiereFilter(basis) {
   zuruecksetzen.addEventListener("click", () => {
     status.value = "";
     owner.value = "";
+    const welle = konfiguration.welle ? document.getElementById(konfiguration.welle) : null;
+    if (welle) welle.value = "";
     const suche = document.getElementById(konfiguration.suche);
     if (suche) suche.value = "";
     neuZeichnen();
@@ -370,6 +515,7 @@ async function ladeListe(basis) {
   // Rohe Antwort pro Ansicht merken: Fehler-/Formatzustand bleibt so auch bei
   // Filteränderungen erhalten, bis neu geladen wird.
   datenProAnsicht.set(basis, daten ?? null);
+  montiereWellenFilter(basis, daten ?? null);
   wendeFilterAn(basis);
 
   if (basis === "uebersicht") zeichneUebersichtZusatz(daten ?? null);

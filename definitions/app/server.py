@@ -120,6 +120,9 @@ def create_app(bundle_root: str | os.PathLike[str]) -> Flask:
             for feld in ("owner", "status")
             if feld in daten and daten[feld] is not None
         }
+        # ``welle`` auch als ``null`` durchreichen — das entfernt die Zuordnung.
+        if "welle" in daten:
+            ziele["welle"] = daten["welle"]
         if not ziele:
             raise okf_bundle.EingabeFehler("Keine setzbaren Felder")
         return jsonify(path=pfad, frontmatter=meta.setzen(pfad, **ziele))

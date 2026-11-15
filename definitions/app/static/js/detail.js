@@ -6,10 +6,13 @@ import {
   zeigeFehler,
   zeigeMeldung,
 } from "./api.js";
+import { erstelleTabelle } from "./liste.js";
 
 const CONTAINER_ID = "detail";
 const OWNER_AUSWAHL_ID = "detail-owner";
 const OWNER_HINWEIS_ID = "detail-owner-hinweis";
+const WELLE_AUSWAHL_ID = "detail-welle";
+const WELLE_HINWEIS_ID = "detail-welle-hinweis";
 const FORMULAR_ID = "nachtrag-formular";
 const TEXT_ID = "nachtrag-text";
 const FEHLER_ID = "nachtrag-fehler";
@@ -25,6 +28,20 @@ const OWNER_ERFOLG = "owner gespeichert.";
 const STATUS_ERFOLG = "Status gespeichert.";
 const OWNER_UNBEKANNT = "unbekannt";
 const ZURUECK_ZIEL = "#/uebersicht";
+
+// Wellen-Zuordnung (A27): Feld nur an Aufgaben, Optionen aus `GET /api/wellen`.
+const WELLE_KEINE = "keine";
+const WELLE_UNBEKANNT = "unbekannt";
+const WELLE_ERFOLG = "Welle gespeichert.";
+const WELLE_ENTFERNT = "Welle entfernt.";
+const WELLEN_LADE_FEHLER = "Wellen konnten nicht geladen werden.";
+const WELLEN_FORMAT_FEHLER = "Wellen haben ein unerwartetes Format.";
+const AUFGABEN_LADE_FEHLER = "Aufgaben konnten nicht geladen werden.";
+const AUFGABEN_FORMAT_FEHLER = "Aufgaben haben ein unerwartetes Format.";
+const KEINE_AUFGABEN = "Keine Aufgaben dieser Welle.";
+const ABSCHNITT_KLASSE = "detail-abschnitt";
+const AUFGABEN_ORDNER = "aufgaben/";
+const WELLEN_ORDNER = "wellen/";
 
 // R1: Nur diese beiden Status sind über die UI setzbar; Pipeline-Status nicht.
 export const STATUS_KNOEPFE = ["Klarung", "Geschlossen"];
@@ -259,15 +276,22 @@ export function ermittleOwner(frontmatter) {
 
 /**
  * Payload für `POST /api/meta`: Nicht gesetzte Felder werden weggelassen, weil
- * die API strikt prüft und leere Strings mit 403 abweist.
+ * die API strikt prüft und leere Strings mit 403 abweist. `welle: null` wird
+ * mitgeschickt — das ist die Anweisung „Zuordnung entfernen".
  */
-export function erstelleMetaPayload(pfad, { owner, status } = {}) {
+export function erstelleMetaPayload(pfad, { owner, status, welle } = {}) {
   const daten = { path: pfad };
   const ownerText = typeof owner === "string" ? owner.trim() : "";
   const statusText = typeof status === "string" ? status.trim() : "";
 
   if (ownerText) daten.owner = ownerText;
   if (statusText) daten.status = statusText;
+  if (welle === null) {
+    daten.welle = null;
+  } else {
+    const welleText = typeof welle === "string" ? welle.trim() : "";
+    if (welleText) daten.welle = welleText;
+  }
   return daten;
 }
 
@@ -377,6 +401,91 @@ function erstelleOwnerAuswahl(pfad, owner) {
   return bereich;
 }
 
+function erstelleWellenOption(wert, beschriftung) {
+  const option = document.createElement("option");
+  option.value = wert;
+  option.textContent = beschriftung;
+  return option;
+}
+
+/** Ist die Datei eine Aufgabe? `type: Task` oder Altbestand unter `aufgaben/`. */
+function istAufgabe(pfad, frontmatter) {
+  if (pfad.startsWith(AUFGABEN_ORDNER)) return true;
+  return feld(frontmatter, "type") === "Task";
+}
+
+/**
+ * Wellen-Auswahl im Frontmatter-Kopf; speichert beim Wechsel sofort
+ * (`POST /api/meta`), sperrt das Feld während des Requests und rollt bei einem
+ * Fehler auf den vorherigen Wert zurück.
+ */
+function erstelleWellenAuswahl(pfad, welle, wellen) {
+  const eintraege = Array.isArray(wellen?.eintraege) ? wellen.eintraege : null;
+  const fehler = wellen?.fehler ?? null;
+
+  const auswahl = document.createElement("select");
+  auswahl.id = WELLE_AUSWAHL_ID;
+  auswahl.setAttribute("aria-label", "Welle");
+  auswahl.append(erstelleWellenOption("", WELLE_KEINE));
+
+  const bekannt = new Set();
+  for (const eintrag of eintraege ?? []) {
+    const wellenPfad = typeof eintrag?.path === "string" ? eintrag.path.trim() : "";
+    if (!wellenPfad) continue;
+    const titel = typeof eintrag?.titel === "string" ? eintrag.titel.trim() : "";
+    // Pfad im Label, damit Titel-Duplikate unterscheidbar bleiben (A13).
+    const beschriftung = titel ? `${titel} (${wellenPfad})` : wellenPfad;
+    auswahl.append(erstelleWellenOption(wellenPfad, beschriftung));
+    bekannt.add(wellenPfad);
+  }
+
+  // A12-3-Muster: unbekannte Werte nicht still verschlucken.
+  const unbekannt = Boolean(welle) && !bekannt.has(welle);
+  if (unbekannt) {
+    auswahl.append(erstelleWellenOption(welle, `${welle} (${WELLE_UNBEKANNT})`));
+  }
+
+  auswahl.value = welle ?? "";
+  const anzeigewert = auswahl.value;
+  // Ohne Wellenliste (Fehler/Format) bleibt das Feld gesperrt: kein Blindschreiben.
+  const gesperrt = eintraege === null || fehler !== null;
+  auswahl.disabled = gesperrt;
+
+  auswahl.addEventListener("change", async () => {
+    if (auswahl.disabled) return;
+    const entfernen = auswahl.value === "";
+    auswahl.disabled = true;
+    try {
+      const erfolg = await speichereMeta(
+        pfad,
+        { welle: entfernen ? null : auswahl.value },
+        entfernen ? WELLE_ENTFERNT : WELLE_ERFOLG,
+      );
+      if (!erfolg) auswahl.value = anzeigewert;
+    } finally {
+      if (!gesperrt) auswahl.disabled = false;
+    }
+  });
+
+  const hinweise = [];
+  if (unbekannt) {
+    hinweise.push(
+      `Welle „${welle}" ist ${WELLE_UNBEKANNT}; bitte eine Welle wählen oder „${WELLE_KEINE}" setzen.`,
+    );
+  }
+  if (fehler) hinweise.push(fehler);
+  if (hinweise.length === 0) return auswahl;
+
+  const hinweis = document.createElement("span");
+  hinweis.id = WELLE_HINWEIS_ID;
+  hinweis.classList.add("hinweis");
+  hinweis.textContent = hinweise.join(" ");
+
+  const bereich = document.createDocumentFragment();
+  bereich.append(auswahl, hinweis);
+  return bereich;
+}
+
 function erstelleStatusKnopf(status, aktiv) {
   const knopf = document.createElement("button");
   knopf.type = "button";
@@ -418,7 +527,7 @@ function erstelleAktionen(pfad, status) {
   return aktionen;
 }
 
-function erstelleKopf(pfad, daten) {
+function erstelleKopf(pfad, daten, wellen) {
   const frontmatter =
     daten.frontmatter && typeof daten.frontmatter === "object" ? daten.frontmatter : {};
   const { status, hinweis } = ermittleStatus(frontmatter);
@@ -435,9 +544,51 @@ function erstelleKopf(pfad, daten) {
   anhaengenFeld(angaben, "Typ", feld(frontmatter, "type") || KEINE_ANGABE);
   anhaengenFeld(angaben, "Status", erstelleStatusAnzeige(status, hinweis));
   anhaengenFeld(angaben, "owner", erstelleOwnerAuswahl(pfad, ermittleOwner(frontmatter)));
+  if (istAufgabe(pfad, frontmatter)) {
+    anhaengenFeld(
+      angaben,
+      "Welle",
+      erstelleWellenAuswahl(pfad, feld(frontmatter, "welle"), wellen),
+    );
+  }
   kopf.append(angaben, erstelleAktionen(pfad, status));
 
   return kopf;
+}
+
+/**
+ * Wellen-Sicht (AK-10/AK-11): Aufgaben werden ausschließlich aus dem
+ * `welle`-Feld abgeleitet (`GET /api/aufgaben`); die Wellen-Datei bleibt
+ * unangetastet.
+ */
+function erstelleAufgabenSicht(pfad, aufgaben) {
+  if (!pfad.startsWith(WELLEN_ORDNER)) return null;
+
+  const eintraege = Array.isArray(aufgaben?.eintraege) ? aufgaben.eintraege : [];
+  const fehler = aufgaben?.fehler ?? null;
+  const treffer = eintraege.filter(
+    (eintrag) => typeof eintrag?.welle === "string" && eintrag.welle.trim() === pfad,
+  );
+
+  const bereich = document.createElement("section");
+  bereich.classList.add(ABSCHNITT_KLASSE);
+  bereich.classList.add("uebersicht-block");
+
+  const titel = document.createElement("h3");
+  titel.className = "uebersicht-titel";
+  titel.textContent = `Aufgaben dieser Welle (${treffer.length})`;
+  bereich.append(titel);
+
+  if (fehler) {
+    bereich.append(erstelleHinweis(fehler));
+    return bereich;
+  }
+  if (treffer.length === 0) {
+    bereich.append(erstelleHinweis(KEINE_AUFGABEN));
+    return bereich;
+  }
+  bereich.append(erstelleTabelle(treffer));
+  return bereich;
 }
 
 function erstelleInhalt(markdown) {
@@ -527,12 +678,39 @@ async function speichereMeta(pfad, aenderung, erfolgsmeldung) {
   return true;
 }
 
-function zeichne(ziel, pfad, daten) {
-  ziel.replaceChildren(
-    erstelleKopf(pfad, daten),
-    erstelleInhalt(daten.markdown),
-    erstelleNachtragFormular(pfad),
-  );
+function zeichne(ziel, pfad, daten, zusatz) {
+  const teile = [erstelleKopf(pfad, daten, zusatz.wellen), erstelleInhalt(daten.markdown)];
+  const aufgabenSicht = erstelleAufgabenSicht(pfad, zusatz.aufgaben);
+  if (aufgabenSicht) teile.push(aufgabenSicht);
+  teile.push(erstelleNachtragFormular(pfad));
+  ziel.replaceChildren(...teile);
+}
+
+/** Wellenliste für die Detail-Auswahl; Fehler werden fail-loud gemeldet. */
+async function ladeWellenListe(noetig) {
+  if (!noetig) return { eintraege: null, fehler: null };
+
+  const antwort = await getJson("/api/wellen");
+  if (antwort === null) {
+    // 200 mit leerem Body zeigt api.js nicht an — hier sichtbar machen.
+    zeigeFehler(WELLEN_LADE_FEHLER);
+    return { eintraege: null, fehler: WELLEN_LADE_FEHLER };
+  }
+  if (!Array.isArray(antwort)) {
+    zeigeFehler(WELLEN_FORMAT_FEHLER);
+    return { eintraege: null, fehler: WELLEN_FORMAT_FEHLER };
+  }
+  return { eintraege: antwort, fehler: null };
+}
+
+/** Aufgabenliste für die Wellen-Sicht; Fehler erscheinen im Abschnitt. */
+async function ladeAufgabenListe(noetig) {
+  if (!noetig) return { eintraege: null, fehler: null };
+
+  const antwort = await getJson("/api/aufgaben");
+  if (antwort === null) return { eintraege: null, fehler: AUFGABEN_LADE_FEHLER };
+  if (!Array.isArray(antwort)) return { eintraege: null, fehler: AUFGABEN_FORMAT_FEHLER };
+  return { eintraege: antwort, fehler: null };
 }
 
 /** Lädt eine Datei aus `GET /api/file` und zeichnet die Detailansicht. */
@@ -558,5 +736,10 @@ export async function ladeDetail({ unterpunkt } = {}) {
     return;
   }
 
-  zeichne(ziel, pfad, daten);
+  const frontmatter =
+    daten.frontmatter && typeof daten.frontmatter === "object" ? daten.frontmatter : {};
+  const wellen = await ladeWellenListe(istAufgabe(pfad, frontmatter));
+  const aufgaben = await ladeAufgabenListe(pfad.startsWith(WELLEN_ORDNER));
+
+  zeichne(ziel, pfad, daten, { wellen, aufgaben });
 }

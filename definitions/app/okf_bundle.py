@@ -193,26 +193,40 @@ def _yaml_zeilen(schluessel: str, wert: object) -> list[str]:
         raise FrontmatterFehler(f"Wert für {schluessel!r} nicht schreibbar: {fehler}") from fehler
 
 
-def _setze_zeilen(zeilen: list[str], schluessel: str, wert: object) -> list[str]:
-    """Ersetzt einen Top-Level-Key samt Folgezeilen, sonst anhängen."""
+def _finde_schluessel(zeilen: list[str], schluessel: str) -> int | None:
+    """Index der Top-Level-Zeile zu ``schluessel``; ``None``, wenn sie fehlt."""
     if not isinstance(schluessel, str) or not re.fullmatch(r"[A-Za-z0-9_.-]+", schluessel):
         raise FrontmatterFehler(f"Ungültiger Frontmatter-Schlüssel: {schluessel!r}")
 
-    ergebnis = list(zeilen)
-    start = None
-    for index, zeile in enumerate(ergebnis):
+    for index, zeile in enumerate(zeilen):
         treffer = _SCHLUESSEL.match(zeile)
         if treffer and treffer.group(1) == schluessel:
-            start = index
-            break
+            return index
+    return None
 
+
+def _setze_zeilen(zeilen: list[str], schluessel: str, wert: object) -> list[str]:
+    """Ersetzt einen Top-Level-Key samt Folgezeilen, sonst anhängen."""
+    start = _finde_schluessel(zeilen, schluessel)
     if start is None:
-        return ergebnis + _yaml_zeilen(schluessel, wert)
+        return list(zeilen) + _yaml_zeilen(schluessel, wert)
 
     ende = start + 1
-    while ende < len(ergebnis) and _zum_wertblock(ergebnis, ende):
+    while ende < len(zeilen) and _zum_wertblock(zeilen, ende):
         ende += 1
-    return ergebnis[:start] + _yaml_zeilen(schluessel, wert) + ergebnis[ende:]
+    return zeilen[:start] + _yaml_zeilen(schluessel, wert) + zeilen[ende:]
+
+
+def _entferne_zeilen(zeilen: list[str], schluessel: str) -> list[str]:
+    """Löscht einen Top-Level-Key samt Wertblock; fehlt er, bleibt alles gleich."""
+    start = _finde_schluessel(zeilen, schluessel)
+    if start is None:
+        return list(zeilen)
+
+    ende = start + 1
+    while ende < len(zeilen) and _zum_wertblock(zeilen, ende):
+        ende += 1
+    return zeilen[:start] + zeilen[ende:]
 
 
 def _zum_wertblock(zeilen: list[str], index: int) -> bool:
@@ -233,14 +247,23 @@ def _zum_wertblock(zeilen: list[str], index: int) -> bool:
     return False
 
 
-def set_meta(pfad: str | os.PathLike[str], updates: dict) -> dict:
-    """Setzt ausschließlich die angegebenen Frontmatter-Keys; Body bleibt unverändert."""
+def set_meta(
+    pfad: str | os.PathLike[str], updates: dict, entfernen: tuple[str, ...] = ()
+) -> dict:
+    """Setzt die angegebenen Frontmatter-Keys; Body bleibt unverändert.
+
+    ``entfernen`` löscht Schlüssel (samt Wertblock) im selben atomaren
+    Schreibvorgang; fehlende Schlüssel sind dort ein No-op.
+    """
     ziel = _pruefe_schreibziel(pfad)
     text = _lies_text(ziel)
     zeilen, body, ende = _zerlege(text)
     if zeilen is None:
         raise FrontmatterFehler(f"Frontmatter fehlt: {ziel.name}")
     _parse_frontmatter(zeilen)
+
+    for schluessel in entfernen:
+        zeilen = _entferne_zeilen(zeilen, schluessel)
 
     for schluessel, wert in updates.items():
         zeilen = _setze_zeilen(zeilen, schluessel, wert)

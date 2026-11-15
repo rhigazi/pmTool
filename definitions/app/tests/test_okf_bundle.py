@@ -424,3 +424,100 @@ def test_lesen_tolerant_ungueltiges_yaml_liefert_body(bundle):
     assert frontmatter == {}
     assert body == "\n# Ziel\n"
     assert "broken" not in body
+
+
+# --- A27: Frontmatter-Schlüssel gezielt entfernen --------------------------
+
+
+def _mit_welle() -> str:
+    return (
+        "---\n"
+        "type: Task\n"
+        'title: "A1: Mini-Aufgabe"\n'
+        "task_status: offen\n"
+        "welle: wellen/w1.md\n"
+        "---\n\n"
+        "# Ziel\n\n"
+        "Body bleibt.\n"
+    )
+
+
+def test_set_meta_entfernen_loescht_schluessel_und_erhaelt_body(bundle):
+    pfad = bundle / "aufgaben/a1.md"
+    pfad.write_text(_mit_welle(), encoding="utf-8")
+    body_vorher = okf_bundle.lesen("aufgaben/a1.md")[1]
+
+    frontmatter = okf_bundle.set_meta("aufgaben/a1.md", {}, entfernen=("welle",))
+
+    assert "welle" not in frontmatter
+    assert frontmatter["title"] == "A1: Mini-Aufgabe"
+    assert frontmatter["task_status"] == "offen"
+    roh = pfad.read_text(encoding="utf-8")
+    assert "welle" not in roh
+    assert _hash(okf_bundle.lesen("aufgaben/a1.md")[1]) == _hash(body_vorher)
+
+
+def test_set_meta_entfernen_fehlender_schluessel_ist_no_op(bundle):
+    pfad = bundle / "aufgaben/a1.md"
+    vorher = pfad.read_bytes()
+
+    frontmatter = okf_bundle.set_meta("aufgaben/a1.md", {}, entfernen=("welle",))
+
+    assert "welle" not in frontmatter
+    assert pfad.read_bytes() == vorher
+
+
+def test_set_meta_entfernen_und_setzen_in_einem_vorgang(bundle):
+    pfad = bundle / "aufgaben/a1.md"
+    pfad.write_text(_mit_welle(), encoding="utf-8")
+    body_vorher = okf_bundle.lesen("aufgaben/a1.md")[1]
+
+    frontmatter = okf_bundle.set_meta(
+        "aufgaben/a1.md", {"owner": "mensch"}, entfernen=("welle",)
+    )
+
+    assert "welle" not in frontmatter
+    assert frontmatter["owner"] == "mensch"
+    assert _hash(okf_bundle.lesen("aufgaben/a1.md")[1]) == _hash(body_vorher)
+    assert list((bundle / "aufgaben").glob(".tmp-*")) == []
+
+
+def test_set_meta_entfernen_erhaelt_crlf(bundle):
+    volltext = (
+        "---\r\n"
+        "type: Task\r\n"
+        'title: "CRLF-Aufgabe"\r\n'
+        "welle: wellen/w1.md\r\n"
+        "---\r\n\r\n"
+        "# Ziel\r\n\r\n"
+        "Body mit CRLF.\r\n"
+    )
+    pfad = bundle / "aufgaben/crlf-welle.md"
+    pfad.write_bytes(volltext.encode("utf-8"))
+    body_vorher = okf_bundle.lesen("aufgaben/crlf-welle.md")[1]
+
+    okf_bundle.set_meta("aufgaben/crlf-welle.md", {}, entfernen=("welle",))
+
+    roh = (bundle / "aufgaben/crlf-welle.md").read_bytes()
+    assert b"welle" not in roh
+    assert b"\n" not in roh.replace(b"\r\n", b"")
+    assert okf_bundle.lesen("aufgaben/crlf-welle.md")[1] == body_vorher
+
+
+def test_set_meta_entfernen_weist_ungueltigen_schluessel_ab(bundle):
+    pfad = bundle / "aufgaben/a1.md"
+    vorher = pfad.read_bytes()
+
+    with pytest.raises(FrontmatterFehler):
+        okf_bundle.set_meta("aufgaben/a1.md", {}, entfernen=("kein schlüssel",))
+
+    assert pfad.read_bytes() == vorher
+
+
+def test_set_meta_entfernen_default_ist_unveraendert(bundle):
+    """Ohne ``entfernen`` bleibt das A1-Verhalten (Signatur additiv erweitert)."""
+    okf_bundle.set_meta("aufgaben/a1.md", {"owner": "ai"})
+
+    frontmatter, _ = okf_bundle.lesen("aufgaben/a1.md")
+    assert frontmatter["owner"] == "ai"
+    assert frontmatter["title"] == "A1: Mini-Aufgabe"
