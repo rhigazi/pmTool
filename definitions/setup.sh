@@ -93,6 +93,17 @@ if [ -d "$SRC/tools" ]; then
   fi
 fi
 
+echo "4b) Projektvorlagen (definitions/)"
+# tools/neues_projekt.py setzt wissen/ auf definitions/wissen-vorlage/ zurück und
+# verweist im Erfolgstext auf definitions/verify.sh — beides muss im Ziel vorliegen.
+install_file "$SRC/verify.sh" "$TARGET/definitions/verify.sh"
+if [ -e "$TARGET/definitions/wissen-vorlage" ] && [ "$FORCE" -eq 0 ]; then
+  echo "  übersprungen (vorhanden): definitions/wissen-vorlage"
+else
+  copy_tree "$SRC/wissen-vorlage" "$TARGET/definitions/wissen-vorlage"
+  echo "  installiert: definitions/wissen-vorlage"
+fi
+
 if [ "$WISSEN" -eq 1 ]; then
   echo "5) OKF-Wissensdatenbank (wissen/)"
   if [ -e "$TARGET/wissen/index.md" ] && [ "$FORCE" -eq 0 ]; then

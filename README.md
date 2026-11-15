@@ -151,7 +151,7 @@ Danach enthält `wissen/` exakt die Vorlage (`index.md`, `features.md`, `log.md`
 
 Details: Ohne `--ja` wird ausschließlich der Plan ausgegeben (Exit 0, Dateisystem unverändert). `--backup PFAD` legt das Backup-Ziel fest, muss aber innerhalb des Repo-Roots liegen. Fehlt oder unvollständig ist die Vorlage, bricht das Skript ab und nennt die fehlende Datei — ohne zu löschen. Ein zweiter Lauf direkt nach einem Reset ist idempotent (neues Backup, gleiches Ergebnis).
 
-Das Werkzeug gehört zum Repo-Root (`tools/`) und wird derzeit **nicht** von `setup.sh` in Zielprojekte verteilt — diese Verteilungslücke ist als [A26](wissen/aufgaben/a26-verteilung-und-suite-konflikt.md) vorgemerkt.
+Das Werkzeug liegt in der Quelle `definitions/tools/neues_projekt.py`; `setup.sh` verteilt es samt Tests nach `tools/` und legt im Zielprojekt zusätzlich `definitions/wissen-vorlage/` sowie `definitions/verify.sh` an (die Vorlage braucht das Werkzeug, verify.sh verweist der Erfolgstext). Im Entwicklungs-Repo ist `tools/` nur die installierte Kopie — Änderungen immer in `definitions/tools/` vornehmen und mit `bash definitions/setup.sh . --force` erneuern. Die Root-Suite (`pytest -q`) testet deshalb nur `definitions/tools/tests/` und ignoriert den Spiegel `tools/tests/` (`conftest.py`); eine Drift-Prüfung wacht darüber, dass beide Bäume inhaltsgleich bleiben.
 
 ## Telegram-Benachrichtigung
 

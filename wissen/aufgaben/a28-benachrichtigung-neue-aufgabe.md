@@ -137,7 +137,7 @@ Harness: `tests/dom_helfer.py` nutzen (wird in **A30** angelegt: Mini-DOM + Node
   - **Reihenfolge im Paket:** Test schreiben → rot → Minimum → grün → nächster Test. Paket 0 und 1 teilen `overview.py` → **nacheinander** vom selben Coder; Paket 2 nach Paket 1; Paket 3 parallel zu Paket 2.
 - **Reihenfolge-Empfehlung und Freigabe-Gate:**
   1. **A27 abschließen** (Frontend `liste.js`/`detail.js` in Umsetzung, G13/G14 belegt), **A30 abschließen** (Arbeitsstatus nutzt `liste.js`/`detail.js` und `overview.py`) und **A31 abschließen** (Wellen-Spalte nutzt `liste.js`) — vorher **kein** Start von A28 Paket 0/2.
-  2. **Freigabe von A28 durch die Projektleitung** (`freigabe: true` in dieser Datei) — **Start-Gate**. Aktuell fehlt das Feld; die Aufgabe ist damit nicht freigegeben und die Umsetzung darf **nicht** beginnen (Selbstanwendung der neuen Regel).
+  2. **Freigabe von A28 ist erteilt** (Projektleitung 2026-11-15, dokumentiert im Feld `aktuell`) — **Start-Gate erfüllt**. Das maschinenlesbare Feld `freigabe` entsteht erst mit Paket 0; die Projektleitung sollte es danach auf `true` nachtragen. Start trotzdem erst nach A30/A31 (Reihenfolge).
   3. Danach **Paket 0 → 1 → 2**, **Paket 3 parallel zu 2**; anschließend Review, Test (S1–S5), Doku.
   4. **A29 startet erst nach A28** (Paket 0 und 2 müssen grün und committed sein) **und** nach eigener Freigabe.
 - **Abhängigkeiten:** A8 (`overview`-Felder), A9 (`POST /api/meta`-Semantik), A11/A12 (`liste.js`/`detail.js`-Muster), A13 (`neu_aufgabe`), A25/A27 (geteilte Dateien `liste.js`/`detail.js`, Filter-/Wellen-Verträge). A23 (`features.js`, `index.html`, `style.css`) ist **keine** Voraussetzung, solange diese Dateien unberührt bleiben.

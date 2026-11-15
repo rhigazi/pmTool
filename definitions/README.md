@@ -11,9 +11,9 @@ Dieses Verzeichnis bündelt **alle** OpenCode-Definitionen des Projekts. Damit s
 | `opencode.jsonc` | Projekt-Konfiguration: Projektmanager-Modell `opencode-go/mimo-v2.6-pro` |
 | `wissen-vorlage/` | Gerüst der OKF-Wissensdatenbank (Index, Log, Features, Aufgaben, Phasen, …) |
 | `skills/` | Skill-Snapshots: `okf-knowledge-base`, `duckdb-docs` |
-| `tools/` | Werkzeuge der Vorlage: `telegram_send.py` + Tests |
+| `tools/` | Werkzeuge der Vorlage: `telegram_send.py`, `neues_projekt.py` + Tests — wird nach `<projekt>/tools/` verteilt (Quelle; `<projekt>/tools/` ist nur die Kopie) |
 | `app/` | SPA-App: Flask-Server (`server.py`), Fachmodule, `static/` und Tests — wird nach `<projekt>/app/` verteilt |
-| `setup.sh` | Installiert alles in ein Projekt / einen Container (inkl. `tools/`, `app/` und pytest) |
+| `setup.sh` | Installiert alles in ein Projekt / einen Container (inkl. `tools/`, `app/`, `definitions/verify.sh`, `definitions/wissen-vorlage/` und pytest) |
 | `verify.sh` | Setup-Test: prüft Vollständigkeit und Funktion (nach Container-Neustart ausführen) |
 
 ## Modellzuordnung

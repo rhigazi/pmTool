@@ -19,7 +19,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import neues_projekt  # noqa: E402
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+
+def _projektwurzel(start):
+    """Wurzel, unter der ``definitions/wissen-vorlage/`` liegt.
+
+    Die Datei liegt im Dev-Repo unter ``tools/tests`` oder ``definitions/tools/tests``
+    und im installierten Zielprojekt unter ``tools/tests`` — die feste Tiefe
+    ``parents[2]`` wäre nur für einen der Orte korrekt.
+    """
+    for kandidat in start.parents:
+        if (kandidat / "definitions" / "wissen-vorlage").is_dir():
+            return kandidat
+    return start.parents[2]
+
+
+REPO_ROOT = _projektwurzel(Path(__file__).resolve())
 VORLAGE_QUELLE = REPO_ROOT / "definitions" / "wissen-vorlage"
 VERIFY_QUELLE = REPO_ROOT / "definitions" / "verify.sh"
 
@@ -486,9 +500,14 @@ def verify_kopie_bauen(root):
     """
     shutil.copy2(REPO_ROOT / "AGENTS.md", root / "AGENTS.md")
     shutil.copy2(REPO_ROOT / "opencode.jsonc", root / "opencode.jsonc")
+    # Quellen liegen im Dev-Repo unter definitions/, im installierten Zielprojekt
+    # nur unter .opencode/agents/ — beide Layouts müssen den E2E-Test tragen.
+    agenten_quelle = REPO_ROOT / "definitions" / "agents"
+    if not agenten_quelle.is_dir():
+        agenten_quelle = REPO_ROOT / ".opencode" / "agents"
     agenten = root / ".opencode" / "agents"
     agenten.mkdir(parents=True)
-    for quelle in sorted((REPO_ROOT / "definitions" / "agents").glob("*.md")):
+    for quelle in sorted(agenten_quelle.glob("*.md")):
         shutil.copy2(quelle, agenten / quelle.name)
 
     (root / "tools" / "tests").mkdir(parents=True)
