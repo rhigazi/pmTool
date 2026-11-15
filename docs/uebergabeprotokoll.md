@@ -1,140 +1,97 @@
 ---
 type: Document
 title: Übergabeprotokoll — OKF Projekt-Manager (SPA)
-description: Gesamtstand zum Sitzungswechsel: Aufgabenstatus, offene Punkte, Weiterführung und Anleitung zur Umgebungs-Wiederherstellung in einer neuen Colab-Sitzung.
+description: Gesamtstand zum Sitzungswechsel 2026-11-15 (Pause): Aufgabenstatus, laufende/abgebrochene Arbeiten mit Rest-Umfang je Aufgabe, WIP-Hinweis, Weiterführung und Startprompt.
 tags: [uebergabe, status, protokoll]
-generated: { by: opencode/mimo-v2.6-pro, at: 2026-11-14T00:00:00Z }
+generated: { by: opencode/mimo-v2.6-pro, at: 2026-11-15T06:30:00Z }
 status: aktuell
 ---
 
 # Zweck dieses Protokolls
 
-Dieses Dokument sichert den **gesamten Projektstand** nach Abschluss der MVP-Umsetzung. Stand: **MVP abnahmefähig** — alle Aufgaben A1–A20 sowie A23, A24 und A25 sind abgeschlossen. A26 (Werkzeug-Verteilung/Root-Suite-Konflikt) und A27 (Wellen-Zuordnung) sind in Review; A28–A33 sind in Planung/laufend. Offen sind die **MVP-Abnahme durch die Projektleitung** und die Post-MVP-Vormerkungen A21/A22.
+**Geplante Pause 2026-11-15 (Anweisung der Projektleitung):** Die Feature-Strecke ist weitgehend umgesetzt; die Projektleitung beginnt jetzt **eigene Testläufe** (Beginn von **A39** — gemeinsame Test-/Abstimmungsrunde). Danach werden **gemeinsam weitere Aufgaben festgelegt**. Dieses Protokoll sichert den gesamten Stand inkl. der **abgebrochenen Subagenten-Arbeit** (WIP-Commit `f00e81a`).
 
-**Start in der neuen Sitzung:** Den Startprompt aus `docs/startprompt.md` als erste Nachricht an den Projektmanager schicken — er bringt den PM auf Stand (inkl. Session-Start-Regel und Weiterführung).
-
-**Lesereihenfolge für eine neue Session (Projektmanager):** erst dieses Protokoll, dann `wissen/index.md` (Session-Start-Regel), dann `wissen/entscheidungen/log.md`.
+**Lesereihenfolge für eine neue Session (Projektmanager):** erst dieses Protokoll, dann `wissen/index.md`, dann `wissen/entscheidungen/log.md`. Den Startprompt aus `docs/startprompt.md` als erste Nachricht schicken.
 
 # Projekt in Kürze
 
-**OKF Projekt-Manager (SPA)** — browserbasierte Ein-Personen-Oberfläche zur Verwaltung eines OKF-Projekts in Mensch-KI-Zusammenarbeit. Die App ist ein **Tracker** (Status/Zuständigkeit/Nachträge/Wellen), die eigentliche Arbeit läuft autonom über den OpenCode-CLI-Chat (Projektmanager + Subagenten). Datenquelle ist stets das OKF-Bundle `wissen/` — keine Zweitdatenbank.
+**OKF Projekt-Manager (SPA)** — browserbasierte Ein-Personen-Oberfläche zur Verwaltung eines OKF-Projekts in Mensch-KI-Zusammenarbeit. Tracker über dem OKF-Bundle `wissen/` (keine Zweitdatenbank); die eigentliche Arbeit läuft über den OpenCode-CLI-Chat (PM + Subagenten). Regeln: `AGENTS.md` (+ `definitions/AGENTS.md` = Single Source of Truth). Workflow: PM + `planner`/`coder`/`reviewer`/`tester`/`documenter`, TDD, Commits je Takt, Sofort-Push bei angenommenen Aufgaben.
 
-Grundlagen: `docs/prd.md` (PRD + Entscheidungen), `wissen/projekt/technische-spec.md`, `wissen/projekt/user-stories/` (US-1…US-7), `wissen/projekt/planung.md` (TDD-Aufgabenplan A1–A17), `wissen/projekt/phasen.md` (Workflow/Format).
+# Aktueller Stand (2026-11-15, Pause)
 
-# Projektstruktur (Repository)
+- **Abgeschlossen:** A1–A20 (MVP), A23, A24, A25.
+- **Review-frei + testbestanden, reif für Abschluss (nur Doku-Runde):** A27, A30, A31, A32.
+- **In Arbeit (WIP, siehe unten):** A26, A28, A29, A34, A33-Batches.
+- **Vormerkungen:** A35–A38 (nach A29/A33), A22/A21 (Post-MVP).
+- **A39 (Testpause + README) läuft ab jetzt:** Projektleitung testet selbst; PM sammelt Befunde → Lückenliste → neue Aufgaben (ID+Titel+Sofort-Push) → README-Abschluss.
 
-```
-pmTool/
-├── start.sh                 # Startskript Umgebungs-Wiederherstellung (A18)
-├── docs/
-│   ├── prd.md               # PRD + Produktentscheidungen
-│   ├── colab-start.md       # Anleitung: neue Colab-Sitzung
-│   └── uebergabeprotokoll.md  # dieses Dokument
-├── definitions/             # Single Source of Truth (OpenCode-Definitionen)
-│   ├── AGENTS.md, setup.sh, verify.sh, README.md
-│   ├── agents/ (planner, coder, reviewer, tester, documenter)
-│   ├── app/                 # App-Quelle: server.py, okf_bundle.py, status.py,
-│   │                        #   overview.py, nachtrag.py, neu_aufgabe.py,
-│   │                        #   neu_welle.py, meta.py, start_colab.py,
-│   │                        #   static/ (index.html, style.css, js/*: app.js,
-│   │                        #   api.js, liste.js, detail.js, formulare.js, projekt.js, features.js), tests/
-│   └── wissen-vorlage/      # OKF-Gerüst für neue Projekte
-├── wissen/                  # OKF-Bundle des Projekts (Datenbasis der App)
-├── AGENTS.md, opencode.jsonc, .opencode/agents/, tools/   # installierte Projekt-Wurzel
-└── .gitignore               # u. a. config.json (Telegram-Secret!), __pycache__
-```
+**Teststände (Zählumfang „Gesamtsuite" = Root-Suite = App-Suite + `definitions/tools/tests`; Spiegel `tools/tests` zählt nicht):**
+- App-Suite zuletzt attestiert: **1338 passed** (Snapshot A29, Commit `7748dee`).
+- Root-Suite zuletzt attestiert: **1118** (A26) + seitheriger Zuwachs (A28/A29/A34/WIP — nicht mehr nachgezogen).
+- `bash definitions/verify.sh .` → zuletzt Exit 0 (Snapshot-Stände).
+- **WIP-Commit `f00e81a` ist NICHT als grün attestiert** — die Suite kann dort rot sein (halbfertige Pakete).
 
-# Aufgabenstatus (Stand: 2026-11-15)
+# Aufgabenstatus (Stand: 2026-11-15, Pause)
 
-Statuswerte laut Phasenmodell. Alle Aufgaben A1–A20 sowie A23, A24 und A25 sind **abgeschlossen** (Umsetzung, Review, Testphase, Doku/Ergebnisprotokoll); A26 und A27 sind **in Review**, A28–A33 sind **in Planung/laufend**.
-
-| # | Aufgabe | Status | Kurzstand / Beleg |
+| # | Aufgabe | Status | Was noch zu tun ist |
 |---|---|---|---|
-| A1 | `okf_bundle.py` (Fundament) | abgeschlossen | 45 Tests; Sicherheits-/Kleinbefunde erledigt |
-| A2 | `status.py` (Mapping) | abgeschlossen | 44 Tests, Test bestanden, Doku |
-| A3 | `nachtrag.py` | abgeschlossen | 21 Tests; A3-1/A3-2 erledigt |
-| A4 | `neu_aufgabe.py` | abgeschlossen | 32 Tests; Grenzfall-Fix |
-| A5 | `neu_welle.py` | abgeschlossen | 55 Tests; Bestätigungs-Review review-frei |
-| A6 | `meta.py` (Rechte) | abgeschlossen | 30 Tests |
-| A7 | `server.py` (Gerüst) | abgeschlossen | 23 Tests; Pfad-Leak dreifach abgesichert |
-| A8 | Lese-API (4 GET-Routen) | abgeschlossen | 33 Tests + Live-HTTP-Smoke |
-| A9 | Schreib-API (4 POST-Routen) | abgeschlossen | 78 Tests + Live-Smoke; K1/W1/K2 erledigt |
-| A10 | Frontend-Gerüst | abgeschlossen | 66 Tests, Testphase bestanden |
-| A11 | Listenansicht | abgeschlossen | 54 Tests; A11-1 erledigt |
-| A12 | Detailansicht | abgeschlossen | 52 Tests (T10/A12-3 geschlossen) |
-| A13 | Formulare (Aufgabe/Welle) | abgeschlossen | 81 Tests + Moli-Smoke |
-| A14 | Entscheidungen-/Projekt-Ansicht | abgeschlossen | 55 Tests + Moli-Smoke; Review freigegeben |
-| A15 | `setup.sh`/`verify.sh`/README | abgeschlossen | 13/13 Tests; R12/tools-Cache erledigt |
-| A16 | Colab-Startzelle `start_colab.py` | abgeschlossen | 19 Tests; A16-2/3 + Port-Freigabe-Iterationen (final: neuer Browser-Tab via `proxyPort`, 2026-11-15) |
-| A17 | E2E-Absicherung/Abnahmelauf | abgeschlossen | Abnahmelauf bestanden (23/23 API-E2E, Moli 0 Konsolenfehler, Hash-Nachweis) — **MVP abnahmefähig** |
-| A18 | Startskript `start.sh` + `docs/colab-start.md` | abgeschlossen | 7 Tests; A18-1–3 erledigt |
-| A19 | `verify.sh`-Fallback `definitions/app` | abgeschlossen | 5 Tests; `verify.sh` Exit 0 im Dev-Repo |
-| A20 | `setup.sh`-Härtung (Moli/Skill-Installation) | abgeschlossen | Pin v1.1.24 + SHA256, `command -v moli`-Guard; Commits `c1a1a23`/`4d1f335`/`f0a37c8`/`cd91b78` |
-| A23 | Feature-Liste (`features.js`) | abgeschlossen | 92 Tests (H1 geschlossen = Planzahl-Fehlzählung, auf 92 korrigiert); Kleinbefunde K1–K6 erledigt; Review freigegeben (2026-11-15); App-Suite **864** (Zeitstand A23) |
-| A24 | Neues Projekt/Reset (`definitions/tools/neues_projekt.py`) | abgeschlossen | 32 Tests, `tools/tests` **69 grün**; Bestätigungs-Review **FREIGEGEBEN** (2026-11-15): beide wesentlichen Sicherheits-Befunde behoben; Quelle jetzt `definitions/tools/` (A26), `tools/` ist Spiegel |
-| A25 | Suche in der Listenansicht (`liste.js`) | abgeschlossen | 72 Tests (`test_suche.py`), Testphase **S1–S6 bestanden** (44/44, 2026-11-15), Review freigegeben; die 2 Klein-Befunde sind in A27 behoben und werden dort abgeschlossen |
-| A26 | Werkzeug-Verteilung + Root-Suite-Konflikt | in Review | `neues_projekt.py` nach `definitions/tools/` (Quelle), Root-Suite-Konflikt über `conftest` gelöst, `setup.sh` 4b) verteilt Werkzeug + Vorlage; Root-Suite **1118** grün; Review + Verteilungs-E2E laufen |
-| A27 | Wellen-Zuordnung (nachträglich, filtern, Wellen-Sicht) | in Review | Umsetzung 2026-11-15: Paket 1 Backend (`meta.py`-`welle`, `set_meta` atomar) + Paket 2 Frontend (Dropdown, Filter, Wellen-Detail), 98 neue Tests, App-Suite **1039** grün; Review + S1–S7 laufen; die 2 A25-Klein-Befunde sind dort mitbehoben |
-| A28 | Benachrichtigung bei neuer Aufgabe | in Planung | Planung fertig (10 AK, 36 Tests T1–T36, 4 Pakete); Projektleitung **freigegeben** (2026-11-15), Umsetzung nach A30/A31 |
-| A29 | Wellen abarbeiten | in Planung | Planung fertig (10 AK, 24 Tests T1–T24, 3 Pakete); Projektleitung **freigegeben**; Gate: Aufgabe **und** Welle freigegeben; Umsetzung nach A28 |
-| A30 | Was passiert gerade | in Planung | Aus der App angelegt, angenommen und von der Projektleitung priorisiert/freigegeben; Paket 1 (Backend `arbeitsstand.py`) + Paket 3 (Doku) laufen, UI-Paket nach A27-Review |
-| A31 | Übersicht Liste um Welle ergänzen | in Planung | Aus der App angelegt, angenommen (Priorität hoch); Planung fertig (9 AK, 22 Tests + 4 UI-Szenarien, 3 Pakete, 5. Spalte „Welle"); wartet auf Freigabe, Umsetzung nach A30 |
-| A32 | Neues-Projekt-Flow (`start.sh --neu` + Erststart-Hinweis) | in Planung | Aus der App angelegt, angenommen und **sofort gepusht**; Entscheidung der Projektleitung: `start.sh` schlägt bei vorbefülltem `wissen/` den Reset vor (Nein = Normalstart), Flag `--neu`; Reset-Logik nur über A24-Werkzeug; Umsetzung läuft |
-| A33 | Kleinbefunde-/Aufräum-Takt (gebündelt) | in Planung | Sammel-Aufgabe für offene Kleinbefunde aus Reviews/Post-MVP in Batches mit je eigenem Commit; Planung läuft, Umsetzung nach A30/A31/A32 |
-| A21 | Desktop-Modus/Lokal-Betrieb | vorgemerkt (Post-MVP) | Nummer reserviert, noch keine Aufgaben-Datei |
-| A22 | E2E-Regressionstest (`test_e2e.py`) | offen (Post-MVP) | Datei angelegt; überführt die T1/T2/T7-Kette aus A17 |
+| A1–A20 | MVP-Strecke | abgeschlossen | — |
+| A23/A24/A25 | Feature-Liste / Neues Projekt / Suche | abgeschlossen | — (Doku-Nachträge siehe A33-B9) |
+| A27 | Wellen-Zuordnung | in Doku (reif) | Doku-Runde → `abgeschlossen` |
+| A30 | Was passiert gerade | in Doku (reif) | Doku-Runde → `abgeschlossen` (Testlücke T5 → A33/A30-R1) |
+| A31 | Welle in der Liste | in Doku (reif) | Doku-Runde → `abgeschlossen` (K1–K3/H1–H6 → A33) |
+| A32 | Neues-Projekt-Flow | in Doku (reif) | Doku-Runde → `abgeschlossen` (H1/H2/H3/H6 → A33-Polish) |
+| A26 | Verteilung + Root-Suite | in Nachbesserung | **Rücklauf W1/W2 abgebrochen** — WIP vervollständigen (siehe unten), dann Bestätigungs-Review; K1/K2/K5 → Doku |
+| A28 | Freigabe + Wahrnehmung | in Nachbesserung | **Welle A abgebrochen** (W2/K7/W3/K5 vervollständigen); **Welle B offen** (W1/K1/K2); dann Bestätigungs-Review |
+| A29 | Wellen abarbeiten | in Review | **Review + Testphase abgebrochen** — Zwischenurteil/-bericht einholen, ggf. Nachbesserung, dann Doku/Abschluss |
+| A34 | Unter-Aufgaben | in Umsetzung | **Paket 1+2 abgebrochen** (WIP prüfen/fertigstellen); danach Paket 3 (UI, erst nach A33-B8), Paket 4 (Doku), Review/Test |
+| A33 | Kleinbefunde-/Aufräum-Takt | in Umsetzung | **B5+B6+B8 abgebrochen** (vervollständigen); offen: B1 (nach A26!), B4, B7, B9 + Nachträge (siehe A33-Abschnitt) |
+| A35–A38 | Status-Mapping serverseitig / schreibgeschuetzt-Signal / DOM-Harness / Log-Anker | offen (vorgemerkt) | Umsetzung nach A29/A33 (Reihenfolge A35 → A36; A37/A37 nach A29) |
+| A22 | E2E-Regressionstest | offen (Post-MVP) | T1/T2/T7-Kette aus A17 überführen |
+| A21 | Desktop-Modus/Lokal-Betrieb | vorgemerkt | Nummer reserviert, keine Datei |
+| **A39** | **Gemeinsame Test-/Abstimmungsrunde + README-Abschluss** | **läuft (owner: mensch)** | Projektleitung testet; PM sammelt Befunde → Lückenliste → Folgeaufgaben → README final |
 
-**Teststand (2026-11-15):** **Zählumfang „Gesamtsuite" = App-Suite + `tools/tests`** (`definitions/tools/tests` wird separat ausgewiesen). **Basis `07ad675` = 1011** (App 942 + tools 69) — `bash definitions/verify.sh .` → Exit 0. Zeitstände des Arbeitsbaums: **App-Suite 1039** (Stand A27), **Root-Suite 1118** (Stand A26); **laufende Takte zählen nach**, daher keine „Gesamtsuite"-Zahl für den Arbeitsbaum. Serialisiert messen — Parallelbetrieb ist die bekannte Flaky-Zone.
+# Laufende/abgebrochene Arbeiten — Rest-Umfang im Detail (WIP-Commit `f00e81a`)
 
-# Offene Punkte (Post-MVP)
+Die sechs laufenden Subagenten wurden um ~06:30 per STOPP angehalten; ihre unvollständige Arbeit steckt im WIP-Commit. **Nächste Session: zuerst `git status` + die WIP-Dateien sichten, Pakete sauber zu Ende bringen oder gezielt zurückrollen.**
 
-* **A26/A27 in Review** — A26 (Werkzeug-Verteilung + Root-Suite-Konflikt, Root-Suite 1118 grün) und A27 (Wellen-Zuordnung, App-Suite 1039 grün) warten auf Review-Abschluss und Testphase; A27 schließt dabei die 2 A25-Klein-Befunde mit ab.
-* **A28–A33 in Planung/laufend** — A28/A29 (freigegeben, Umsetzung nach A30/A31), A30 (Paket 1+3 laufen, UI-Paket nach A27-Review), A31 (Planung fertig, wartet auf Freigabe, Umsetzung nach A30), A32 (`start.sh --neu` + Erststart-Hinweis, Annahme + Sofort-Push erledigt), A33 (Kleinbefunde-/Aufräum-Takt, Planung läuft). Details im [Aufgaben-Index](../wissen/aufgaben/index.md).
-* **A22** E2E-Regressionstest (`test_e2e.py`) — T1/T2/T7-Kette aus A17 dauerhaft überführen (offen).
-* **A21** Desktop-Modus/Lokal-Betrieb (vorgemerkt, pywebview nach MVP).
-* A12-1 Status-Mapping-Spiegel (Mapping-Drift langfristig lösen); A12-Grenze: Schreib-UI auf reservierten Dateien bleibt sichtbar (fail-loud 403) — Ausblendung erst mit `schreibgeschuetzt`-Signal der API.
-* A13-3 Linktext-Kosmetik (bräuchte Wellen-Titel-Lookup).
-* A4-1 `#`-Maskierung in `ziel`-Zeilen; A4-2 `welle`-Feld in Spec/phasen.md ergänzen.
-* A5-B3 `description`-Feld bei Wellen; A5-B4 Slug-Logik-Duplikat.
-* A6-1 H1/H5/H7-Belege je H-Punkt (H-Definitionen fehlen im Bundle); A6-2 T2 Body-Hash optional.
-* A7-2 Startfehler-Meldung nennt absoluten Pfad.
-* A9-K3 403-Notiz/Spec-Abgleich; A9-K4 TOCTOU als R8-Einschränkung (bekanntes Risiko).
-* A14-5 `istDatei`/Meldungen nach `api.js`; A14-6 DOM-Harness-Fork `MINI_DOM` konsolidieren; A14-7 Request-Sequenz-Guard gegen Races; A14-9 Anker je Log-Eintrag.
-* A16-1 R11-Zitat korrigieren oder Ausweichport vormerken; A16-4 Env-Weitergabe.
-* N5 Cache-Fixture schreibt ins Definitions-Repo (kosmetisch); N8 T7 verschärft sich mit neuen Testdateien (Betriebshinweis).
-* A20 Pin-Pflege: URL + SHA256 bei Moli-Updates zusammen ändern.
-* Optional: Fett-Rendering des Nachtrag-Markers; owner-Signal-Testnotiz (A17-T1); Root-Suite-Konflikt → A26.
+1. **A26-Rücklauf (W1/W2 + K3/K4):** WIP in `definitions/setup.sh`, `conftest.py`, `definitions/tools/tests/test_verteilung.py`, `tools/tests/test_verteilung.py`, `definitions/README.md`. Offen: Selbstkopie-Guard (realpath → „übersprungen (Quelle = Ziel)"), Dev-Repo überspringt 4b/5/10 (kein doppeltes `app/`), Regressionsfall Dev-Layout, K3-Testhärtung, K4-Namensregel. Danach **Bestätigungs-Review**.
+2. **A28-Welle A:** WIP in `definitions/app/tests/test_freigabe.py`, `definitions/app/tests/test_neue_aufgabe_signal.py`, `wissen/projekt/technische-spec.md`. Offen: W2 (T10 über `wert ∈ {True,False}` parametrisieren + Mutantenprobe), K7 (Doppel-Param), W3 (Spec-Tabelle `freigabe`-Zeile), K5 (Modultest „leerer Bestand → A1"). **Welle B (komplett offen):** W1 (`overview.py` `NUMMER_DATEI` um `$` ergänzen + T5-Fall `a<N>.md` ohne Slug), K1 (`test_welle_spalte.py` `neu`-Fixture-Default **entfernen** — A31 scharf halten), K2 (`test_arbeitsstand.py` T12 auf exakte Schlüsselmenge). Danach **Bestätigungs-Review**.
+3. **A29 (Review + Testphase):** Beide Prüfläufe abgebrochen — Zwischenurteil/-bericht fehlt vollständig. Offen: Review AK-1… + Gate-Mutantenprobe, Testphase S1–S5 (Moli), HTTP-Matrix, Verteilungs-Probe, Regression. Danach ggf. Nachbesserung → Doku/Abschluss.
+4. **A34-Paket 1+2:** WIP in `definitions/app/kennung.py` (neu), `definitions/app/tests/test_kennung.py` (neu), `definitions/app/tests/test_unteraufgabe.py` (neu), `definitions/app/overview.py`, `definitions/app/neu_aufgabe.py`. Offen: Paket 1+2 fertigstellen (Grammatik + `parent`-Anlage: kleinste freie 001–999, Tiefe 1 → 400, `welle` ererbt, `welle`+`parent` → 400, Eltern nicht `abgeschlossen`) bis alle Tests grün; danach **Paket 3 (UI `unteraufgaben.js` + `detail.js`, erst nach A33-B8)**, Paket 4 (Doku), T43: `test_freigabe_ui.py` T33-Request-Zähler 2→3 nachziehen; dann Review/Test.
+5. **A33-B5+B6+B8:** WIP in `definitions/app/server.py`, `definitions/app/tests/test_server.py`, `definitions/app/tests/test_meta.py`, `definitions/app/static/js/api.js`, `detail.js`, `features.js`, `liste.js`, `projekt.js`, `tests/test_welle_spalte.py`, `tests/test_arbeitsstand_ui.py`, `tests/test_static.py`. Offen: B5 (Startfehler ohne Pfad), B6 (T2 Body-Hash), B8 (`istDatei` zentral + Nachträge A27-F1 Wellen-Cache lazy / A27-K2 `bekannteWellen` für `wellen` / A31-H1 Titel-Map entkoppeln / A31-H3/H4 Testschärfung). **Danach weitere Batches:** B1 (Werkzeug-Härtung — **erst nach A26-Rücklauf**), B4 (Wellen-Linktext, A13-3), B7 (Slug-Konsolidierung, A5-B4), B9 (Doku-Sammel: A4-2/A6-1/A9-K3/A9-K4/A16-1/A24-H2 + A5-B2-Asymmetrie dokumentieren).
+6. **A33-Nachträge (gesammelt, nicht im obigen WIP):** A30-R1 (T5 Nicht-String-Fälle), A31-K3 (T19–T21 im verteilten Projekt per `skipif`), A32-H1/H2/H3/H6 (`start.sh`-Polish), A27-K1 (`meta.py` `_wellen_pfad` unquote — mit B6), A28-Testvermerk (A31-Fixture-Text präzisieren: Feld wird weggelassen, nicht `false` gesetzt).
 
-# Weiterführung — nächste Schritte
+# Offene Punkte (klein, in A33 verankert)
 
-1. **Laufende Nachläufe abschließen:** A26 (Review + Verteilungs-E2E) und A27 (Review + UI-Szenarien S1–S7, schließt die 2 A25-Klein-Befunde ab) abschließen; danach die Post-MVP-Reihe A30 → A31 → A28 → A29 sowie A32/A33; anschließend Doku/Abschluss und Sicherungs-Commit.
-2. **MVP-Abnahme durch die Projektleitung** (Kurzbericht: A17-Belege — 23/23 API-E2E, 761 passed, `verify.sh` Exit 0, Moli 0 Konsolenfehler, Hash-Nachweis; Aufgaben A1–A20 sowie A23–A25 abgeschlossen; Teststand-Basis 1011, Arbeitsbaum-Zeitstände App 1039/Root 1118).
-3. **Nach der Abnahme (Post-MVP):** A22 (E2E-Regression), A21 (Desktop-Modus) sowie die Post-MVP-/Aufräum-Punkte — gebündelt im Aufräum-Takt A33 (bereits in Planung).
-4. **Sicherungs-Commits** je Takt und nach jedem grünen Tester-Stand weiterführen (Regel „Sicherungs-Push nach grünen Tests").
+Siehe A33-Befund-Katalog in `wissen/aufgaben/a33-kleinbefunde-aufräum-takt.md` (18 Befunde in 9 Batches + Nachträge). Größere Punkte sind als eigene Aufgaben A35–A38 ausgegliedert. Betriebs-Hinweise (kein Code): A20-Pin-Pflege (Moli-URL+SHA256 gemeinsam), N8 (Suite wächst mit neuen Testdateien), Verteilungs-Prüfungen künftig aus committeten Snapshots (A31-K3-Ursache).
+
+# Wichtige Regelungen (Auswahl, Details im Entscheidungslog)
+
+- **Freigabe-Gate:** Umsetzung beginnt erst nach Freigabe der Projektleitung (Menschen-Recht; KI-Weg → 403; fail-closed `freigabe: true`). Phase „3b. Freigabe" in `phasen.md`. Freigaben A28/A29 als `freigabe: true` nachgetragen (stellvertretender Menschen-Kanal per Datei-Edit — künftig via `POST /api/freigabe`).
+- **Neue Aufgaben:** wahrnehmen → ID + Titel (`A<N>: <Titel>`) + Dateiname → **sofort pushen** → planen → auf Freigabe warten → umsetzen.
+- **Zählumfang:** „Gesamtsuite" = Root-Suite = App-Suite + `definitions/tools/tests`.
+- **Testisolation:** nur tmp-Bundles, nie `wissen/`; Verteilungs-/Setup-Tests nur auf tmp-Ziele.
+- **Freigabe-Interpretation:** „alle ausstehenden Features fertig machen" der Projektleitung gilt als Freigabe der Feature-Strecke (A31/A34 darunter); revidierbar.
+
+# Weiterführung — nächste Schritte (in dieser Reihenfolge)
+
+1. **A39 läuft:** Projektleitung testet. PM: Test-Befunde sammeln und als Lückenliste „was fehlt für sauberes Zusammenarbeiten" dokumentieren; daraus Folgeaufgaben ableiten (ID+Titel+Sofort-Push). Danach README final aktualisieren und bewusste Pause ohne neue Feature-Takte.
+2. **WIP-Arbeit sauber abschließen** (Reihenfolge wegen Datei-Konflikte): A26-Rücklauf → A28-Welle A + B → A29-Review/-Test nachholen → A33-B5/B6/B8 vervollständigen → A34-P1+2 fertigstellen → A33-B8 → A34-P3 (UI) → A33-B1/B4/B7/B9 → A34-P4. Jeweils: Review + Testphase, Commits je Takt.
+3. **Doku-Runde (`documenter`):** A27/A30/A31/A32 abschließen; A28-K4-Plan-Korrektur; A28-Testvermerk; Standzahlen nachziehen; Ergebnisprotokolle vervollständigen (A26-Datei fehlt!).
+4. **Bestätigungs-Reviews** für A26- und A28-Rückläufe; A29-Review/-Test abschließen.
+5. **Danach (Post-MVP):** A35–A38, A22, A21.
 
 # Umgebungs-Wiederherstellung (neue Colab-Sitzung)
 
-1. **Repository klonen** (im Zielverzeichnis, z. B. `/content`):
-   ```bash
-   git clone https://github.com/rhigazi/pmTool
-   cd pmTool
-   ```
-2. **Umgebung starten:**
-   ```bash
-   bash start.sh --colab   # in Colab: startet Server + öffnet Browser-Fenster
-   # alternativ lokal: bash start.sh   (Server auf http://localhost:5000)
-   ```
-   Das Skript installiert fehlende Pakete (`flask`, `pyyaml`, `pytest`), prüft die Projektstruktur und startet die App mit `BUNDLE_ROOT=$PROJEKT/wissen` (absolut gesetzt, `PROJEKT` = Projektroot).
-3. **Telegram-Konfiguration neu erzeugen** (`config.json` ist gitignored und wird **nicht** mitgeklont!) — **nach** `bash start.sh --colab`: Colab-Secrets `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` setzen und die Zelle aus `docs/colab-start.md` ausführen.
-4. **OpenCode-CLI im Projektverzeichnis starten** — Projektregeln (`AGENTS.md`) und Subagenten (`.opencode/agents/`) werden automatisch gefunden. Session-Start-Regel: zuerst `wissen/index.md` lesen.
-5. **Kontrolle:** `bash definitions/verify.sh .` → Exit 0. Hinweis: Abschnitt 7 akzeptiert `app/` **oder** `definitions/app/` (Fallback) — `verify.sh` ist damit auch im Dev-Repo ohne verteiltes `app/` Exit 0. `moli` wird über `setup.sh --global` installiert (bzw. ist per Symlink im PATH).
+1. `git clone https://github.com/rhigazi/pmTool && cd pmTool`
+2. `bash start.sh --colab` (lokal: `bash start.sh`) — erkennt bei Repo-Pull vorbefüllte Projektdaten und schlägt interaktiv den Reset vor (A32); `--neu` setzt gezielt zurück (Backup + saubere Vorlage).
+3. Telegram-Secrets (`config.json` ist gitignored!): Colab-Secrets `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`, Zelle aus `docs/colab-start.md`.
+4. OpenCode-CLI im Projektverzeichnis starten; Session-Start-Regel: `wissen/index.md` zuerst.
+5. Kontrolle: `bash definitions/verify.sh .` → Exit 0. `moli` liegt unter `/root/.local/bin/moli` (nicht im PATH — explizit aufrufen).
 
 # Historie (Kurz)
 
-1. Sitzungsübergabe: Projekt angehalten, Übergabeprotokoll, Startskript (A18).
-2. Weiterführung Takt 1: Zwischenstände A1–A19 eingearbeitet, A2 abgeschlossen, A19 angelegt.
-3. Review-Runden 1+2, Bestätigungs-Review (A1/A5/A7/A9/A15/A19 review-frei), gebündelte Testphase, Testphase 2 (A12/A13/A14), Moli-Smoke erfolgreich.
-4. Kleinbefunde-Takt (4 Batches, je eigener Commit) — 761 grün.
-5. A17-Abnahmelauf bestanden → **MVP abnahmefähig** (alle A1–A20 abgeschlossen).
-6. Post-MVP-Strecke 2026-11-15: A23 (Feature-Liste, 864) und A24 (Neues Projekt, 862) umgesetzt; A25 (Suche, `test_suche.py` 72 Tests) umgesetzt → App-Suite **936**. Reviews: A23 und A25 freigegeben, A24 nachgebessert (beide Sicherheits-Befunde behoben).
-7. Doku-Runde 2026-11-15: **A23, A24 und A25 abgeschlossen** (A23 92 Tests/K1–K6 erledigt, A24 32 Tests + Bestätigungs-Review FREIGEGEBEN + 69 tools-Tests, A25 72 Tests + Testphase S1–S6 44/44). Teststand-Zählumfang festgelegt: „Gesamtsuite" = App-Suite + `tools/tests` (Basis `07ad675` = **1011**); A26/A27 in Review (Root-Suite 1118, App-Suite 1039); A28–A33 aufgenommen.
+1.–5.: siehe frühere Protokollstände (Projektstart, MVP A1–A20, Abnahmelauf A17 bestanden).
+6. Post-MVP-Strecke 2026-11-15: A23/A24/A25 (abgeschlossen), A26/A27, Kleinbefunde-Takte.
+7. Groß-Takt 2026-11-15 (diese Session): A27/A30/A31/A32 komplett (review-frei + testbestanden), A28 (Paket 0–3 umgesetzt, Review → Nachbesserung W1–W3), A29 komplett umgesetzt (Review/Test offen), A28/A29-Freigaben nachgetragen, A33 (B2/B3 erledigt, Nachträge gesammelt), A34 gestartet, A35–A38 angelegt, A39 als Abschluss-Meilenstein definiert. **STOPP + WIP-Commit `f00e81a`** auf Anweisung der Projektleitung (Beginn der Testphase A39).
