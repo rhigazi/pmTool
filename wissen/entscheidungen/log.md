@@ -2,6 +2,14 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-15: A28 und A29 durch die Projektleitung freigegeben
+
+**Entscheidung:** Die Projektleitung hat A28 („Benachrichtigung bei neuer Aufgabe") und A29 („Wellen abarbeiten") am 2026-11-15 **ausdrücklich freigegeben** („A29,A28 sind freigegeben", Menschen-Kanal). Die Freigaben sind im Frontmatter der Aufgaben-Dateien vermerkt (`aktuell`); sobald das A28-Paket-0-Fundament (`freigabe`-Feld) existiert, werden sie als `freigabe: true` nachgetragen. Die Umsetzung startet in der festgelegten Reihenfolge **A27 (läuft) → A30 → A31 → A28 → A29** (Datei-Konflikte `liste.js`/`detail.js`/`meta.py`/`overview.py`; G15–G23). **A31 ist noch nicht freigegeben** — fail-closed: Umsetzung erst nach ausdrücklicher Freigabe; Rückfrage an die Projektleitung läuft.
+
+**Begründung:** Freigabe-Gate (Standardentscheidung 2026-11-15): Umsetzung beginnt erst nach geklärt + freigegeben. Die Reihenfolge minimiert Datei-Konflikte bei maximaler Parallelität der Review-/Teststränge.
+
+**Auswirkung:** Coder-Takte A30/A31/A28/A29 nacheinander (jeweils Review + Testphase); A29 startet zusätzlich erst nach A28 Paket 0 + 2 (grün/committed) laut Plan.
+
 ## 2026-11-15: H1-Schluss (A23) und fester Zählumfang der Gesamtsuite
 
 **Entscheidung:** (1) **H1 (A23-Testzahl 92 vs. 93) wird geschlossen** — die Planzahl war falsch: 71 `def test_`-Zeilen inkl. des Fixtures `test_bundle` + 22 parametrisierte Fälle ⇒ 70 echte Tests + 22 = **92** = pytest-Collect; kein Test fehlt, die Abdeckung (T1–T23) ist vollständig. Planzahl auf 92 korrigiert; die kosmetische Fixture-Umbenennung geht in den Aufräum-Takt. (2) **Der Zählumfang „Gesamtsuite" wird festgelegt:** App-Suite (`definitions/app/tests`) + `tools/tests`; `definitions/tools/tests` wird separat ausgewiesen. Der Stand **1015 war nicht reproduzierbar** und wird auf **1011** korrigiert (Basis `07ad675`: 942 + 69). Stand 2026-11-15 (Arbeitsbaum): 995/996 — der eine „failed" ist fremde halbfertige A27-Arbeit (`test_welle_zuordnung.py` noch rot), kein A25/A23-Regress.

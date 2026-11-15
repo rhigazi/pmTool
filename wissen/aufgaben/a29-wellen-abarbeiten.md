@@ -8,7 +8,7 @@ phase: 2 Planung
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: "PM: Planung fertig (10 AK, 24 Tests, 3 Pakete) — wartet auf Freigabe; Umsetzung erst nach A27/A28"
+aktuell: "PM: FREIGEGEBEN (Projektleitung 2026-11-15) — Umsetzung nach A28 (Gate: Welle + Aufgabe)"
 ---
 
 # Ziel
@@ -116,7 +116,7 @@ Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das M
   - **Paket 3 — Doku:** AK-9, Prüfschritte T23/T24; parallel zu Paket 2.
   - **Reihenfolge im Paket:** Test → rot → Minimum → grün. Paket 1 vor Paket 2 (UI braucht die Felder); Paket 3 parallel zu Paket 2.
 - **Reihenfolge-Empfehlung und Freigabe-Gate:**
-  1. **A27 abgeschlossen** (Wellen-Zuordnung, Filter, Wellen-Sicht, `detail.js`/`liste.js` committed) und **A30 abgeschlossen** (Arbeitsstatus nutzt `liste.js`/`detail.js`).
+  1. **A27 abgeschlossen** (Wellen-Zuordnung, Filter, Wellen-Sicht, `detail.js`/`liste.js` committed), **A30 abgeschlossen** (Arbeitsstatus nutzt `liste.js`/`detail.js`) und **A31 abgeschlossen** (Wellen-Spalte in `liste.js`).
   2. **A28 Paket 0 (Freigabe-Fundament) und Paket 2 (Aufgaben-UI) abgeschlossen** — A29 nutzt `freigabe.py`, `POST /api/freigabe`, `freigabe` im Read-Modell und die gemeinsame Titel-Zellen-Hilfe.
   3. **Freigabe von A29 durch die Projektleitung** (`freigabe: true` in dieser Datei) — **Start-Gate**. Fehlt sie, bleibt A29 `geplant` und wird nicht an den `coder` vergeben (Selbstanwendung der neuen Regel). Die Freigabe kann direkt in der Datei gesetzt werden (Menschen-Recht, auch vor A28-Fertigstellung), die **Umsetzung** wartet dennoch auf Schritt 1 und 2.
   4. Danach **Paket 1 → 2**, **Paket 3 parallel zu 2**; anschließend Review, Test (S1–S5), Doku.

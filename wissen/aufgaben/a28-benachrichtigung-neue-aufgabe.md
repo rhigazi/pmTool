@@ -8,7 +8,8 @@ phase: 2 Planung
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: "PM: Planung fertig (10 AK, 36 Tests, 4 Pakete) — wartet auf Freigabe der Projektleitung"
+aktuell: "PM: FREIGEGEBEN (Projektleitung 2026-11-15) — Umsetzungsreihe nach A30/A31"
+welle: wellen/w2.md
 ---
 
 # Ziel
@@ -121,7 +122,7 @@ Harness: `tests/dom_helfer.py` nutzen (wird in **A30** angelegt: Mini-DOM + Node
   - **`freigabe`-Werte:** geschrieben wird ausschließlich `true`/`false`; gelesen wird ausschließlich `is True` als freigegeben (`ist_freigegeben`). Kein Löschen des Schlüssels (sichtbarer Zustand statt fehlender Information); Default für Altbestand bleibt „nicht freigegeben".
   - **`neu` wird abgeleitet, nicht gespeichert:** kein zusätzliches Frontmatter-Feld „erkannt/angenommen" (würde eine zweite Wahrheit schaffen und bei Umbenennung veralten). Die Ableitung ist idempotent und für App- und Direktanlagen identisch.
   - **`naechste_kennung` ist ein Hinweis, keine Reservierung:** Sie wird bei jedem Detailaufruf neu berechnet; zwei gleichzeitig angelegte Aufgaben können dieselbe Nummer sehen — die KI vergibt die Kennung weiterhin selbst und prüft Kollisionen (bestehende Regel).
-  - **Marke statt neuer Spalte/Filter:** `erstelleTabelle` bleibt bei vier Spalten (A11/A27-Vertrag, inkl. A27-Tests zur Kopfzeile); die Marke sitzt in der Titel-Zelle und ist damit auch in der Übersicht sichtbar. Ein `neu`-Filter ist **nicht** Teil von A28 (kein Eingriff in die A25/A27-Filterlogik; bei Bedarf eigene Aufgabe).
+  - **Marke im Titel, keine neue Spalte/kein Filter:** Die Welle erhält ab A31 eine eigene Spalte; A28 erweitert die Tabelle nicht, sondern setzt die „neu"-Marke in die Titel-Zelle (kombinierbar mit der Welle-Spalte). Ein `neu`-Filter ist **nicht** Teil von A28 (kein Eingriff in die A25/A27-Filterlogik; bei Bedarf eigene Aufgabe).
   - **UI nur im Detail schreibend:** Freigeben/Entziehen ausschließlich im Aufgaben-Detail (nicht in der Liste), damit kein versehentlicher Klick in einer Tabelle schreibt und das A12-Muster (ein `speichereMeta`-analoger Aufruf) erhalten bleibt. Für die Welle kommt dieselbe Bedienung in A29 ins Wellen-Detail.
   - **Kein `style.css`-Eingriff:** Marke nutzt `classList.add("status")` (bestehende Pille), Hinweis `class="hinweis"` — dadurch bleibt `index.html`/`style.css` unverändert (A10-Linie, kein Konflikt mit A23).
 - **Konfliktgruppen (neu):**
@@ -135,7 +136,7 @@ Harness: `tests/dom_helfer.py` nutzen (wird in **A30** angelegt: Mini-DOM + Node
   - **Paket 3 — Doku/Regelwerk:** AK-9. Parallel zu Paket 2 möglich (disjunkte Dateien), Prüfschritt T36.
   - **Reihenfolge im Paket:** Test schreiben → rot → Minimum → grün → nächster Test. Paket 0 und 1 teilen `overview.py` → **nacheinander** vom selben Coder; Paket 2 nach Paket 1; Paket 3 parallel zu Paket 2.
 - **Reihenfolge-Empfehlung und Freigabe-Gate:**
-  1. **A27 abschließen** (Frontend `liste.js`/`detail.js` in Umsetzung, G13/G14 belegt) und **A30 abschließen** (Arbeitsstatus nutzt `liste.js`/`detail.js` und `overview.py`) — vorher **kein** Start von A28 Paket 0/2.
+  1. **A27 abschließen** (Frontend `liste.js`/`detail.js` in Umsetzung, G13/G14 belegt), **A30 abschließen** (Arbeitsstatus nutzt `liste.js`/`detail.js` und `overview.py`) und **A31 abschließen** (Wellen-Spalte nutzt `liste.js`) — vorher **kein** Start von A28 Paket 0/2.
   2. **Freigabe von A28 durch die Projektleitung** (`freigabe: true` in dieser Datei) — **Start-Gate**. Aktuell fehlt das Feld; die Aufgabe ist damit nicht freigegeben und die Umsetzung darf **nicht** beginnen (Selbstanwendung der neuen Regel).
   3. Danach **Paket 0 → 1 → 2**, **Paket 3 parallel zu 2**; anschließend Review, Test (S1–S5), Doku.
   4. **A29 startet erst nach A28** (Paket 0 und 2 müssen grün und committed sein) **und** nach eigener Freigabe.
