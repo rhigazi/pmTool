@@ -6,7 +6,7 @@ task_status: in Nachbesserung
 phase: 4 Nachbesserung
 priority: mittel
 assigned_to: coder
-aktuell: "PM: Review NACHBESSERUNG (W1/W2 + K1–K5 entschieden) — Rücklauf nach Tester-Rückkehr"
+aktuell: "tester: FREIGEGEBEN (1118 ×2, E2E + Drift grün) — coder: Rücklauf W1/W2 + K3/K4 läuft"
 feature: /features/okf-projekt-manager-spa.md
 owner: ai
 ---
