@@ -158,6 +158,8 @@ definitions/app/
 | 8 | Body | `# Ziel` und `# Aufgaben` vorhanden |
 | 9 | Kürzel | `Wave 1 — MVP` → `wave-1-mvp.md` |
 
+**Beschluss A5-B2 (PM, 2026-11-15):** `FALLBACK_KUERZEL` bleibt bewusst robust — bei leerem Wellen-Slug entsteht ein Fallback-Kürzel statt `EingabeFehler`. Die Asymmetrie zu A4 (dort `EingabeFehler`) ist eine bewusste Entscheidung, kein Fehler: Der Aufgaben-Titel ist Pflichtinhalt, während die Welle mit Ersatz-Kürzel anlegbar bleiben soll. Dokumentiert in der [Technischen Spec](/projekt/technische-spec.md); kein Code-Punkt.
+
 ## A6 — Meta-Update `meta.py` (owner/Status mit Rechteprüfung)
 
 - **user_story:** US-5, US-7 · **Priorität:** hoch · **Konfliktgruppe:** G6 · **Abhängigkeiten:** A1, A2
@@ -179,6 +181,8 @@ definitions/app/
 | 10 | Kombiniert | beide Felder, ein Schreibvorgang |
 | 11 | „zuletzt geändert" | mtime nachher ≥ vorher |
 | 12 | Pfad außerhalb | `BundlePfadFehler` |
+
+**Doku-Vermerk A6-1 (2026-11-15):** Die Belege zur Testhärtung **H1/H5/H7** stehen im Doku-Eintrag vom 2026-11-14 in [A6](/aufgaben/a6-meta.md) (Testnamen u. a. `test_kombiniert_verboten_kein_schreibvorgang`, `test_ohne_aenderung_kein_schreibvorgang`, `test_owner_wird_nicht_doppelt_geschrieben`, `test_fehlende_datei`, `test_crlf_body_bleibt_bytegleich`, `test_task_status_ziele_passen_zum_status_mapping`). Die **H-Definitionen selbst fehlen im Bundle** (nur im Commit-Text `9f42200` genannt) — eine 1:1-Zuordnung H-Punkt → Testname ist daraus nicht belegbar. Offener Doku-Punkt an den PM/`reviewer` (kein Code; A6-2 separat in B6).
 
 ## A7 — Server-Gerüst & Start `server.py`
 
@@ -419,10 +423,10 @@ A7 ─► A16        A1+A7+A10 ─► A15        alle ─► A17
 | R5 | Wellen-Struktur fehlt | Vom PM nachgepflegt: `wissen/wellen/index.md` angelegt, in `wissen/index.md` verlinkt. |
 | R6 | Markdown-Rendering | Eigener Minimal-Renderer, `textContent`, kein CDN. |
 | R7 | „zuletzt geändert" | mtime als ISO-Zeitstempel, lokal formatiert; Frontmatter-`updated` ist Ausbau. |
-| R8 | Gleichzeitige Schreibzugriffe | MVP: atomares Schreiben + Re-Read, kein Locking; als bekanntes Risiko dokumentiert. |
+| R8 | Gleichzeitige Schreibzugriffe | MVP: atomares Schreiben + Re-Read, kein Locking; TOCTOU zwischen Prüfung und Schreiben (KI + App) als bekanntes Risiko dokumentiert. |
 | R9 | Testisolation | **Verbindlich:** Test-Bundle unter `/tmp/opencode/moli-bundle`; `/content/pmTool/wissen` nie beschrieben (A17 prüft per Hash). |
 | R10 | `feature:`-Feld | **Optional** im MVP; Feature-Dateien erst bei Feature-Beginn. |
-| R11 | Port-Wahl Colab | Default 5000, Ausweichport + klare Meldung bei Belegung. |
+| R11 | Port-Wahl Colab | Default 5000, **kein** automatischer Ausweichport; bei Belegung klare Meldung (`server.py`: Exit ≠ 0 „Port … ist bereits belegt"; Startzelle: „läuft bereits", kein Doppelstart). Ausweichport ist optionaler Post-MVP-Punkt. |
 | R12 | `verify.sh`-Erweiterung | Neuer Abschnitt, bestehende Blöcke unverändert. |
 | R13 | Datum im Marker | Serverzeit UTC, Format `YYYY-MM-DD`, als Parameter injizierbar. |
 | R14 | Pakete in Startzelle | `start_colab.py` installiert `flask`/`pyyaml` bei Bedarf (keine neuen Abhängigkeiten zur Spec). |

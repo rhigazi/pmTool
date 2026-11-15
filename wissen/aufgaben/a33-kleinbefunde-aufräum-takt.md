@@ -9,7 +9,7 @@ phase: 2 Planung
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: "coder: B1 + B9 laufen | B4+B7+A27-K1 committed (Review frei)"
+aktuell: "reviewer: B1 im Review | B9 + B4+B7+A27-K1 committed"
 ---
 
 # Ziel

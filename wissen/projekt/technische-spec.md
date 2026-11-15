@@ -73,6 +73,7 @@ UI-Szenarien: `moli` gegen `http://localhost:5000` (siehe `tester`-Aufgaben).
 | `status` | `Klarung`, `Offen`, `In Arbeit`, `Testing`, `Dokumentation`, `Geschlossen` | Wellen & Punkte **ohne** `task_status` | Mensch: nur `Klarung`/`Geschlossen`; KI: alle |
 | `task_status` / `phase` | wie Phasenmodell | Aufgaben | ausschließlich KI (Projektmanager/documenter) |
 | `freigabe` | `true` \| `false`; fehlend oder ≠ `true` = **nicht freigegeben** (fail-closed) | Aufgaben und Wellen | ausschließlich Mensch (App, `POST /api/freigabe`); KI ❌ **403** |
+| `welle` | Pfad `wellen/<x>.md` (optional) | Aufgaben | beim Anlegen (`POST /api/task`, KI/App) und über `POST /api/meta`; das Read-Modell liefert es als `welle` (`GET /api/overview`, `frontmatter` von `GET /api/file`) |
 
 ## Mapping: `task_status` → UI-Status (6 Werte)
 
@@ -96,10 +97,11 @@ Es gibt **kein zweites Statusmodell in den Dateien**: Die sechs UI-Status sind e
 
 ## Struktur neuer Punkte
 
-- Aufgaben: `wissen/aufgaben/<id>.md` — Format exakt nach Phasenmodell, ergänzt um `owner: ai`.
+- Aufgaben: `wissen/aufgaben/<id>.md` — Format exakt nach Phasenmodell, ergänzt um `owner: ai`; optional `welle: wellen/<x>.md` (Pfad der zugeordneten Welle, siehe API-Tabelle).
 - Wellen: `wissen/wellen/<kuerzel>.md` mit `type: Welle`, `title`, `status`, `owner`, Ziel-Abschnitt und OKF-Links auf zugehörige Aufgaben (Ordner wird bei Erstanlage angelegt).
 - Nachträge: Abschnitt `# Nachträge` am Dateiende jeder bearbeitbaren Datei; Einträge als
   `> **Nachtrag (Mensch, YYYY-MM-DD):** <Text>` (Blockquote-Format, mehrfach möglich, immer anfügend).
+- **Slug-Regel (R2):** ASCII, kleingeschrieben, nur `a-z`/`0-9`/`-`, max. 60 Zeichen, Kollisionssuffix `-2`/`-3`. **Bewusste Asymmetrie bei leerem Slug** (PM-Entscheidung 2026-11-15, A5-B2): `neu_aufgabe` bricht mit `EingabeFehler` ab (der Pflicht-Titel muss verwertbar sein), `neu_welle` nutzt den robusten `FALLBACK_KUERZEL` — die Welle bleibt anlegbar, statt an einer exotischen Zeichenfolge zu scheitern. Kein Fehler, sondern dokumentierte Entscheidung.
 
 ## Schreibrechte (Verbindlich)
 
@@ -126,7 +128,7 @@ Als **reserviert** gelten `index.md`, `log.md` und `features.md` (KI-Dateien lau
 | `POST /api/nachtrag` | Nachtrag anfügen | `{path, text}` → aktualisierte Datei |
 | `POST /api/task` | Neue Aufgabe anlegen | `{titel, ziel, akzeptanz[], prioritaet, welle?}` → Pfad der neuen Datei |
 | `POST /api/welle` | Neue Welle anlegen | `{titel, ziel, status, owner}` → Pfad |
-| `POST /api/meta` | `owner`/erlaubte Status setzen | `{path, owner?, status?}` → neue Metadaten |
+| `POST /api/meta` | `owner`/erlaubte Status/`welle` setzen | `{path, owner?, status?, welle?}` → neue Metadaten (`welle: null`/leer entfernt die Zuordnung) |
 | `POST /api/freigabe` | Freigabe setzen/entziehen (**Menschen-Kanal**) | `{path, wert: true\|false}` → `{path, freigabe, frontmatter}` |
 | `GET /api/wellen` / `GET /api/aufgaben` | Rohdaten je Navigationspunkt | Listen (gleiches Feldschema wie `/api/overview`) |
 
@@ -137,11 +139,13 @@ Als **reserviert** gelten `index.md`, `log.md` und `features.md` (KI-Dateien lau
 
 - Alle `path`-Parameter werden gegen Ausbruch aus `BUNDLE_ROOT` geprüft (normalisiert, Präfix-Check) — **reject** bei Verstößen.
 - Fehler: HTTP 4xx mit `{error: "<verständliche Meldung>"}`, nie Teil-Zustände (Schreiben erst nach vollständiger Validierung).
+- **Fehlercodes (A9-K3):** Bei `POST /api/meta` gilt die Whitelist: jeder Statuswert außer `Klarung`/`Geschlossen` — auch `Testing` (gültiger Wellen-Status, aber nicht über `meta` setzbar) oder unbekannte Werte — wird mit **403** abgewiesen, ebenso ein unbekannter `owner`; die Rechteprüfung greift fail-closed vor dem Lesen (403 auch bei nicht existierender Datei). Beim Anlegen (`POST /api/task`/`POST /api/welle`) führen ungültige Werte und Payload-Fehler (fehlende Pflichtfelder, leerer Text) zu **400**. Pfad-/Frontmatter-Fehler → 400, fehlende Datei → 404, Traversal → 400.
 
 # Nicht-funktionale Anforderungen
 
 - **Einfachheit:** Start mit einer Colab-Zelle; kein externer Dienst, keine Tokens, kein Tunnel.
 - **Datenintegrität:** Nie überschreiben statt anfügen; Frontmatter erhalten; keine stillen Löschungen.
+- **Nebenläufigkeit (R8, bekannte Grenze, A9-K4):** Schreiben erfolgt atomar (temporäre Datei + `os.replace`) mit Re-Read, aber **ohne Locking** im MVP. Das TOCTOU-Fenster zwischen Prüfung und Schreiben ist bekannt — gleichzeitige Schreibzugriffe von KI (CLI) und App können sich gegenseitig überschreiben (Lost-Update, letzter Schreiber gewinnt). Halbe Zustände entstehen dadurch nicht; das Risiko ist bewusst akzeptiert, Locking bleibt Post-MVP.
 - **Autonomie der KI:** Die App greift nicht in die Pipeline-Steuerung ein; KI bleibt jederzeit in der Lage, das Projekt ohne App fortzusetzen (Bundle ist vollständig allein lesbar).
 - **Kein Informationsverlust:** Offene Fragen/Aufgaben bleiben im Bundle bestehen, bis sie geschlossen werden.
 - **Sicherheit:** Keine Secrets in Dateien; Telegram-/Git-Konfiguration unberührt; Zugriff nur auf `BUNDLE_ROOT`.

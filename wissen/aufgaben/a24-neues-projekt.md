@@ -107,3 +107,9 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** A24 auf `task_status: abgeschlossen` / `phase: 8 Abgeschlossen` gesetzt, `aktuell` geleert, im [Aufgaben-Index](index.md) nach „Abgeschlossene Aufgaben" verschoben; [features.md](/features.md) und [Projekt-Log](/log.md) nachgezogen.
 - **Belege:** 32 Tests in `test_neues_projekt.py`, `tools/tests` **69 grün**, Bestätigungs-Review FREIGEGEBEN (2026-11-15).
 - **Wichtig — Quelle/Spiegel (A26):** Die gepflegte Quelle ist jetzt **`definitions/tools/neues_projekt.py`** (Single Source of Truth); `tools/neues_projekt.py` ist der gepflegte Spiegel im Entwicklungs-Repo. Grund: [A26](a26-verteilung-und-suite-konflikt.md) hat die Verteilungslücke geschlossen — künftige Änderungen an der Quelle vornehmen, nicht im Spiegel. Testdatei entsprechend `definitions/tools/tests/test_neues_projekt.py`.
+
+## 2026-11-15 — coder (A33-B9, Doku-Nachtrag: A24-H2 Testlücken a–e)
+
+- **Ergebnis:** Die fünf **Testlücken a–e** aus dem Review sind im Bundle **nicht rekonstruierbar**: Der Review-Eintrag verweist nur auf „Details dort" (Reviewer-Rückmeldung außerhalb des Bundles), der Coder-Eintrag nennt sieben behobene Fälle nur „u. a." und ohne a–e-Zuordnung. Deshalb **keine erfundene Tabelle** — a–e stehen im Review-Text, nicht im Bundle.
+- **Belegt (ohne a–e-Zuordnung):** Die Nachbesserung schließt die Lücken mit 8 neuen Tests, `test_neues_projekt.py` **24 → 32** (Coder-Eintrag); das Bestätigungs-Review ist FREIGEGEBEN mit **69 grün** in `tools/tests`. Genannte Fälle (u. a., ohne Buchstaben-Zuordnung): vorhandenes Backup-Ziel, Symlink-Ziel, Backup-Ziel als Verzeichnis, Symlink in der Vorlage, fehlgeschlagener Rollback, Lesbarkeit der neuen Struktur, keine unbelegte verify-Behauptung.
+- **Offener Punkt:** Die a–e-Definitionen liegen nur im Review-Text außerhalb des Bundles; bei Bedarf vom `reviewer` nachreichen (kein Code, kein Testlauf nötig).

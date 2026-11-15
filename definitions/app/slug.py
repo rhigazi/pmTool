@@ -1,8 +1,10 @@
 """Gemeinsame Slug-Regel (R2) für Aufgaben- und Wellen-Dateinamen.
 
 Ein Slug ist ASCII, kleingeschrieben, enthält nur ``a-z``/``0-9`` mit ``-``
-als Trenner und höchstens 60 Zeichen. Umlaute und ß werden umgeschrieben,
-Akzente per NFKD entfernt; alle übrigen Zeichen trennen. Bleibt kein
+als Trenner und höchstens 60 Zeichen. Umlaute und Klein-``ß`` werden
+umgeschrieben; Groß-``ẞ`` fällt unter die Exoten-Regel (``-``, am Rand
+entfernt).
+Akzente werden per NFKD entfernt; alle übrigen Zeichen trennen. Bleibt kein
 verwendbares Zeichen übrig, ist das Ergebnis leer — die Aufrufer entscheiden
 über Fehler bzw. Fallback.
 """

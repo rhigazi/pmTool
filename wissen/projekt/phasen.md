@@ -141,6 +141,7 @@ priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-<x>.md
 feature: /features/<feature>.md
+welle: wellen/<x>.md
 aktuell: "<Rolle>: <Was passiert gerade>"
 freigabe: false
 ---
@@ -167,5 +168,7 @@ freigabe: false
 ```
 
 Das boolesche Feld `freigabe` im Frontmatter dokumentiert die Freigabe der Projektleitung: nur ein exaktes `true` gilt als freigegeben (fail-closed, fehlt = nicht freigegeben). Neue Aufgaben werden mit `freigabe: false` angelegt; gesetzt/entzogen wird sie ausschließlich über den Menschen-Kanal der App.
+
+Das Feld `welle` ist **optional** und verweist auf die zugeordnete Welle als Pfad `wellen/<x>.md` (z. B. `wellen/w2.md`). Zusammen mit `freigabe` bildet es das Wellen-Gate aus Phase „3b. Freigabe": Ohne `welle` gilt nur die Aufgaben-Freigabe; mit `welle` müssen Aufgabe **und** Welle freigegeben sein (UND-Regel, fail-closed). Das Read-Modell der App liefert das Feld als `welle` (siehe [Technische Spec](/projekt/technische-spec.md)).
 
 Das Feld `aktuell` im Frontmatter ist der **Live-Arbeitsstand** im Format `<Rolle>: <Was passiert gerade>` (z. B. `coder: Umsetzung Paket 2`): Live-Feld, nur Anzeige, bei Abschluss leeren — die App leitet daraus den Arbeitsstatus ab (Rolle + Text) und schreibt es nie. Rollen (case-insensitiv, mit Aliassen): `planner`/`planer` (Planer), `coder` (Coder), `tester` (Tester), `reviewer`/`review` (Review), `documenter`/`doku` (Documenter), `pm`/`projektmanager`/`projektleitung` (PM). Unbekannte Rollen werden unverändert angezeigt.
