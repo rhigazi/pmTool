@@ -2,6 +2,14 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-15: A25 Suche läuft parallel zu A23
+
+**Entscheidung:** Die Suche (A25, Konfliktgruppe G11: `liste.js`, `test_suche.py`) wird **parallel** zu A23 (G10: `features.js`, `app.js`, `index.html`, `style.css`, `test_features.py`) umgesetzt. Die frühere Empfehlung „Umsetzung erst nach Abschluss von A23" ist aufgehoben.
+
+**Begründung:** Die Dateimengen sind disjunkt (G11 vs. G10), es gibt keine gemeinsame Datei; eine Serialisierung hätte nur Zeit gekostet. PM-Entscheidung 2026-11-15.
+
+**Auswirkung:** A25 steht im Aufgaben-Index und in [features.md](/features.md) als „in Umsetzung" neben A23. Vorbehalt: Berührt ein Strang nachträglich Dateien des anderen, wird er dahinter serialisiert. Inhaltliche PM-Festlegungen zur Suche (alle drei Listen, UND-Verknüpfung, Umlaut-/ß-Toleranz, „zuletzt geändert" nicht durchsuchbar, Reset leert die Suche, Phase 2 Volltextsuche bleibt Vormerkung) sind in [A25](/aufgaben/a25-suche.md) unter „Kontext" festgehalten.
+
 ## 2026-11-15: Colab-Port-Freigabe nur im Kernel-Kontext
 
 **Entscheidung:** Colab-Startzellen nutzen `%run`/Import im Notebook-Kernel; `!bash`-/`!python`-Aufrufe starten nicht mehr still, sondern geben die Handlungsanweisung `HINWEIS_PORT_FREIGABE` aus. Der `__main__`-Guard von `start_colab.py` beendet im Kernel nicht per `sys.exit`.
