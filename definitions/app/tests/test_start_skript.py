@@ -163,7 +163,7 @@ def _freier_port() -> int:
         return probe.getsockname()[1]
 
 
-def _umgebung(*, bundle_root: Path | None = None, port: int | None = None) -> dict[str, str]:
+def _umgebung(*, bundle_root: Path | str | None = None, port: int | None = None) -> dict[str, str]:
     """Umgebung ohne geerbtes ``BUNDLE_ROOT``/``PORT``; freier Port für den Dummy-Server."""
     geerbt = {"BUNDLE_ROOT", "PORT"}
     umgebung = {schlüssel: wert for schlüssel, wert in os.environ.items() if schlüssel not in geerbt}
@@ -214,7 +214,7 @@ def starte_im(
     projekt: Path,
     *argumente: str,
     eingabe: str = "",
-    bundle_root: Path | None = None,
+    bundle_root: Path | str | None = None,
     port: int | None = None,
 ) -> subprocess.CompletedProcess:
     """Führt ``start.sh`` im Mini-Projekt aus; stdin ist eine Pipe (kein TTY)."""
@@ -279,6 +279,16 @@ def starte_mit_tty(
 
 def _backups(projekt: Path) -> list[Path]:
     return sorted(projekt.glob("wissen-backup-*.tar.gz"))
+
+
+def _server_mit_startprotokoll(projekt: Path, protokoll: Path) -> None:
+    """Dummy-Server, der jeden Start in ``protokoll`` festhält (H6)."""
+    (projekt / "definitions" / "app" / "server.py").write_text(
+        "import pathlib\n"
+        f"pathlib.Path({str(protokoll)!r}).write_text('gestartet\\n', encoding='utf-8')\n"
+        "raise SystemExit(0)\n",
+        encoding="utf-8",
+    )
 
 
 def test_erststart_hinweis_ohne_tty_setzt_nichts_zurueck(tmp_path):
@@ -508,6 +518,8 @@ def test_neu_setzt_lokales_wissen_trotz_fremdem_bundle_zurueck(tmp_path):
 def test_belegter_port_verhindert_reset_vor_der_rueckfrage(tmp_path):
     """K7: Bei belegtem Port kommt der Hinweis vor der Rückfrage — kein Reset."""
     projekt = baue_testprojekt(tmp_path)
+    protokoll = tmp_path / "serverstarts.txt"
+    _server_mit_startprotokoll(projekt, protokoll)
     with socket.socket() as belegung:
         belegung.bind(("127.0.0.1", 0))
         belegung.listen(1)
@@ -521,6 +533,8 @@ def test_belegter_port_verhindert_reset_vor_der_rueckfrage(tmp_path):
     assert "beginnen? [j/N]" not in ergebnis.stdout
     assert (projekt / "wissen" / MARKER[0]).is_file()
     assert _backups(projekt) == []
+    # H6: kein Startversuch — der Stub hätte sich sonst protokolliert.
+    assert not protokoll.exists(), protokoll.read_text(encoding="utf-8")
 
 
 def test_neu_ohne_wissen_legt_bundle_ohne_backup_an(tmp_path):
@@ -570,3 +584,105 @@ def test_zustimmung_ignoriert_gross_kleinschreibung(tmp_path, antwort):
     assert ergebnis.returncode == 0
     assert not (projekt / "wissen" / MARKER[0]).exists()
     assert len(_backups(projekt)) == 1
+
+
+# --- A33-Nachträge A32-H1/H2/H3: start.sh-Polish ---------------------------
+
+
+def test_belegter_port_meldet_nur_einmal(tmp_path):
+    """H1: Der Port-Hinweis aus Schritt 5 ist die einzige Meldung — Schritt 7 schweigt."""
+    projekt = baue_testprojekt(tmp_path)
+    with socket.socket() as belegung:
+        belegung.bind(("127.0.0.1", 0))
+        belegung.listen(1)
+        port = belegung.getsockname()[1]
+
+        ergebnis = starte_im(projekt, "--skip-verify", port=port)
+
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert "ist bereits belegt" in ergebnis.stdout
+    assert ergebnis.stdout.count("Kein zweiter Start") == 1, ergebnis.stdout
+    assert "Kein zweiter Start: Port" not in ergebnis.stdout
+
+
+def test_neu_bei_belegtem_port_bricht_mit_hinweis_ab(tmp_path):
+    """H2: ``--neu`` bei belegtem Port ist fail-loud — kein Reset, kein Start, Exit ≠ 0."""
+    projekt = baue_testprojekt(tmp_path)
+    protokoll = tmp_path / "serverstarts.txt"
+    _server_mit_startprotokoll(projekt, protokoll)
+    with socket.socket() as belegung:
+        belegung.bind(("127.0.0.1", 0))
+        belegung.listen(1)
+        port = belegung.getsockname()[1]
+
+        ergebnis = starte_im(projekt, "--neu", "--skip-verify", port=port)
+
+    assert ergebnis.returncode != 0
+    assert "Server zuerst beenden, dann --neu" in ergebnis.stderr
+    assert (projekt / "wissen" / MARKER[0]).is_file()
+    assert _backups(projekt) == []
+    assert "App starten" not in ergebnis.stdout
+    assert not protokoll.exists(), protokoll.read_text(encoding="utf-8")
+
+
+def test_neu_bei_belegtem_port_bricht_auch_in_colab_ab(tmp_path):
+    """H2: Der Abbruch gilt modusunabhängig — auch ``--neu --colab`` startet nichts."""
+    projekt = baue_testprojekt(tmp_path)
+    with socket.socket() as belegung:
+        belegung.bind(("127.0.0.1", 0))
+        belegung.listen(1)
+        port = belegung.getsockname()[1]
+
+        ergebnis = starte_im(projekt, "--neu", "--colab", "--skip-verify", port=port)
+
+    assert ergebnis.returncode != 0
+    assert "Server zuerst beenden, dann --neu" in ergebnis.stderr
+    assert (projekt / "wissen" / MARKER[0]).is_file()
+    assert _backups(projekt) == []
+
+
+def test_keine_fehlwarnung_bei_trailing_slash(tmp_path):
+    """H3: ``wissen/`` mit Trailing-Slash ist dasselbe Reset-Ziel — keine Warnung."""
+    projekt = baue_testprojekt(tmp_path)
+
+    ergebnis = starte_im(projekt, "--dry-run", bundle_root=f"{projekt / 'wissen'}/")
+
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert "Projekt-Daten" in ergebnis.stdout
+    assert "Reset wirkt auf" not in ergebnis.stdout
+
+
+def test_keine_fehlwarnung_bei_relativem_bundle_root(tmp_path):
+    """H3: Ein relativer ``BUNDLE_ROOT`` zeigt auf dasselbe Ziel — keine Warnung."""
+    projekt = baue_testprojekt(tmp_path)
+
+    ergebnis = starte_im(projekt, "--dry-run", bundle_root="wissen")
+
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert "Projekt-Daten" in ergebnis.stdout
+    assert "Reset wirkt auf" not in ergebnis.stdout
+
+
+def test_keine_fehlwarnung_ueber_symlink(tmp_path):
+    """H3: ``pwd -P`` löst Symlinks auf — ein Link auf ``wissen/`` ist kein anderes Ziel."""
+    projekt = baue_testprojekt(tmp_path)
+    verknuepfung = tmp_path / "wissen-link"
+    verknuepfung.symlink_to(projekt / "wissen", target_is_directory=True)
+
+    ergebnis = starte_im(projekt, "--dry-run", bundle_root=verknuepfung)
+
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert "Projekt-Daten" in ergebnis.stdout
+    assert "Reset wirkt auf" not in ergebnis.stdout
+
+
+def test_fehlwarnung_bleibt_bei_echt_abweichendem_ziel(tmp_path):
+    """H3-Gegenprobe: Ein wirklich anderes Verzeichnis warnt weiterhin."""
+    projekt = baue_testprojekt(tmp_path)
+    fremd = tmp_path / "fremdes-bundle"
+    fremd.mkdir()
+
+    ergebnis = starte_im(projekt, "--dry-run", bundle_root=str(fremd) + "/")
+
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert "Reset wirkt auf" in ergebnis.stdout

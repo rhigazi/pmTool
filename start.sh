@@ -138,8 +138,23 @@ wissen_vorbefuellt() {
   return 1
 }
 
+pfad_normalisiert() {
+  # Physischer Pfad (Symlinks, Trailing-Slash, relative Anteile aufgelöst) —
+  # nur so ist der Vergleich mit dem Reset-Ziel aussagekräftig. Nicht
+  # existierende Pfade werden textuell von Trailing-Slashes befreit.
+  local pfad="$1" physisch
+  if physisch="$(cd "$pfad" 2>/dev/null && pwd -P)"; then
+    printf '%s\n' "$physisch"
+    return 0
+  fi
+  while [ "${#pfad}" -gt 1 ] && [ "${pfad%/}" != "$pfad" ]; do
+    pfad="${pfad%/}"
+  done
+  printf '%s\n' "$pfad"
+}
+
 warnung_reset_ziel() {
-  if [ "$BUNDLE_ROOT" != "$RESET_ZIEL" ]; then
+  if [ "$(pfad_normalisiert "$BUNDLE_ROOT")" != "$(pfad_normalisiert "$RESET_ZIEL")" ]; then
     info "    Achtung: BUNDLE_ROOT=$BUNDLE_ROOT weicht ab — der Reset wirkt auf $RESET_ZIEL, nicht auf $BUNDLE_ROOT."
   fi
 }
@@ -209,6 +224,11 @@ pruefe_projektstand() {
   if [ "$DRY_RUN" -eq 0 ] && port_belegt; then
     PORT_BELEGT=1
     info "→ Port $PORT ist bereits belegt — der Server läuft vermutlich schon: http://localhost:$PORT"
+    if [ "$NEU" -eq 1 ]; then
+      # H2: fail-loud statt stiller Erfolg — ohne freien Port gibt es keinen Reset.
+      fehler "Reset nicht möglich: Port $PORT ist belegt — Server zuerst beenden, dann --neu erneut starten."
+      exit 1
+    fi
     info "→ Kein zweiter Start, kein Projekt-Reset."
     return 0
   fi
@@ -290,7 +310,7 @@ starte_server() {
   fi
 
   if [ "$PORT_BELEGT" -eq 1 ]; then
-    info "→ Kein zweiter Start: Port $PORT ist belegt."
+    # H1: Der Hinweis kam bereits in Schritt 5 — hier keine zweite Meldung.
     return 0
   fi
 
