@@ -358,3 +358,19 @@ def test_t17_welle_setzen_schreibt_getrimmt(bundle):
 
     assert frontmatter["welle"] == WELLE
     assert okf_bundle.lesen(AUFGABE)[0]["welle"] == WELLE
+
+
+# --- A28: ``freigabe`` ist ein Menschen-Recht -----------------------------
+
+
+@pytest.mark.parametrize("wert", [True, False, None, "true"])
+def test_a28_freigabe_ueber_meta_ist_verboten(bundle, monkeypatch, wert):
+    aufrufe = []
+    monkeypatch.setattr(okf_bundle, "set_meta", lambda *a, **k: aufrufe.append((a, k)))
+    hash_vorher = _datei_hash(bundle, AUFGABE)
+
+    with pytest.raises(meta.RechteFehler):
+        meta.setzen(AUFGABE, freigabe=wert)
+
+    assert aufrufe == []
+    assert _datei_hash(bundle, AUFGABE) == hash_vorher

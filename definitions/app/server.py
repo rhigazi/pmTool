@@ -15,6 +15,7 @@ from pathlib import Path
 from flask import Flask, abort, jsonify, request, send_from_directory
 from werkzeug.exceptions import HTTPException, default_exceptions
 
+import freigabe
 import meta
 import nachtrag
 import neu_aufgabe
@@ -110,10 +111,27 @@ def create_app(bundle_root: str | os.PathLike[str]) -> Flask:
         _ohne_pfadfeld(daten)
         return jsonify(path=neu_welle.anlegen(daten))
 
+    @app.post("/api/freigabe")
+    def api_freigabe():
+        """Menschen-Kanal: Freigabe setzen/entziehen (``{path, wert}``)."""
+        daten = _json_nutzdaten()
+        pfad = _pflicht_pfad(daten)
+        if "wert" not in daten:
+            raise okf_bundle.EingabeFehler("Feld wert fehlt")
+        frontmatter = freigabe.setzen(pfad, daten["wert"], herkunft=freigabe.MENSCH)
+        return jsonify(
+            path=pfad,
+            freigabe=freigabe.ist_freigegeben(frontmatter),
+            frontmatter=frontmatter,
+        )
+
     @app.post("/api/meta")
     def api_meta():
         daten = _json_nutzdaten()
         pfad = _pflicht_pfad(daten)
+        # Fail-closed: ``freigabe`` ist ein Menschen-Recht, auch bei ``false``.
+        if "freigabe" in daten:
+            raise meta.RechteFehler(meta.MELDUNG_FREIGABE)
         # Nur gesetzte Felder weitergeben: ``meta`` prüft die Whitelist strikt.
         ziele = {
             feld: daten[feld]

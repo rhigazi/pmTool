@@ -252,14 +252,15 @@ def test_t12_api_file_liefert_felder_top_level(client, bundle):
 
     assert antwort.status_code == 200
     daten = antwort.get_json()
-    assert set(daten) == {
+    # A28 ergänzt weitere Top-Level-Felder (freigabe, neu, …) — hier zählen die A30-Felder.
+    assert {
         "frontmatter",
         "markdown",
         "nachtraege",
         "arbeitsrolle",
         "arbeitsrolle_label",
         "arbeitsstatus",
-    }
+    } <= set(daten)
     assert daten["arbeitsrolle"] == "coder"
     assert daten["arbeitsrolle_label"] == "Coder"
     assert daten["arbeitsstatus"] == "Umsetzung Paket 2"
@@ -275,7 +276,9 @@ def test_t12_api_file_ohne_arbeitsstatus(client, bundle, pfad):
 
     daten = client.get(f"/api/file?path={pfad}").get_json()
 
-    assert set(daten) == {"frontmatter", "markdown", "nachtraege"}
+    # A28 ergänzt ``freigabe``/``neu``; die A30-Arbeitsstatus-Felder fehlen weiterhin.
+    assert set(daten).isdisjoint(FELDER)
+    assert {"frontmatter", "markdown", "nachtraege"} <= set(daten)
 
 
 def test_t13_keine_schreibpfade_und_keine_doppelpflege(client, bundle):

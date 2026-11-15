@@ -72,6 +72,8 @@ def test_t2_frontmatter(bundle):
     assert frontmatter["priority"] == GUELTIG["prioritaet"]
     assert frontmatter["assigned_to"] == "coder"
     assert frontmatter["owner"] == "ai"
+    # A28: neue Aufgaben sind nicht freigegeben (Menschen-Recht).
+    assert frontmatter["freigabe"] is False
 
 
 def test_t2_description_wird_aus_dem_ziel_abgeleitet(bundle):

@@ -13,13 +13,17 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, timezone
+from pathlib import Path
 
 import arbeitsstand
+import freigabe
 import okf_bundle
 import status
 
 UNBEKANNTER_TYP = "unbekannt"
 TYP_AUFGABE = "Task"
+TYP_WELLE = "Welle"
+AUFGABEN_ORDNER = "aufgaben/"
 HINWEIS_NICHT_LESBAR = "nicht lesbar"
 # Einzige Quelle der neutralen Meldungen ist okf_bundle (keine Pfade/OS-Details).
 MELDUNG_NICHT_GEFUNDEN = okf_bundle.MELDUNG_NICHT_GEFUNDEN
@@ -31,6 +35,14 @@ _MARKER = re.compile(
     r"(?P<text>.*)$"
 )
 _FOLGEZEILE = re.compile(r"^>\s?(?P<text>.*)$")
+
+# Kennung (A28/A34): ``A12`` bzw. zugewiesene Unterkennung ``A34.001``.
+KENNUNG_TITEL = re.compile(r"^A([1-9][0-9]*)(?:\.([0-9]{3}))?:(?:\s|$)")
+KENNUNG_DATEI = re.compile(r"^a([1-9][0-9]*)(?:\.([0-9]{3}))?(?:-|$)")
+# Für ``naechste_kennung`` zählt die bloße Nummer (ohne Formatstrenge); eine
+# zugewiesene Unterkennung (``A34.001``) zählt dabei zur Familie ``A34``.
+NUMMER_TITEL = re.compile(r"^A([0-9]+)(?:\.\d+|:)")
+NUMMER_DATEI = re.compile(r"^a([0-9]+)(?:\.\d+|-)")
 
 
 def liste(praefix: str | None = None) -> list[dict]:
@@ -78,7 +90,14 @@ def details(pfad: str) -> dict:
         "nachtraege": nachtraege(markdown),
     }
     if _text(frontmatter.get("type")) == TYP_AUFGABE:
+        titel = _text(frontmatter.get("title"))
         daten.update(arbeitsstand.ermittle(frontmatter))
+        daten["neu"] = _ist_neu(pfad, titel)
+        kennung = _kennung(titel)
+        if kennung:
+            daten["kennung"] = kennung
+        daten["naechste_kennung"] = _naechste_kennung()
+    _ergaenze_freigabe(daten, frontmatter)
     return daten
 
 
@@ -144,6 +163,9 @@ def _eintrag(pfad: str) -> dict | None:
     except (OSError, UnicodeDecodeError):
         return _nicht_lesbarer_eintrag(pfad)
 
+    if not frontmatter and _hat_defektes_frontmatter(pfad):
+        return _nicht_lesbarer_eintrag(pfad)
+
     ui_status, hinweis = status.ui_status(frontmatter)
 
     eintrag = {
@@ -161,7 +183,86 @@ def _eintrag(pfad: str) -> dict | None:
         eintrag["welle"] = welle
     if eintrag["typ"] == TYP_AUFGABE:
         eintrag.update(arbeitsstand.ermittle(frontmatter))
+        eintrag["neu"] = _ist_neu(pfad, eintrag["titel"])
+    _ergaenze_freigabe(eintrag, frontmatter)
     return eintrag
+
+
+def _hat_defektes_frontmatter(pfad: str) -> bool:
+    """Defektes YAML (Block vorhanden, nicht lesbar) statt Altbestand ohne Block."""
+    try:
+        okf_bundle.lesen(pfad)
+    except okf_bundle.FrontmatterFehler:
+        return _hat_frontmatter_block(pfad)
+    except (OSError, UnicodeDecodeError):
+        return False
+    return False
+
+
+def _hat_frontmatter_block(pfad: str) -> bool:
+    """Beginnt die Datei mit ``---``?"""
+    try:
+        with open(okf_bundle.resolve_path(pfad), encoding="utf-8", newline="") as datei:
+            return datei.readline().strip() == "---"
+    except (OSError, UnicodeDecodeError):
+        return False
+
+
+def _ist_neu(pfad: str, titel: str | None) -> bool:
+    """Keine gültige Kennung: Titel/Dateiname passen nicht zusammen (oder fehlen)."""
+    titel_treffer = KENNUNG_TITEL.match(titel) if isinstance(titel, str) else None
+    datei_treffer = KENNUNG_DATEI.match(Path(pfad).stem)
+    if titel_treffer is None or datei_treffer is None:
+        return True
+    return (titel_treffer.group(1), titel_treffer.group(2)) != (
+        datei_treffer.group(1),
+        datei_treffer.group(2),
+    )
+
+
+def _kennung(titel: str | None) -> str | None:
+    """Kennung aus dem Titel (``A12``/``A34.001``); ``None`` ohne gültiges Format."""
+    treffer = KENNUNG_TITEL.match(titel) if isinstance(titel, str) else None
+    if treffer is None:
+        return None
+    unterkennung = f".{treffer.group(2)}" if treffer.group(2) else ""
+    return f"A{treffer.group(1)}{unterkennung}"
+
+
+def _naechste_kennung() -> str:
+    """Hinweis auf die nächste freie Kennung — Maximum aus Titeln und Dateinamen + 1."""
+    hoechste = 0
+    for pfad in okf_bundle.scan():
+        if not pfad.startswith(AUFGABEN_ORDNER):
+            continue
+        hoechste = max(hoechste, _nummer(NUMMER_DATEI, Path(pfad).stem))
+        try:
+            frontmatter, _ = okf_bundle.lesen_tolerant(pfad)
+        except (OSError, UnicodeDecodeError, FileNotFoundError):
+            continue
+        hoechste = max(hoechste, _nummer(NUMMER_TITEL, frontmatter.get("title")))
+    return f"A{hoechste + 1}"
+
+
+def _nummer(muster: re.Pattern[str], wert: object) -> int:
+    if not isinstance(wert, str):
+        return 0
+    treffer = muster.match(wert.strip())
+    return int(treffer.group(1)) if treffer else 0
+
+
+def _ergaenze_freigabe(ziel: dict, frontmatter: dict) -> None:
+    """``freigabe`` (fail-closed) für Aufgaben und Wellen, plus Hinweis bei ungültigem Wert.
+
+    ``details`` führt keinen ``typ`` im Antwortobjekt — dort zählt der Frontmatter-Typ.
+    """
+    typ = ziel.get("typ") or _text(frontmatter.get("type"))
+    if typ not in (TYP_AUFGABE, TYP_WELLE):
+        return
+    ziel["freigabe"] = freigabe.ist_freigegeben(frontmatter)
+    meldung = freigabe.hinweis(frontmatter)
+    if meldung:
+        ziel["freigabe_hinweis"] = meldung
 
 
 def _nicht_lesbarer_eintrag(pfad: str) -> dict | None:
@@ -171,7 +272,7 @@ def _nicht_lesbarer_eintrag(pfad: str) -> dict | None:
     except OSError:
         return None
 
-    return {
+    eintrag = {
         "path": pfad,
         "typ": UNBEKANNTER_TYP,
         "titel": "",
@@ -180,6 +281,10 @@ def _nicht_lesbarer_eintrag(pfad: str) -> dict | None:
         "zuletzt_geaendert": zeitstempel,
         "hinweis": HINWEIS_NICHT_LESBAR,
     }
+    if pfad.startswith(AUFGABEN_ORDNER):
+        # Fail-loud: eine unlesbare Aufgabe ist immer „neu" (Kennung unprüfbar).
+        eintrag["neu"] = True
+    return eintrag
 
 
 

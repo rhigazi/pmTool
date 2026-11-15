@@ -3,12 +3,13 @@ type: Task
 title: "A28: Benachrichtigung bei neuer Aufgabe"
 description: Wenn eine neue Aufgabe angelegt wird, muss die KI ist automatisch wahrnehmen
   können um die Planung durchzuführen. Die Aufgabe wird erst begonnen wenn der Aufga…
+freigabe: true
 task_status: in Umsetzung
 phase: 3 Umsetzung
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: "coder: A28 Paket 0+1 (Freigabe-Fundament + Wahrnehmung)"
+aktuell: "coder: A28 Paket 2+3 (UI + Doku) — Freigabe nachgetragen (Projektleitung 2026-11-15)"
 welle: wellen/w2.md
 ---
 
@@ -170,4 +171,14 @@ Harness: `tests/dom_helfer.py` nutzen (wird in **A30** angelegt: Mini-DOM + Node
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-15 — coder (Umsetzung Paket 0 + Paket 1)
+
+- **Ergebnis Paket 0 (Freigabe-Fundament, gemeinsam A28/A29):** `definitions/app/freigabe.py` neu — `MENSCH`/`KI`, `ist_freigegeben(frontmatter)` (fail-closed: nur ein echtes `True`), `hinweis(frontmatter)` (deutsche Meldung bei ungültigem Rohwert), `setzen(pfad, wert, *, herkunft)` (nur `MENSCH`; `KI`/fehlend → `meta.RechteFehler`, auch bei `False`; nur echtes `bool`, sonst `EingabeFehler`; idempotent ohne Schreibvorgang) und `pruefe_ziel` (Eingabe → Pfadschutz → reserviert 403 → fehlende Datei 404 → Frontmatter/Typ 400; Aufgaben/Wellen über Ordner oder `type`). `meta.setzen(..., freigabe=…)` wirft ausnahmslos `RechteFehler`; `server.api_meta` liefert für jeden `freigabe`-Schlüssel im Body **403** (auch `null`, auch kombiniert mit `owner`/`status`, ohne Teil-Schreibvorgang). Neuer Endpunkt **`POST /api/freigabe`** `{path, wert}` → `{path, freigabe, frontmatter}` (genau ein atomarer Schreibvorgang, `GET` → 405). `neu_aufgabe._inhalt` und `neu_welle._inhalt` schreiben `freigabe: false`. Read-Modell: `freigabe` (fail-closed) und `freigabe_hinweis` bei ungültigem Rohwert für `typ in ("Task","Welle")` in `/api/overview`, `/api/aufgaben`, `/api/wellen` **und** `/api/file`. Deckt AK-5, AK-6, AK-7 ab.
+- **Ergebnis Paket 1 (Wahrnehmungssignale):** `overview` leitet für Aufgaben `neu` ab (Titel **und** Dateiname müssen zur Kennung passen) und liefert in `/api/file` zusätzlich `kennung` (z. B. `A28`/`A34.001`) und `naechste_kennung` (Maximum aus Titeln und Dateinamen aller `aufgaben/*.md` + 1, ohne Bestand `A1`, unlesbare Dateien ignoriert). **Regex-Konsistenz A34:** Titel `^A([1-9][0-9]*)(?:\.([0-9]{3}))?:(?:\s|$)`, Dateiname `^a([1-9][0-9]*)(?:\.([0-9]{3}))?(?:-|$)` — `A34.001`/`a34.001-<slug>.md` gilt als zugewiesen (`neu: false`, `kennung: "A34.001"`), `naechste_kennung` bleibt top-level-only. Nicht lesbare Aufgaben (`aufgaben/`, defektes YAML oder unlesbare Bytes) erscheinen weiterhin mit `hinweis: "nicht lesbar"` und jetzt `neu: true`; Nicht-Tasks tragen kein `neu`. Deckt AK-1, AK-2 ab.
+- **Belege:** TDD-Red-Green je Paket. Paket 0: `test_freigabe.py` zuerst rot (Collection-Error, Modul fehlt) → nach Implementierung **68 grün** (T8–T22 inkl. `freigabe_hinweis`-Fall). Paket 1: `test_neue_aufgabe_signal.py` **23 rot** → **25 grün** (T1–T7, T22 inkl. Unterkennung/Deep-File). Additive Fälle: `test_api_schreiben.py` (`ENDPUNKTE` + `/api/freigabe`), `test_meta.py` (Modul-Guard), `test_neu_aufgabe.py` (`freigabe is False`). Gesamtsuite serialisiert (`python3 -m pytest definitions/app/tests -q -p no:randomly`): **1268 passed, 0 failed** (10:37 unter Parallel-Last); Nachlauf der berührten Dateien: 459 passed.
+- **Bewusste Abweichungen/Grenzen:** (1) `naechste_kennung` zählt eine zugewiesene Unterkennung (`A34.001`) zur Familie `A34` (nächste freie `A35`) — Ausgabe bleibt top-level-only, kein `A34.002`. (2) Die A30-Datei `test_arbeitsstand.py` (T12) prüfte `/api/file` per **exakter** Schlüsselmenge; sie ist auf „A30-Felder enthalten / keine A30-Felder" umgestellt (A28 ergänzt additiv `freigabe`, `neu`, …). Das ist die einzige Anpassung einer bestehenden Testdatei außerhalb der im Plan genannten; `test_api_lesen.py` und `test_welle_zuordnung.py` blieben unverändert grün (die `_eintrag`-Umstellung auf „defektes YAML = nicht lesbar" nutzt weiterhin `lesen_tolerant` als Primärlesen). (3) `wellen/index.md` wird als reserviertes Ziel mit 403 abgewiesen, auch wenn die Datei fehlt (Namensprüfung vor Existenz, wie `meta`). (4) `POST /api/meta` mit `freigabe` liefert 403 bereits nach der Pflichtpfad-Prüfung (fehlender `path` bleibt 400).
+- **PM-Hinweis (nicht selbst erledigt):** Die Freigaben von A28/A29 sollen nach dem Paket-0-Commit als `freigabe: true` nachgetragen werden — das übernimmt der PM (Menschen-Recht, `POST /api/freigabe`); Paket 0/1 haben es bewusst nicht gesetzt.
+- **Offene Punkte:** Paket 2 (UI: Marke „neu", Detail-Hinweis, Freigabe-Knopf) und Paket 3 (Doku AK-9) folgen im nächsten Auftrag; `test_freigabe_ui.py` T33 (Request-Zähler) ist bei Paket 2 von 2 auf 3 Requests nachzuziehen (Hinweis aus dem A34-Plan), die Zähl-Tests wurden hier nicht verhärtet. `bash definitions/verify.sh .` nicht separat gelaufen (Parallelbetrieb). Keine Commits.
+

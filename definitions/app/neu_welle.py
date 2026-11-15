@@ -107,6 +107,7 @@ def _inhalt(titel: str, beschreibung: str, ziel: str, status_wert: str, owner: s
             "description": beschreibung,
             "status": status_wert,
             "owner": owner,
+            "freigabe": False,
         },
         allow_unicode=True,
         default_flow_style=False,

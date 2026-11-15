@@ -169,6 +169,8 @@ def _inhalt(felder: dict) -> str:
     for feld in ("user_story", "welle"):
         if felder[feld]:
             frontmatter[feld] = felder[feld]
+    # Neue Aufgaben sind nicht freigegeben (Menschen-Recht, A28).
+    frontmatter["freigabe"] = False
     frontmatter["owner"] = "ai"
 
     kopf = yaml.safe_dump(

@@ -15,7 +15,7 @@ import server
 AUFGABE = "aufgaben/a1.md"
 WELLE = "wellen/w1.md"
 
-ENDPUNKTE = ("/api/nachtrag", "/api/task", "/api/welle", "/api/meta")
+ENDPUNKTE = ("/api/nachtrag", "/api/task", "/api/welle", "/api/meta", "/api/freigabe")
 RESERVIERTE = ("index.md", "log.md", "features.md", "aufgaben/index.md")
 TRAVERSAL = (
     "../fremd.md",
@@ -779,7 +779,13 @@ def test_t16_reservierte_zieldatei_ist_403(client, bundle):
 
 
 def test_t18_endpunkt_inventar_und_welle_anlegen(client, bundle):
-    assert ENDPUNKTE == ("/api/nachtrag", "/api/task", "/api/welle", "/api/meta")
+    assert ENDPUNKTE == (
+        "/api/nachtrag",
+        "/api/task",
+        "/api/welle",
+        "/api/meta",
+        "/api/freigabe",
+    )
 
     regeln = {regel.rule for regel in client.application.url_map.iter_rules()}
     assert {
@@ -792,6 +798,7 @@ def test_t18_endpunkt_inventar_und_welle_anlegen(client, bundle):
         "/api/task",
         "/api/welle",
         "/api/meta",
+        "/api/freigabe",
     } <= regeln
 
     antwort = client.post("/api/welle", json=_welle_daten(welle=WELLE))
@@ -800,3 +807,31 @@ def test_t18_endpunkt_inventar_und_welle_anlegen(client, bundle):
     pfad = antwort.get_json()["path"]
     assert pfad.startswith("wellen/")
     assert "welle:" not in _lies(bundle, pfad)
+
+
+# --- A28: Freigabe ist ein Menschen-Recht ---------------------------------
+
+
+@pytest.mark.parametrize(
+    "nutzlast",
+    [{"freigabe": True}, {"freigabe": False}, {"owner": "mensch", "freigabe": True}],
+)
+def test_a28_freigabe_ueber_meta_ist_403(client, bundle, nutzlast):
+    hash_vorher = _datei_hash(bundle, AUFGABE)
+
+    antwort = client.post("/api/meta", json={"path": AUFGABE, **nutzlast})
+
+    assert antwort.status_code == 403
+    assert antwort.get_json()["error"].strip()
+    assert _datei_hash(bundle, AUFGABE) == hash_vorher
+
+
+def test_a28_freigabe_endpunkt_setzt_und_entzieht(client, bundle):
+    setzen = client.post("/api/freigabe", json={"path": AUFGABE, "wert": True})
+    entziehen = client.post("/api/freigabe", json={"path": AUFGABE, "wert": False})
+
+    assert setzen.status_code == 200
+    assert setzen.get_json()["freigabe"] is True
+    assert entziehen.status_code == 200
+    assert entziehen.get_json()["freigabe"] is False
+    assert _lies(bundle, AUFGABE).count("\nfreigabe:") == 1

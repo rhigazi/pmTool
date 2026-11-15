@@ -21,6 +21,9 @@ TASK_STATUS_ZIELE = {"Klarung": "in Klärung", "Geschlossen": "abgeschlossen"}
 
 # Wellen liegen flach unter ``wellen/`` (A5/A13).
 WELLEN_ORDNER = "wellen"
+
+# ``freigabe`` ist ein Menschen-Recht (A28): hier nie setzbar, auch nicht ``False``.
+MELDUNG_FREIGABE = "freigabe ist ein Menschen-Recht und kann hier nicht gesetzt werden."
 WELLE_MELDUNG = "welle muss eine vorhandene Wellen-Datei unter wellen/ sein"
 
 # Sentinel: „welle nicht übergeben" ist von „Zuordnung entfernen" (None) zu trennen.
@@ -36,6 +39,7 @@ def setzen(
     owner: str | None = None,
     status: str | None = None,
     welle: Any = _NICHT_GESETZT,
+    freigabe: Any = _NICHT_GESETZT,
 ) -> dict:
     """Setzt ``owner``, ``status`` und/oder ``welle`` und liefert das neue Frontmatter.
 
@@ -44,7 +48,11 @@ def setzen(
     wird; der Body bleibt unverändert. Die Prüfreihenfolge ist fail-closed:
     reservierte Zieldatei, ``owner``-, ``status``-Whitelist, ``welle``,
     Zielpfad/Datei. ``welle=None`` (oder leer) entfernt die Zuordnung.
+    ``freigabe`` ist ein Menschen-Recht: jedes Mitgeben ist ein Rechtefehler.
     """
+    if freigabe is not _NICHT_GESETZT:
+        raise RechteFehler(MELDUNG_FREIGABE)
+
     ziel = okf_bundle.resolve_path(pfad)
     if okf_bundle.ist_reserviert(pfad) or okf_bundle.ist_reserviert(ziel):
         raise RechteFehler(f"Reservierte Datei ist schreibgeschützt: {ziel.name}")
