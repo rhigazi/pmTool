@@ -14,10 +14,12 @@ from __future__ import annotations
 import re
 from datetime import datetime, timezone
 
+import arbeitsstand
 import okf_bundle
 import status
 
 UNBEKANNTER_TYP = "unbekannt"
+TYP_AUFGABE = "Task"
 HINWEIS_NICHT_LESBAR = "nicht lesbar"
 # Einzige Quelle der neutralen Meldungen ist okf_bundle (keine Pfade/OS-Details).
 MELDUNG_NICHT_GEFUNDEN = okf_bundle.MELDUNG_NICHT_GEFUNDEN
@@ -55,6 +57,9 @@ def liste(praefix: str | None = None) -> list[dict]:
 def details(pfad: str) -> dict:
     """Dateiinhalt als ``{frontmatter, markdown, nachtraege}``.
 
+    Aufgaben (``type: Task``) erhalten zusätzlich die abgeleiteten
+    Arbeitsstatus-Felder top-level; ``frontmatter`` bleibt roh.
+
     Wirft :class:`okf_bundle.BundlePfadFehler` bei Pfadausbruch oder nicht
     zulässiger Endung, :class:`FileNotFoundError`, wenn die Datei fehlt, und
     :class:`PermissionError`, wenn sie nicht lesbar ist. Die Meldungen sind
@@ -67,7 +72,14 @@ def details(pfad: str) -> dict:
         raise FileNotFoundError(MELDUNG_NICHT_GEFUNDEN)
 
     frontmatter, markdown = _lesen(pfad)
-    return {"frontmatter": frontmatter, "markdown": markdown, "nachtraege": nachtraege(markdown)}
+    daten = {
+        "frontmatter": frontmatter,
+        "markdown": markdown,
+        "nachtraege": nachtraege(markdown),
+    }
+    if _text(frontmatter.get("type")) == TYP_AUFGABE:
+        daten.update(arbeitsstand.ermittle(frontmatter))
+    return daten
 
 
 def nachtraege(markdown: str) -> list[dict]:
@@ -147,6 +159,8 @@ def _eintrag(pfad: str) -> dict | None:
     welle = _text(frontmatter.get("welle"))
     if welle:
         eintrag["welle"] = welle
+    if eintrag["typ"] == TYP_AUFGABE:
+        eintrag.update(arbeitsstand.ermittle(frontmatter))
     return eintrag
 
 

@@ -140,6 +140,7 @@ priority: hoch
 assigned_to: coder
 user_story: /projekt/user-stories/us-<x>.md
 feature: /features/<feature>.md
+aktuell: "<Rolle>: <Was passiert gerade>"
 ---
 
 # Ziel
@@ -162,3 +163,5 @@ feature: /features/<feature>.md
 # Ergebnisse
 <Vom documenter gepflegt: je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte.>
 ```
+
+Das Feld `aktuell` im Frontmatter ist der **Live-Arbeitsstand** im Format `<Rolle>: <Was passiert gerade>` (z. B. `coder: Umsetzung Paket 2`): Live-Feld, nur Anzeige, bei Abschluss leeren — die App leitet daraus den Arbeitsstatus ab (Rolle + Text) und schreibt es nie. Rollen (case-insensitiv, mit Aliassen): `planner`/`planer` (Planer), `coder` (Coder), `tester` (Tester), `reviewer`/`review` (Review), `documenter`/`doku` (Documenter), `pm`/`projektmanager`/`projektleitung` (PM). Unbekannte Rollen werden unverändert angezeigt.

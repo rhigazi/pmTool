@@ -118,13 +118,15 @@ Als **reserviert** gelten `index.md`, `log.md` und `features.md` (KI-Dateien lau
 
 | Methode & Pfad | Zweck | Payload / Rückgabe |
 |---|---|---|
-| `GET /api/overview` | Alle Punkte für Listenansicht | Liste: `path, typ, titel, status(6), owner, zuletzt_geaendert, welle?` |
-| `GET /api/file?path=` | Dateiinhalt + Frontmatter (Detailansicht) | `{frontmatter, markdown, nachtraege[]}` |
+| `GET /api/overview` | Alle Punkte für Listenansicht | Liste: `path, typ, titel, status(6), owner, zuletzt_geaendert, welle?, hinweis?, arbeitsrolle?, arbeitsrolle_label?, arbeitsstatus?` |
+| `GET /api/file?path=` | Dateiinhalt + Frontmatter (Detailansicht) | `{frontmatter, markdown, nachtraege[], arbeitsrolle?, arbeitsrolle_label?, arbeitsstatus?}` |
 | `POST /api/nachtrag` | Nachtrag anfügen | `{path, text}` → aktualisierte Datei |
 | `POST /api/task` | Neue Aufgabe anlegen | `{titel, ziel, akzeptanz[], prioritaet, welle?}` → Pfad der neuen Datei |
 | `POST /api/welle` | Neue Welle anlegen | `{titel, ziel, status, owner}` → Pfad |
 | `POST /api/meta` | `owner`/erlaubte Status setzen | `{path, owner?, status?}` → neue Metadaten |
-| `GET /api/wellen` / `GET /api/aufgaben` | Rohdaten je Navigationspunkt | Listen |
+| `GET /api/wellen` / `GET /api/aufgaben` | Rohdaten je Navigationspunkt | Listen (gleiches Feldschema wie `/api/overview`) |
+
+- **Arbeitsstatus (abgeleitet, nur lesend):** `arbeitsrolle`, `arbeitsrolle_label` und `arbeitsstatus` werden beim Lesen aus dem Frontmatter-Feld `aktuell` abgeleitet (`<Rolle>: <Text>`) und **top-level** ausgeliefert — nur für Einträge mit `typ: Task`; Nicht-Tasks und Aufgaben ohne belegbares `aktuell` tragen keines der Felder (fehlend = keine Anzeige). Aufgaben mit UI-Status „Geschlossen" liefern keine Arbeitsstatus-Felder. `frontmatter.aktuell` bleibt unverändert roh erhalten; es gibt **keinen neuen Endpunkt** und keinen Schreibpfad (Single Source of Truth: `aktuell`).
 
 - Alle `path`-Parameter werden gegen Ausbruch aus `BUNDLE_ROOT` geprüft (normalisiert, Präfix-Check) — **reject** bei Verstößen.
 - Fehler: HTTP 4xx mit `{error: "<verständliche Meldung>"}`, nie Teil-Zustände (Schreiben erst nach vollständiger Validierung).
