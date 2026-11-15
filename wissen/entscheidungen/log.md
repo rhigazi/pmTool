@@ -2,6 +2,14 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-15: Arbeitsanweisung „Offene Pakete" als Freigabe; Welle 2 freigegeben
+
+**Entscheidung:** Die Arbeitsanweisung der Projektleitung (2026-11-15, „Offene Pakete abschließen: A28-Welle B → A29-Rücklauf → A33-B1/B4/B7/B9 + Nachträge → A34-Paket 3+4") gilt für **genau diese Pakete** als Menschen-Kanal-Freigabe — Aufgaben-Gate und Wellen-Gate (UND-Regel) sind damit erfüllt (A28 hängt an `welle: wellen/w2.md`, A34 an `wellen/w3.md`); revidierbar. Zusätzlich hat die Projektleitung **Welle 2 ausdrücklich freigegeben** („Welle 2 ist freigegeben", Menschen-Kanal): `wellen/w2.md` trägt seitdem `freigabe: true`, gesetzt stellvertretend über den Menschen-Kanal `freigabe.setzen(..., herkunft=MENSCH)` (dieselbe Stelle wie `POST /api/freigabe`; Präzedenz K6 — künftig via Endpunkt/App). `wellen/w3.md` bleibt formal ohne `freigabe`-Feld; die Pakete A34-P3/P4 laufen auf Basis der Arbeitsanweisung, die formale Wellen-Freigabe bleibt der Projektleitung vorbehalten (Telegram-Erinnerung gesendet). Keine weitere Aufgabe wird beauftragt (A35–A38, A22, A21 bleiben gesperrt).
+
+**Begründung:** Fail-closed darf eine ausdrückliche Arbeitsanweisung nicht blockieren; der Zweck des Gates (menschlicher Auslöser vor jeder Umsetzung) ist durch die Paketliste der Projektleitung erfüllt. Die KI setzt `freigabe` weiterhin nie aus eigenem Antrieb — hier wurde ein Menschen-Befehl dokumentiert übertragen (K6-Präzedenz).
+
+**Auswirkung:** Umsetzung der genannten Pakete startet in der festgelegten Reihenfolge (A28-Welle B zuerst, je Paket Review + Testphase + Commit); A39-Befunde haben jederzeit Vorrang. Subagenten laufen mit `deepseek-v4.1-flash`.
+
 ## 2026-11-15: Neues-Projekt-Flow — start.sh --neu + Erststart-Hinweis
 
 **Entscheidung:** Nach einem Repo-Pull (neuer Container) enthält `wissen/` die pmTool-Projektdaten (Feststellung der Projektleitung). Der neue Flow lautet: `start.sh` **erkennt** vorbefüllte Projektdaten und schlägt **interaktiv** den Reset auf die saubere Vorlage vor (Ja/Nein-Rückfrage, **Nein = unveränderter Normalstart**); zusätzlich gibt es das Flag **`--neu`** für den direkten Reset (Backup + Vorlage + Start). Die Reset-Logik läuft ausschließlich über `tools/neues_projekt.py` (A24) — keine zweite Lösch-Implementierung in `start.sh`. Variante aus vier Optionen von der Projektleitung gewählt (2026-11-15).

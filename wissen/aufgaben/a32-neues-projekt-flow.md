@@ -8,7 +8,7 @@ phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
 owner: ai
-aktuell: "PM: Bestätigungs-Review FREIGEBEN (H1–H6 → A33) — reif für Abschluss"
+aktuell: "PM: Bestätigungs-Review FREIGEBEN (H1–H6 → A33) — Nachträge H1/H2/H3/H6 (start.sh) umgesetzt — reviewer: Review — 2026-11-15"
 ---
 
 # Ziel

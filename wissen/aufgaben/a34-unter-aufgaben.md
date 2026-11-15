@@ -10,7 +10,7 @@ priority: mittel
 assigned_to: coder
 welle: wellen/w3.md
 owner: ai
-aktuell: "coder: A34 Paket 1+2 (kennung.py + parent-Anlage) — Freigabe lt. Feature-Strecken-Vorgabe"
+aktuell: "PM: Paket 1+2 fertig (1444 grün) — Paket 3 startet nach A29-Rücklauf (detail.js-Konflikt)"
 ---
 
 # Ziel
