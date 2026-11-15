@@ -3,12 +3,11 @@ type: Task
 title: "A25: Suche (Feldsuche in den Listen)"
 description: In der Übersicht Liste brauchen wir eine Möglichkeit Suchbegriffe einzugeben
   um die Aufgaben nach bestimmten Informationen zur durchsuchen
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: "PM: Testphase S1–S6 bestanden (44/44) — reif für Abschluss, Doku-Runde folgt"
 ---
 
 # Ziel
@@ -133,3 +132,14 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Klein-Befunde (laufen direkt im A27-Paket 2 mit, gleiche Datei `liste.js` — als laufend vermerkt):** (1) Idempotenz-Prüfung soll `isConnected` berücksichtigen; (2) doppelter Leerzustand. Kein Review-Blocker.
 - **Hinweise für den gebündelten Lauf:** T24-Arbeitsteilung zwischen `tester` und `verify.sh` klären; optional die String-Präsenz-Tests zusammenlegen.
 - **Offene Punkte:** Testphase-Ergänzung **S1–S6** folgt im gebündelten Lauf. Status **A25 → in Doku** (review-frei).
+
+## 2026-11-15 — tester (Testphase S1–S6, BESTANDEN)
+
+- **Ergebnis:** **BESTANDEN — 44/44 Prüfungen** in beiden Umgebungen (Basis-Commit `07ad675` **und** Arbeitsbaum mit der parallelen A27-Änderung an `liste.js`): S1 Suchen (9/9), S2 Leeren (4/4), S3 Kombination Suchbegriff + Status + owner (4/4), S4 kein Treffer „Keine Treffer." statt „Keine Einträge." (4/4), S5 Sonderzeichen/XSS `.*`, `(`, `<img …>` (4/4, literal, keine Senke), S6 Enter ohne Reload strukturell belegt (5/5) — dazu 8 Zusatzprüfungen (UND-Verknüpfung, Umlaut-/ß-Faltung, „zuletzt geändert" nicht durchsuchbar, alle drei Listen).
+- **Belege:** Szenarien-Bundle `/tmp/opencode/a25_szenarien/`; `wissen/` unberührt. Grenze des Belegs: kein Moli im Container — Standard-Fallback HTTP + Node-DOM-Harness (dokumentiert).
+- **Offene Punkte:** 2 Klein-Befunde (Idempotenz-Prüfung mit `isConnected`, doppelter Leerzustand) sind in [A27](a27-wellen-zuordnung.md) (Paket 2, gleiche Datei `liste.js`) behoben und werden dort abgeschlossen. Sonst keine.
+
+## 2026-11-15 — documenter (Abschluss)
+
+- **Ergebnis:** A25 auf `task_status: abgeschlossen` / `phase: 8 Abgeschlossen` gesetzt, `aktuell` geleert, im [Aufgaben-Index](index.md) nach „Abgeschlossene Aufgaben" verschoben; [features.md](/features.md) und [Projekt-Log](/log.md) nachgezogen.
+- **Belege:** **72 Tests** (`test_suche.py`), **Testphase S1–S6 bestanden** (44/44, 2026-11-15), **Review FREIGEGEBEN** (2026-11-15). Die 2 Klein-Befunde werden im Rahmen von A27 abgeschlossen (dortige Aufgabe, gleiche Datei).

@@ -2,13 +2,12 @@
 type: Task
 title: "A24: Neues Projekt beginnen (wissen/ zurücksetzen)"
 description: "`python3 tools/neues_projekt.py` löscht `wissen/` und ersetzt es durch die saubere OKF-Vorlage `definitions/wissen-vorlage/` — mit Plan-Vorschau, Backup und Verify-Nachweis."
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: hoch
 assigned_to: coder
 feature: /features/okf-projekt-manager-spa.md
 owner: ai
-aktuell: "reviewer: Bestätigungs-Review der Nachbesserung (Commit a959d75)"
 ---
 
 # Ziel
@@ -51,8 +50,8 @@ Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das M
 
 # Betroffene Dateien
 
-- `tools/neues_projekt.py` (neu)
-- `tools/tests/test_neues_projekt.py` (neu)
+- `tools/neues_projekt.py` (neu) — **seit A26:** gepflegte Quelle ist `definitions/tools/neues_projekt.py`, `tools/neues_projekt.py` ist der Spiegel (künftige Änderungen an der Quelle)
+- `tools/tests/test_neues_projekt.py` (neu) — **seit A26:** Quelle `definitions/tools/tests/test_neues_projekt.py`
 - Doku: `README.md` + `docs/colab-start.md`, Abschnitt „Neues Projekt beginnen" — 2026-11-15 vom `documenter` ergänzt
 
 # Ergebnisse
@@ -96,3 +95,15 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **PM-Entscheidung (2026-11-15):** Der **Plan-Lauf** (ohne `--ja`) bricht bei belegtem Backup-Ziel ebenfalls ab — bleibt so, weil es konsistent ist: Die Vorschau kündigt keinen Lauf an, der mit Sicherheit scheitern würde. Alternative „Vorschau warnt, Lauf weicht aus" wurde verworfen (würde die Regel „nie überschreiben" im Lauf wieder aufweichen).
 - **Belege:** `python3 -m pytest tools/tests -q` → **69 passed** (davon `test_neues_projekt.py` **32**), geprüft 2026-11-15 durch den `documenter`. Der Rollback-Test ist gegen den Elternstand von `a959d75` (alte Git-Version) nachweislich rot und auf dem neuen Stand grün.
 - **Offene Punkte:** Status **A24 → in Doku** (Phase 7). Die Review-Bestätigung des Rücklaufs folgt im gebündelten Lauf bzw. als kurzes Bestätigungs-Review; danach Testphase. **A26** (Verteilung `definitions/tools/` + Root-Suite-Konflikt) bleibt separat und unverändert offen.
+
+## 2026-11-15 — reviewer (Bestätigungs-Review der Nachbesserung, FREIGEGEBEN)
+
+- **Ergebnis:** **FREIGEGEBEN** — beide **wesentlichen** Sicherheits-Befunde sind behoben und durch echte, nicht abgeschwächte Tests belegt: (1) vorhandenes `--backup`-Ziel wird als `PfadFehler` abgelehnt, Doppel-Barriere in Pfadauflösung **und** `backup_erstellen` (kein Truncaten, kein Überschreiben der einzigen Sicherung); (2) fehlgeschlagener Rücktausch erhält den Altbaum (`.wissen-alt-*` bleibt liegen und wird gemeldet, `_ersetze`-Seam, Test gegen den Elternstand von `a959d75` nachweislich rot). Kleinbefunde 3–5 (Modus 0755, Vorlagen-Symlinks abgelehnt, Erfolgsmeldung ohne unbelegten verify-Nachweis) und die Testlücken a–e sind mit erledigt.
+- **Belege:** `python3 -m pytest tools/tests -q` → **69 passed** (davon `test_neues_projekt.py` **32**, vorher 24). Sicherheitsinvariante „kein Löschen ohne erhaltenes Backup" bestätigt.
+- **Offene Punkte:** keine für A24 — Status **A24 → in Doku** (review-frei).
+
+## 2026-11-15 — documenter (Abschluss)
+
+- **Ergebnis:** A24 auf `task_status: abgeschlossen` / `phase: 8 Abgeschlossen` gesetzt, `aktuell` geleert, im [Aufgaben-Index](index.md) nach „Abgeschlossene Aufgaben" verschoben; [features.md](/features.md) und [Projekt-Log](/log.md) nachgezogen.
+- **Belege:** 32 Tests in `test_neues_projekt.py`, `tools/tests` **69 grün**, Bestätigungs-Review FREIGEGEBEN (2026-11-15).
+- **Wichtig — Quelle/Spiegel (A26):** Die gepflegte Quelle ist jetzt **`definitions/tools/neues_projekt.py`** (Single Source of Truth); `tools/neues_projekt.py` ist der gepflegte Spiegel im Entwicklungs-Repo. Grund: [A26](a26-verteilung-und-suite-konflikt.md) hat die Verteilungslücke geschlossen — künftige Änderungen an der Quelle vornehmen, nicht im Spiegel. Testdatei entsprechend `definitions/tools/tests/test_neues_projekt.py`.

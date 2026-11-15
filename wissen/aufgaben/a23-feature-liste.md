@@ -4,8 +4,8 @@ title: "A23: Feature-Liste (Menüpunkt + Feature-Status)"
 description: Die Feature List erscheint nicht im Menü, es sollte möglich sein über
   die Feature List zu jedem Feature zu sehen welche Aufgaben noch offen sind welche
   umgeset…
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: hoch
 assigned_to: coder
 owner: ai
@@ -136,3 +136,14 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Kleinbefunde K1–K6 — laufen als Coder-Takt (kein Review-Blocker):** K1 führender `/`-Link, K2 Singular/Plural, K3 Formatfehler bei ungewohnter Bullet-Form, K4 Klammern, K5 Router-Harness-Unterpunkte, K6 harte Zählungen.
 - **Testphase-Hinweise:** **H1 GESCHLOSSEN (tester, 2026-11-15):** Planzahl war falsch — 71 `def test_`-Zeilen inkl. Fixture `test_bundle` + 22 parametrisierte Fälle ⇒ 70 echte Tests + 22 = **92** = pytest-Collect; **kein fehlender Test**. Planzahl auf **92** korrigiert; kosmetische Empfehlung (Aufräum-Takt): Fixture umbenennen (pytest sammelt sie nicht). **H2** `tests/fixtures/bundle_min/features.md` hat das ALT-Format → der `tester` nutzt für die Moli-Szenarien **S1–S3** ein eigenes Szenarien-Bundle **mit** `# Offene Features`/`# Umgesetzte Features`; **S4** bewusst eines **ohne** Datei. **H3** Harness-Konsolidierung [A14-6] bestätigt, kein Neu-Befund.
 - **Offene Punkte:** Status **A23 → in Doku** (review-frei). A23-Suite **92** (H1 geschlossen, Planzahl korrigiert). Teststand-Korrektur (tester, 2026-11-15): Basis `07ad675` = App **942** + tools **69** = **1011** (die Zahl 1015 war nicht reproduzierbar; Zählumfang „Gesamtsuite" = App + tools, `definitions/tools` wird separat ausgewiesen).
+
+## 2026-11-15 — tester (Testphase-Ergänzung / H1-Nachlauf, GESCHLOSSEN)
+
+- **Ergebnis:** Die offene Planzahl ist geklärt — **kein fehlender Test**. Die 71 `def test_`-Zeilen enthalten die Fixture `test_bundle` (pytest sammelt sie nicht) und 22 parametrisierte Fälle: 70 echte Tests + 22 = **92** = pytest-Collect. Abdeckung T1–T23 vollständig.
+- **Befunde:** Planzahl-Fehlzählung, Planvorgabe auf **92** korrigiert. Kosmetische Empfehlung (Aufräum-Takt, [A33](a33-kleinbefunde-aufräum-takt.md)): Fixture umbenennen. H2: Szenarien-Bundle für S1–S3 **mit** Feature-Abschnitten, S4 **ohne** Datei.
+- **Offene Punkte:** keine — review-frei, reif für Abschluss.
+
+## 2026-11-15 — documenter (Abschluss)
+
+- **Ergebnis:** A23 auf `task_status: abgeschlossen` / `phase: 8 Abgeschlossen` gesetzt, im [Aufgaben-Index](index.md) nach „Abgeschlossene Aufgaben" verschoben; [features.md](/features.md) und [Projekt-Log](/log.md) nachgezogen.
+- **Belege:** **92 Tests** (`test_features.py`, pytest-Collect), H1 geschlossen (Planzahl-Fehlzählung, auf 92 korrigiert), **K1–K6 erledigt**, **Review FREIGEGEBEN** (2026-11-15) inkl. Bestätigung der Planabweichung `markiereNavigation` (nicht nachholen). App-Suite **864** bleibt der A23-Zeitstand.
