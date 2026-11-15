@@ -4,13 +4,13 @@ title: "A30: Was passiert gerade"
 description: Wenn ich die Übersicht Liste Aufrufe und den Status "in Arbeit" sehe
   ich die Aufgaben die im Moment von dir bearbeitet werden, allerdings weiß ich nicht
   wo wir…
-task_status: in Planung
-phase: 2 Planung
+task_status: in Review
+phase: 5 Review
 priority: mittel
 assigned_to: coder
 welle: wellen/w2.md
 owner: ai
-aktuell: "coder: Paket 2 (UI) gestartet — Gate gefallen (A27 durch); danach A31"
+aktuell: "reviewer: Review A30 (Snapshot) | tester: S1–S4 | coder: A31 läuft parallel"
 ---
 
 # Ziel
