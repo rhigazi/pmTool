@@ -2,6 +2,11 @@
 
 <!-- Einträge neueste zuerst; Format: ## YYYY-MM-DD (ISO-Datum), darunter Stichpunkte mit **Update**/**Creation**/**Deprecation** -->
 
+## 2026-11-15
+
+* **Update** A16-Bugfix: `serve_kernel_port_as_window` funktioniert nur im Notebook-Kernel — der bisherige Start als Unterprozess (`!bash start.sh --colab`) ließ die Port-Freigabe **still** fehlschlagen (Nutzer sah nur 127.0.0.1-/172.x-URLs). Umgesetzt: `_laeuft_im_kernel()`, `HINWEIS_PORT_FREIGABE` statt stillem Fallback, `__main__`-Guard ohne `sys.exit` im Kernel, Notebook-Zelle 6 (`%run definitions/app/start_colab.py`), Doku/README angeglichen; 4 neue Tests (rot→grün), Gesamtsuite **765**. Offen (Post-MVP): erneuter Zellen-Aufruf bei laufendem Server öffnet kein neues Freigabe-Fenster (bewusst unverändert); `start.sh --colab` bleibt Unterprozess-Variante mit Hinweis (nicht empfohlen).
+* **Creation** Entscheidung „Colab-Port-Freigabe nur im Kernel-Kontext" im [Entscheidungslog](/entscheidungen/log.md).
+
 ## 2026-11-14
 
 * **Update** **A17-Abnahmelauf BESTANDEN — MVP abnahmefähig, alle Aufgaben A1–A20 `abgeschlossen`.** Belege: T1 API-E2E 23/23; T2 Frontmatter intakt; T3 Hash-Nachweis `wissen/` (39 Dateien) `53f032e3…68ea` vor/nach jedem Schritt identisch (erster Lauf-Hash-Einbruch kam vom eigenen Doku-Commit `ec8bb7f`, danach re-baselined); T4 761 passed/Exit 0; T5 `verify.sh` Exit 0; T6 Moli 1.1.24/Chrome 156 via CDP, 0 Konsolenfehler, 5 Screenshots `/tmp/opencode/a17-shots/`; T7 Reset 23/23. PM-Entscheidungen: Einmal-Nachweis für die Abnahme + **A22** (E2E-Regression) angelegt; literal gerenderter Nachtrag-Marker R6-konform akzeptiert; `task_status: in Klärung` als Soll-Datenhaltung bestätigt.

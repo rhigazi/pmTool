@@ -73,3 +73,10 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Ergebnis:** [A16-2] `start_colab.py::_installiere` liefert `bool`, `main` prüft Returncode + Re-Import → Exit 1 mit klarer Meldung. [A16-3] `_port_belegt` bindet jetzt `0.0.0.0` (statt nur 127.0.0.1).
 - **Belege:** Kleinbefunde-Takt Batch A (+12 Tests); Gesamtsuite 761 grün.
 - **Offene Punkte:** [A16-1] R11-Zitat, [A16-4] Env-Weitergabe (Aufräum-Takt); Doku/Abschluss.
+
+## 2026-11-15 — coder (Bugfix: Colab-Port-Freigabe)
+
+- **Ursache:** `serve_kernel_port_as_window` funktioniert nur im Notebook-Kernel; der bisherige Start lief als Unterprozess (`!bash start.sh --colab`) → die Port-Freigabe schlug **still** fehl (Nutzer sah nur 127.0.0.1-/172.x-URLs). Die gemockten Tests konnten diesen Real-World-Constraint nicht finden.
+- **Umsetzung:** `_laeuft_im_kernel()`, Handlungsanweisung `HINWEIS_PORT_FREIGABE` statt stillem Fallback, `__main__`-Guard ohne `sys.exit` im Kernel, Notebook-Zelle 6 (`%cd` + `%run definitions/app/start_colab.py`), Doku/README angeglichen.
+- **Belege:** 4 neue Tests (rot → grün); Gesamtsuite **765** grün.
+- **Offene Punkte:** (a) „Server läuft bereits" öffnet bei erneutem Zellen-Aufruf kein neues Freigabe-Fenster (bewusst unverändert) — Kleinticket; (b) `start.sh --colab` bleibt Unterprozess-Variante mit Hinweis (Doku weist sie als nicht empfehlenswert aus).

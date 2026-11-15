@@ -2,6 +2,14 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-15: Colab-Port-Freigabe nur im Kernel-Kontext
+
+**Entscheidung:** Colab-Startzellen nutzen `%run`/Import im Notebook-Kernel; `!bash`-/`!python`-Aufrufe starten nicht mehr still, sondern geben die Handlungsanweisung `HINWEIS_PORT_FREIGABE` aus. Der `__main__`-Guard von `start_colab.py` beendet im Kernel nicht per `sys.exit`.
+
+**Begründung:** `google.colab.output.serve_kernel_port_as_window` braucht den Kernel-Kanal des Notebooks — als Unterprozess (`!bash start.sh --colab`) schlägt die Freigabe still fehl (nur 127.0.0.1-/172.x-URLs); das war der A16-Bug.
+
+**Auswirkung:** Notebook-Zelle 6 und Doku/README nutzen `%run definitions/app/start_colab.py`; `start.sh --colab` bleibt als Unterprozess-Variante mit Hinweis bestehen (nicht empfohlen); 4 neue Tests, Gesamtsuite 765.
+
 ## 2026-11-14: MVP-Abnahme mit Einmal-Nachweis; E2E-Regression als A22 (post-MVP)
 
 **Entscheidung:** Die MVP-Abnahme erfolgt auf Basis des dokumentierten **Einmal-Nachweises** aus dem A17-Abnahmelauf (T1/T2/T7-Kette, 23/23, 761 passed, verify.sh Exit 0, Moli 0 Konsolenfehler, Hash-Nachweis). Ein eingechecktes `test_e2e.py` existiert noch nicht; die dauerhafte E2E-Regression wird als **A22 „E2E-Regressionstest (test_e2e.py)"** post-MVP nachgezogen (Aufgaben-Datei angelegt, Priorität mittel).

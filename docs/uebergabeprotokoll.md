@@ -65,7 +65,7 @@ Statuswerte laut Phasenmodell. Alle Aufgaben A1–A20 sind **abgeschlossen** (Um
 | A13 | Formulare (Aufgabe/Welle) | abgeschlossen | 81 Tests + Moli-Smoke |
 | A14 | Entscheidungen-/Projekt-Ansicht | abgeschlossen | 55 Tests + Moli-Smoke; Review freigegeben |
 | A15 | `setup.sh`/`verify.sh`/README | abgeschlossen | 13/13 Tests; R12/tools-Cache erledigt |
-| A16 | Colab-Startzelle `start_colab.py` | abgeschlossen | 8 Tests; A16-2/3 erledigt |
+| A16 | Colab-Startzelle `start_colab.py` | abgeschlossen | 12 Tests; A16-2/3 + Port-Freigabe-Bugfix (2026-11-15) |
 | A17 | E2E-Absicherung/Abnahmelauf | abgeschlossen | Abnahmelauf bestanden (23/23 API-E2E, Moli 0 Konsolenfehler, Hash-Nachweis) — **MVP abnahmefähig** |
 | A18 | Startskript `start.sh` + `docs/colab-start.md` | abgeschlossen | 7 Tests; A18-1–3 erledigt |
 | A19 | `verify.sh`-Fallback `definitions/app` | abgeschlossen | 5 Tests; `verify.sh` Exit 0 im Dev-Repo |
@@ -73,7 +73,7 @@ Statuswerte laut Phasenmodell. Alle Aufgaben A1–A20 sind **abgeschlossen** (Um
 | A21 | Desktop-Modus/Lokal-Betrieb | vorgemerkt (Post-MVP) | Nummer reserviert, noch keine Aufgaben-Datei |
 | A22 | E2E-Regressionstest (`test_e2e.py`) | offen (Post-MVP) | Datei angelegt; überführt die T1/T2/T7-Kette aus A17 |
 
-**Teststand (letzter Gesamtlauf):** `python3 -m pytest definitions/app/tests -q` → **761 passed, Exit 0** (serialisiert; Parallelbetrieb ist eine bekannte Flaky-Zone). `bash definitions/verify.sh .` → **Exit 0**.
+**Teststand (letzter Gesamtlauf):** `python3 -m pytest definitions/app/tests -q` → **765 passed, Exit 0** (serialisiert; Parallelbetrieb ist eine bekannte Flaky-Zone). `bash definitions/verify.sh .` → **Exit 0**.
 
 # Offene Punkte (Post-MVP)
 
