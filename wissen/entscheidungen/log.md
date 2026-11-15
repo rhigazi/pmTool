@@ -2,6 +2,22 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-15: A30 als nächste Aufgabe — Freigabe durch Priorisierung der Projektleitung
+
+**Entscheidung:** Die Projektleitung hat die neue Aufgabe „Was passiert gerade" (angenommen als [A30](/aufgaben/a30-was-passiert-gerade.md)) als „nächste Aufgabe" bezeichnet. Das gilt als **Priorisierung und Freigabe** über den Menschen-Kanal (Standardentscheidung: ausdrückliche Zustimmung über Chat/Telegram/App genügt) — Planung startet sofort, Umsetzung nach A27 (Datei-Überschneidung `liste.js`). Wird die Freigabe widerrufen, stoppt die Umsetzung (revidierbar).
+
+**Begründung:** Klarer Handlungsauftrag der Projektleitung („hier die nächste Aufgabe"); die A28-Freigabe-Regel soll Wartezeiten verhindern, nicht blockieren. Die Datensemantik von `freigabe` (eigenes Feld, fail-closed) wird erst mit A28/A29 produktiv — bis dahin gilt der Menschen-Kanal.
+
+**Auswirkung:** A30 geht in die Planung und wird nach A27 umgesetzt (Reihenfolge im Frontmatter `aktuell` gepflegt). Die Freigabe-Interpretation ist im Log offen dokumentiert.
+
+## 2026-11-15: Freigabe-Datenhaltung fail-closed (A28/A29-Planung bestätigt)
+
+**Entscheidung:** Die im Planungsstand von [A28](/aufgaben/a28-benachrichtigung-neue-aufgabe.md)/[A29](/aufgaben/a29-wellen-abarbeiten.md) getroffenen Festlegungen werden bestätigt: `freigabe` ist ein boolesches Frontmatter-Feld, fehlend/≠`true` = **nicht freigegeben** (fail-closed); bei Neuanlage immer `freigabe: false`. Die Freigabe ist ein **Menschen-Recht** — der KI-Schreibweg liefert technisch 403 und schreibt nichts (auch nicht bei `false`); dokumentiert als Modul-/API-Konvention + Projektregel, da eine lokale Single-User-App keine Authentifizierung kennt. Wahrnehmungssignal: abgeleitetes `neu`-Flag (Titel `^A<N>:` **und** Dateiname `^a<N>(-|.)`); kein Push/Watcher/Telegram aus der App (verworfen — Prüfpflicht des PM bleibt, die App liefert das deterministische Signal). Wellen-Gate: `wirksam = Aufgabe freigegeben AND (keine Welle OR Welle freigegeben)`; Entzug sperrt nur weitere Beauftragungen, keine laufende Umsetzung.
+
+**Begründung:** Fail-closed ist die sichere Voreinstellung (nichts beginnt ohne ausdrückliche Freigabe); die Rechteklasse ist analog zu `owner`/Status-Klarung/Geschlossen als Menschen-Recht konsistent; externe Benachrichtigungsdienste widersprechen der Abhängigkeits-Regel.
+
+**Auswirkung:** Umsetzung in A28 Paket 0 (Fundament) → A29; `phasen.md` erhält Phase „3b. Freigabe" + Wartestatus `geplant`; `technische-spec.md` Rechtezeile + Endpunkt `POST /api/freigabe`.
+
 ## 2026-11-15: Freigabe-Gate für Aufgaben und Wellen (Standardentscheidung)
 
 **Entscheidung:** Neue Aufgaben werden bei Wahrnehmung mit Kennung + Titel (`A<N>: Titel`) versehen und geplant — die **Umsetzung beginnt erst, wenn die Aufgabe geklärt und von der Projektleitung freigegeben** ist ([A28](/aufgaben/a28-benachrichtigung-neue-aufgabe.md)). Aufgaben werden Wellen zugeordnet; eine Welle ist standardmäßig **nicht freigegeben** — erst die Freigabe der Welle startet die Umsetzung aller Aufgaben dieser Welle ([A29](/aufgaben/a29-wellen-abarbeiten.md)). Bis die Funktion existiert, gilt das als Prozessregel: Freigabe = ausdrückliche Zustimmung der Projektleitung (App/Chat/Telegram); die Datenhaltung wird von A28/A29 spezifiziert.

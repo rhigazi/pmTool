@@ -4,6 +4,8 @@ Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in
 
 # Laufende Aufgaben
 
+* [A30: Was passiert gerade](a30-was-passiert-gerade.md) - In-Arbeit-Aufgaben zeigen den Arbeitsstatus der Subagenten (Planer, Coder, Tester, Review, Documenter) — **in Planung** (2026-11-15 aus der App angelegt, angenommen als A30; von der Projektleitung als nächste Aufgabe priorisiert und freigegeben; Umsetzung nach A27 wg. `liste.js`)
+
 * [A28: Benachrichtigung bei neuer Aufgabe](a28-benachrichtigung-neue-aufgabe.md) - Bei neuer Aufgabe wird die KI benachrichtigt; sie vergibt die Kennung in den Titel (`A<N>: Titel`) und wartet auf die Freigabe — erst danach beginnt die Umsetzung — **in Planung** (2026-11-15 aus der App angelegt und angenommen; Umsetzung erst nach Freigabe der Projektleitung)
 * [A29: Wellen abarbeiten](a29-wellen-abarbeiten.md) - Aufgaben werden einer Welle zugeordnet; eine Welle ist standardmäßig nicht freigegeben — erst die Freigabe der Welle startet die Umsetzung aller Aufgaben der Welle — **in Planung** (2026-11-15 aus der App angelegt und angenommen; Umsetzung nach A27 wg. Datei-Überschneidung und nach Freigabe)
 
