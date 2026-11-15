@@ -87,3 +87,10 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 - **Umsetzung:** Freigabe-Kette umgestellt: **primär `serve_kernel_port_as_iframe(port)`** (App rendert in der Notebook-Zelle), Fenster nur noch Fallback mit Veraltet-Notiz, letzter Fallback = Handlungs-Hinweis (absoluter Pfad). Meldungen ohne irreführende localhost-URL. README/`docs/colab-start.md`: iframe als Empfehlung, Window als deprecated markiert.
 - **Belege:** 3 neue Tests (rot → grün); Gesamtsuite **768** grün.
 - **Offene Punkte:** (a) Die iframe-Höhe ist Colab-Standard — falls die App abgeschnitten wirkt, `height`-Argument als Kleinticket; (b) unverändert: `start.sh --colab` ohne Freigabe (als nicht empfehlenswert markiert).
+
+## 2026-11-15 — coder (Bugfix 3. Iteration: App im neuen Browser-Tab)
+
+- **Vorgabe:** Die App soll in einem **neuen Browser-Tab** öffnen (iframe „nicht nutzbar").
+- **Umsetzung (finale Freigabe-Kette):** (1) primär `google.colab.kernel.proxyPort(<port>)` per `eval_js` (sicherer, authentifizierter Colab-Link) + `window.open(…, '_blank')` → neuer Tab; (2) Fallback = Nutzer-Snippet `output.serve_kernel_port_as_window(5000)` (Notiz: lieferte aus `%run` nur `https://localhost:5000/`); (3) iframe nur Notbehelf; (4) Handlungs-Hinweis (absoluter `%run`-Pfad + beide Nachhol-Snippets). Meldungen ohne localhost-URL. README/`docs/colab-start.md` auf „neuer Browser-Tab" umgestellt.
+- **Belege:** Gesamtsuite **769** grün (19 Tests in `test_start_colab.py`).
+- **Offene Punkte:** (a) **Popup-Blocker (Post-MVP):** `window.open` ohne echten Klick-Kontext kann blockiert werden — falls im echten Colab beobachtet, `window.open`-Rückgabewert auswerten und automatisch in den Fenster-Fallback gehen (bewusst noch nicht gebaut); (b) „iframe-Höhe" entfällt — iframe ist nur noch Notbehelf (Thema erledigt); (c) unverändert: `start.sh --colab` ohne Freigabe (nicht empfohlen); (d) „Server läuft bereits" öffnet kein neues Freigabe-Fenster (bewusst unverändert).
