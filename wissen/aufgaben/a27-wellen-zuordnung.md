@@ -2,11 +2,11 @@
 type: Task
 title: "A27: Wellen-Zuordnung (nachträglich zuordnen, filtern, Wellen-Sicht)"
 description: Aufgaben nachträglich einer Welle zuordnen, umsortieren und die Zuordnung entfernen (Detail-Dropdown über POST /api/meta), Aufgaben nach Welle filtern (Listen) und die Aufgaben einer Welle im Wellen-Detail aus dem welle-Feld ableiten.
-task_status: in Review
-phase: 5 Review
+task_status: in Doku
+phase: 7 Dokumentation
 priority: hoch
 assigned_to: coder
-aktuell: "tester: S1–S7 BESTANDEN (Moli 1.1.24, A25-Regression + 'ohne Welle'-Probe grün) — reviewer: Review läuft"
+aktuell: "PM: FREIGEGEBEN + S1–S7 bestanden — reif für Abschluss (Doku-Runde)"
 feature: /features/okf-projekt-manager-spa.md
 owner: ai
 ---
