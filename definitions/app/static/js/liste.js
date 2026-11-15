@@ -6,6 +6,8 @@ const WELLE_SPALTE = "Welle";
 // Top 5 zuletzt geänderte Punkte gemäß US-1-AC4.
 const ZULETZT_ANZAHL = 5;
 const KEINE_ANGABE = "—";
+// A28: Marke für Aufgaben ohne gültige Kennung (``neu`` aus der Lese-API).
+const MARKE_NEU = "neu";
 const LEER_TABELLE = "Keine Einträge.";
 const LEER_TREFFER = "Keine Treffer.";
 const LEER_KLARUNG = "Keine offenen Rückfragen.";
@@ -277,6 +279,19 @@ function erstelleWelleZelle(eintrag) {
   return zelle;
 }
 
+/** Titel-Zelle; Aufgaben ohne Kennung tragen zusätzlich die Marke „neu". */
+function erstelleTitelZelle(eintrag) {
+  const titel = eintrag?.titel || KEINE_ANGABE;
+  if (eintrag?.neu !== true) return erstelleZelle(titel);
+
+  const zelle = document.createElement("td");
+  const marke = document.createElement("span");
+  marke.classList.add("status");
+  marke.textContent = MARKE_NEU;
+  zelle.append(document.createTextNode(titel), document.createTextNode(" "), marke);
+  return zelle;
+}
+
 /** Baut die Tabelle aus API-Einträgen; `mitWelle` ergänzt die Spalte „Welle". */
 export function erstelleTabelle(eintraege, { mitWelle = false } = {}) {
   const tabelle = document.createElement("table");
@@ -294,7 +309,7 @@ export function erstelleTabelle(eintraege, { mitWelle = false } = {}) {
     const zeile = koerper.insertRow();
     if (eintrag?.path) zeile.dataset.path = eintrag.path;
     if (eintrag?.status === "Klarung") zeile.classList.add("klarung");
-    zeile.append(erstelleZelle(eintrag?.titel || KEINE_ANGABE));
+    zeile.append(erstelleTitelZelle(eintrag));
     if (mitWelle) zeile.append(erstelleWelleZelle(eintrag));
     zeile.append(
       erstelleStatusZelle(eintrag),

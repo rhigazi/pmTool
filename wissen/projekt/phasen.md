@@ -25,6 +25,7 @@ generated: { by: opencode/mimo-v2.6-pro, at: 2026-11-13T07:04:49Z }
 | 1. Konzeption | Projektmanager | Anforderungen geklärt; User Stories und Technische Spec erstellt |
 | 2. Planung (TDD) | planner | Granulare Aufgaben mit Testfällen, Akzeptanzkriterien, Priorität, betroffenen Dateien |
 | 3. Aufgabenanlage | documenter | Aufgaben-Dateien in [/aufgaben/](/aufgaben/index.md) angelegt |
+| 3b. Freigabe | Projektleitung (human) | Aufgabe geklärt und geplant (`geplant`); `freigabe: true` gesetzt (Menschen-Recht, `POST /api/freigabe`) — Voraussetzung für die Beauftragung |
 | 4. Umsetzung | coder | Red-Green-Refactor abgeschlossen |
 | 5. Review | reviewer | Keine kritischen Befunde (Anforderung, Qualität, Umsetzung) |
 | 6. Test | tester | TDD-Testfälle und Moli-Szenarien grün |
@@ -32,7 +33,7 @@ generated: { by: opencode/mimo-v2.6-pro, at: 2026-11-13T07:04:49Z }
 | 8. Abgeschlossen | Projektmanager | DoD erfüllt; [/features.md](/features.md) und [Projekt-Log](/log.md) aktualisiert; Stand committed |
 | 9. Abnahme | Projektleitung (human) | Abgenommen oder Änderungswünsche → neue Aufgaben |
 
-Es gibt keine fachliche Freigabe-Phase vor der Umsetzung: Nach der Klärung läuft die Pipeline ohne erneute Freigabe durch. Die Abnahme findet am Ende statt (siehe „Abnahme & Meilensteine"). Der Coder meldet eine abgeschlossene Aufgabe an den Reviewer, dieser an den Tester.
+**3b. Freigabe (Projektleitung, human):** Nach Klärung und Planung ist `geplant` der **Wartestatus**: Die Aufgabe wird nicht beauftragt, solange die Projektleitung nicht `freigabe: true` gesetzt hat. Die Freigabe ist ein **Menschen-Recht** — sie wird ausschließlich über die App (`POST /api/freigabe`) gesetzt; der KI-Weg (`meta.setzen`, `POST /api/meta`) liefert 403. Fehlt das Feld oder ist es nicht exakt `true`, gilt die Aufgabe als nicht freigegeben (fail-closed). Ein Entzug sperrt weitere Beauftragungen, bricht aber keine laufende Umsetzung ab. Der Ablauf ist verbindlich: wahrnehmen → annehmen (Kennung/Titel/Datei) → sofort pushen → planen → `geplant` → auf `freigabe: true` warten → umsetzen. Die Abnahme der fertigen Arbeit findet am Ende statt (siehe „Abnahme & Meilensteine"); der Coder meldet eine abgeschlossene Aufgabe an den Reviewer, dieser an den Tester.
 
 # Projektplan & Parallelisierung
 
@@ -141,6 +142,7 @@ assigned_to: coder
 user_story: /projekt/user-stories/us-<x>.md
 feature: /features/<feature>.md
 aktuell: "<Rolle>: <Was passiert gerade>"
+freigabe: false
 ---
 
 # Ziel
@@ -163,5 +165,7 @@ aktuell: "<Rolle>: <Was passiert gerade>"
 # Ergebnisse
 <Vom documenter gepflegt: je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte.>
 ```
+
+Das boolesche Feld `freigabe` im Frontmatter dokumentiert die Freigabe der Projektleitung: nur ein exaktes `true` gilt als freigegeben (fail-closed, fehlt = nicht freigegeben). Neue Aufgaben werden mit `freigabe: false` angelegt; gesetzt/entzogen wird sie ausschließlich über den Menschen-Kanal der App.
 
 Das Feld `aktuell` im Frontmatter ist der **Live-Arbeitsstand** im Format `<Rolle>: <Was passiert gerade>` (z. B. `coder: Umsetzung Paket 2`): Live-Feld, nur Anzeige, bei Abschluss leeren — die App leitet daraus den Arbeitsstatus ab (Rolle + Text) und schreibt es nie. Rollen (case-insensitiv, mit Aliassen): `planner`/`planer` (Planer), `coder` (Coder), `tester` (Tester), `reviewer`/`review` (Review), `documenter`/`doku` (Documenter), `pm`/`projektmanager`/`projektleitung` (PM). Unbekannte Rollen werden unverändert angezeigt.

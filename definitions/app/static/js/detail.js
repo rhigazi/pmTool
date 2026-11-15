@@ -40,6 +40,18 @@ const AUFGABEN_LADE_FEHLER = "Aufgaben konnten nicht geladen werden.";
 const AUFGABEN_FORMAT_FEHLER = "Aufgaben haben ein unerwartetes Format.";
 const KEINE_AUFGABEN = "Keine Aufgaben dieser Welle.";
 const ABSCHNITT_KLASSE = "detail-abschnitt";
+
+// A28: Kennungs-Hinweis und Freigabe (Menschen-Kanal `POST /api/freigabe`).
+const NEU_HINWEIS_ID = "detail-neu-hinweis";
+const FREIGABE_ID = "detail-freigabe";
+const FREIGABE_STATUS_ID = "detail-freigabe-status";
+const NEU_HINWEIS =
+  "Neue Aufgabe ohne Kennung — die Kennung wird beim Annehmen als `A<N>: ` " +
+  "im Titel ergänzt.";
+const FREIGABE_TEXT = "Freigegeben";
+const NICHT_FREIGEGEBEN_TEXT = "Nicht freigegeben";
+const FREIGABE_ERFOLG = "Aufgabe freigegeben.";
+const FREIGABE_ENTZOGEN = "Freigabe entzogen.";
 const AUFGABEN_ORDNER = "aufgaben/";
 const WELLEN_ORDNER = "wellen/";
 
@@ -527,6 +539,69 @@ function erstelleAktionen(pfad, status) {
   return aktionen;
 }
 
+/** Fail-closed: nur ein echtes ``freigabe: true`` gilt als freigegeben. */
+function istFreigegeben(daten) {
+  return daten?.freigabe === true;
+}
+
+/** Hinweis für Aufgaben ohne Kennung, inkl. nächster freier Kennung (wenn geliefert). */
+function erstelleNeuHinweis(daten) {
+  const hinweis = document.createElement("p");
+  hinweis.id = NEU_HINWEIS_ID;
+  hinweis.classList.add("hinweis");
+
+  const kennung = typeof daten?.naechste_kennung === "string" ? daten.naechste_kennung.trim() : "";
+  hinweis.textContent = kennung
+    ? `${NEU_HINWEIS} Nächste freie Kennung: ${kennung}.`
+    : NEU_HINWEIS;
+  return hinweis;
+}
+
+/** Zustand + Knopf der Freigabe; schreibt über den Menschen-Kanal der App. */
+function erstelleFreigabeAnzeige(pfad, daten) {
+  const freigegeben = istFreigegeben(daten);
+
+  const bereich = document.createDocumentFragment();
+  const anzeige = document.createElement("span");
+  anzeige.id = FREIGABE_STATUS_ID;
+  anzeige.textContent = freigegeben ? FREIGABE_TEXT : NICHT_FREIGEGEBEN_TEXT;
+
+  const knopf = document.createElement("button");
+  knopf.type = "button";
+  knopf.id = FREIGABE_ID;
+  knopf.className = "knopf";
+  knopf.textContent = freigegeben ? "Freigabe entziehen" : "Freigeben";
+  knopf.addEventListener("click", async () => {
+    // Doppelklickschutz: genau eine Schreibaktion je Auslöser (A27-Muster).
+    if (knopf.disabled) return;
+    knopf.disabled = true;
+    try {
+      await schreibeFreigabe(pfad, !freigegeben);
+    } finally {
+      knopf.disabled = false;
+    }
+  });
+
+  // Abstand zwischen Zustand und Knopf als eigenes Element (kein style.css-Eingriff).
+  const trenner = document.createElement("span");
+  trenner.textContent = " ";
+  bereich.append(anzeige, trenner, knopf);
+  return bereich;
+}
+
+/** Setzt/entzieht die Freigabe; Fehler zeigt `api.js`, die Ansicht bleibt stehen. */
+async function schreibeFreigabe(pfad, wert) {
+  loescheFehler();
+  loescheMeldung();
+
+  const ergebnis = await postJson("/api/freigabe", { path: pfad, wert });
+  if (ergebnis === null) return false;
+
+  zeigeMeldung(wert ? FREIGABE_ERFOLG : FREIGABE_ENTZOGEN);
+  await ladeDetail({ unterpunkt: pfad });
+  return true;
+}
+
 function erstelleKopf(pfad, daten, wellen) {
   const frontmatter =
     daten.frontmatter && typeof daten.frontmatter === "object" ? daten.frontmatter : {};
@@ -553,8 +628,13 @@ function erstelleKopf(pfad, daten, wellen) {
       "Welle",
       erstelleWellenAuswahl(pfad, feld(frontmatter, "welle"), wellen),
     );
+    anhaengenFeld(angaben, "Freigabe", erstelleFreigabeAnzeige(pfad, daten));
   }
-  kopf.append(angaben, erstelleAktionen(pfad, status));
+  kopf.append(angaben);
+  if (istAufgabe(pfad, frontmatter) && daten?.neu === true) {
+    kopf.append(erstelleNeuHinweis(daten));
+  }
+  kopf.append(erstelleAktionen(pfad, status));
 
   return kopf;
 }
