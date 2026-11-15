@@ -4,13 +4,13 @@ title: "A30: Was passiert gerade"
 description: Wenn ich die Übersicht Liste Aufrufe und den Status "in Arbeit" sehe
   ich die Aufgaben die im Moment von dir bearbeitet werden, allerdings weiß ich nicht
   wo wir…
-task_status: in Review
-phase: 5 Review
-priority: mittel
+task_status: in Doku
+phase: 7 Dokumentation
+priority: hoch
 assigned_to: coder
 welle: wellen/w2.md
 owner: ai
-aktuell: "reviewer: FREIGEGEBEN (Testlücke T5 → A33) — tester: S1–S4 läuft | coder: A31 parallel"
+aktuell: "PM: Review FREIGEGEBEN + S1–S4 bestanden — reif für Abschluss"
 ---
 
 # Ziel
