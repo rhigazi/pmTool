@@ -24,10 +24,11 @@ in Colab übernimmt `%run /content/pmTool/definitions/app/start_colab.py` (Schri
 
 ## 2) Umgebung wiederherstellen und Server starten
 
-Die Port-Freigabe von Colab (`serve_kernel_port_as_iframe`) wirkt **nur im
-Notebook-Kernel**. Deshalb wird das Startskript als Kernel-Aufruf gestartet —
-nicht als Shell-Befehl. Die App erscheint danach direkt in der Zelle. Beide
-Varianten funktionieren; die erste ist ein Einzeiler mit absolutem Pfad:
+Die Port-Freigabe von Colab wirkt **nur im Notebook-Kernel**. Deshalb wird das
+Startskript als Kernel-Aufruf gestartet — nicht als Shell-Befehl. Die App öffnet
+sich danach in einem **neuen Browser-Tab** über den sicheren, authentifizierten
+Colab-Link (`google.colab.kernel.proxyPort`). Beide Varianten funktionieren; die
+erste ist ein Einzeiler mit absolutem Pfad:
 
 ```python
 %run /content/pmTool/definitions/app/start_colab.py
@@ -59,25 +60,36 @@ Das Skript erledigt der Reihe nach:
 2. installiert **nur bei Bedarf** `flask` und `pyyaml` (per `pip`),
 3. startet `definitions/app/server.py` als Subprozess auf Port 5000
    (Bundle `wissen/` wird nur lesend verwendet),
-4. zeigt die App per `serve_kernel_port_as_iframe` **in der Notebook-Zelle**
-   (nur Fallback: das veraltete `serve_kernel_port_as_window`).
+4. öffnet die App in einem **neuen Browser-Tab** — sicherer Colab-Link über
+   `google.colab.kernel.proxyPort` (per `output.eval_js` + `window.open`).
 
 **Warum nicht `!bash start.sh --colab` oder `!python3 …`?** Ein `!`-Befehl läuft
 als Unterprozess ohne Kernel-Kanal. Dort findet `google.colab` zwar statt, der
 Aufruf der Freigabe schlägt aber fehl — sichtbar wird nur
 `127.0.0.1:5000`/`172.x:5000`, das im Browser nicht erreichbar ist. Das Skript
 erkennt das und gibt die Handlungsanweisung aus. Freigabe in laufender Sitzung
-nachholen (Server läuft schon):
+nachholen (Server läuft schon) — Nutzer-Snippet:
 
 ```python
 from google.colab import output
-output.serve_kernel_port_as_iframe(5000)   # App erscheint in der Zelle
+output.serve_kernel_port_as_window(5000)   # erzeugt sicheren Link, fragt neuen Tab an
 ```
 
-> **Veraltet:** `output.serve_kernel_port_as_window(5000)` gibt inzwischen nur
-> noch `https://localhost:5000/` aus (mit Deprecation-Warnung) — diese URL ist
-> im Browser nicht nutzbar. Das Skript nutzt die Funktion deshalb nur noch als
-> Fallback, falls `serve_kernel_port_as_iframe` fehlt.
+Alternative mit garantiertem Proxy-Link (neuer Tab):
+
+```python
+from google.colab import output
+output.eval_js('(async () => window.open(await google.colab.kernel.proxyPort(5000), "_blank"))()')
+```
+
+Reihenfolge im Skript: (1) Proxy-Link in neuem Tab, (2) `serve_kernel_port_as_window`
+als Fallback, (3) **Notbehelf** iframe — dann erscheint die App in der Zelle
+(Meldung: „Fallback: Anzeige in der Zelle").
+
+> **Hinweis:** `serve_kernel_port_as_window(5000)` ist in Colab als veraltet
+> markiert und hat in unserer `%run`-Zelle nur `https://localhost:5000/`
+> ausgegeben. Es bleibt nur als Fallback drin; der sichere Link entsteht über
+> `google.colab.kernel.proxyPort`.
 
 `start.sh` selbst bleibt für den lokalen Start zuständig:
 
@@ -153,7 +165,7 @@ optional (z. B. nicht installierte globale Skills → `bash definitions/setup.sh
 
 ```python
 !git clone https://github.com/rhigazi/pmTool
-%run /content/pmTool/definitions/app/start_colab.py   # Server + App in der Zelle (Kernel-Aufruf, absoluter Pfad)
+%run /content/pmTool/definitions/app/start_colab.py   # Server + App im neuen Browser-Tab (Kernel-Aufruf, absoluter Pfad)
 # Secrets-Zelle aus Schritt 3 ausführen (falls Telegram gewünscht)
 !bash definitions/verify.sh .         # Setup-Check
 # neues Terminal: cd /content/pmTool && opencode

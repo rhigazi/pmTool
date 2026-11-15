@@ -2,10 +2,12 @@
 """Colab-Startzelle für den OKF Projekt-Manager (Aufgabe A16).
 
 Prüft/installiert die Laufzeitpakete ``flask`` und ``pyyaml`` nur bei Bedarf,
-startet ``server.py`` als Subprozess auf dem Bundle und zeigt die App über den
-Kernel-Kanal in der Notebook-Zelle (``serve_kernel_port_as_iframe``). Nur als
-Fallback dient das veraltete ``serve_kernel_port_as_window``; ohne Colab wird
-die lokale URL ausgegeben. Das Bundle wird ausschließlich lesend verwendet.
+startet ``server.py`` als Subprozess auf dem Bundle und öffnet die App in einem
+neuen Browser-Tab über den sicheren Colab-Link
+(``google.colab.kernel.proxyPort`` per ``output.eval_js``). Fallback ist das
+Nutzer-Snippet ``serve_kernel_port_as_window``, Notbehelf die Anzeige in der
+Zelle (``serve_kernel_port_as_iframe``); ohne Colab wird die lokale URL
+ausgegeben. Das Bundle wird ausschließlich lesend verwendet.
 
 Die Port-Freigabe funktioniert nur im Notebook-Kernel, deshalb ist der
 Kernel-Aufruf mit absolutem Pfad der vorgesehene Weg::
@@ -38,8 +40,20 @@ HOST = "0.0.0.0"
 PAKETE = (("flask", "flask"), ("pyyaml", "yaml"))
 
 # Ergebnis-Arten der Port-Freigabe (siehe ``_gib_port_frei``).
-FREIGABE_IFRAME = "iframe"
+FREIGABE_PROXY = "proxy"
 FREIGABE_FENSTER = "fenster"
+FREIGABE_IFRAME = "iframe"
+
+
+def _proxy_skript(port: int) -> str:
+    """JS, das den sicheren Colab-Link erzeugt und in einem neuen Tab öffnet."""
+    return (
+        "(async () => {"
+        f" const url = await google.colab.kernel.proxyPort({port});"
+        " window.open(url, '_blank');"
+        " return url;"
+        "})()"
+    )
 
 
 def _hinweis_port_freigabe(port: int) -> str:
@@ -49,11 +63,16 @@ def _hinweis_port_freigabe(port: int) -> str:
     fehl, weil das Notebook-Verzeichnis `/content` ist, nicht die Projektwurzel.
     """
     skript = Path(__file__).resolve()
+    proxy = (
+        "output.eval_js('(async () => window.open(await "
+        f"google.colab.kernel.proxyPort({port}), \"_blank\"))()')"
+    )
     return (
         f"Port-Freigabe nur aus einer Notebook-Zelle möglich — bitte "
         f"`%run {skript}` in einer Code-Zelle ausführen "
         f"(alternativ in laufender Sitzung: "
-        f"`from google.colab import output; output.serve_kernel_port_as_iframe({port})`)."
+        f"`from google.colab import output; output.serve_kernel_port_as_window({port})` "
+        f"oder `from google.colab import output; {proxy}`)."
     )
 
 
@@ -83,12 +102,14 @@ def main() -> int:
     print(f"Server gestartet (PID {prozess.pid}) für {BUNDLE_ROOT}", flush=True)
 
     freigabe = _gib_port_frei(port)
-    if freigabe == FREIGABE_IFRAME:
-        print(f"App wird in der Notebook-Zelle angezeigt (Port {port}).", flush=True)
+    if freigabe == FREIGABE_PROXY:
+        print(f"App im neuen Browser-Tab geöffnet (sicherer Colab-Link, Port {port}).", flush=True)
     elif freigabe == FREIGABE_FENSTER:
+        print(f"App im Browser-Tab geöffnet (Port {port}).", flush=True)
+    elif freigabe == FREIGABE_IFRAME:
         print(
-            f"App wird im Browserfenster geöffnet (Port {port}) — "
-            "serve_kernel_port_as_window ist veraltet.",
+            f"Fallback: Anzeige in der Zelle (Port {port}) — "
+            "bevorzugt ist der neue Browser-Tab.",
             flush=True,
         )
     elif _colab_output() is not None:
@@ -163,16 +184,36 @@ def _colab_output():
 
 
 def _gib_port_frei(port: int) -> str | None:
-    """Zeigt die App über den Kernel-Kanal; Rückgabe: Art der Freigabe oder ``None``.
+    """Öffnet die App im Browser; Rückgabe: Art der Freigabe oder ``None``.
 
-    Primär ``serve_kernel_port_as_iframe`` (App erscheint in der Zelle). Nur wenn
-    die Funktion fehlt oder scheitert, folgt das veraltete
-    ``serve_kernel_port_as_window``. Beide wirken nur im Notebook-Kernel — im
-    Unterprozess fehlt der Kanal und der Aufruf scheitert.
+    Reihenfolge: (1) sicherer Colab-Proxy-Link per ``eval_js`` in einem neuen
+    Tab, (2) das Nutzer-Snippet ``serve_kernel_port_as_window``, (3) nur als
+    Notbehelf die Anzeige in der Zelle via ``serve_kernel_port_as_iframe``.
+    Alle Wege wirken nur im Notebook-Kernel — im Unterprozess fehlt der Kanal.
     """
     output = _colab_output()
     if output is None:
         return None
+
+    eval_js = getattr(output, "eval_js", None)
+    if eval_js is not None:
+        try:
+            eval_js(_proxy_skript(port))
+            return FREIGABE_PROXY
+        except Exception as fehler:
+            print(f"Colab-Port-Freigabe per proxyPort fehlgeschlagen: {fehler}", file=sys.stderr)
+
+    fenster = getattr(output, "serve_kernel_port_as_window", None)
+    if fenster is not None:
+        print(
+            "Fallback auf das veraltete serve_kernel_port_as_window (Deprecation-Warnung in Colab).",
+            file=sys.stderr,
+        )
+        try:
+            fenster(port)
+            return FREIGABE_FENSTER
+        except Exception as fehler:
+            print(f"Colab-Port-Freigabe als Browser-Tab fehlgeschlagen: {fehler}", file=sys.stderr)
 
     iframe = getattr(output, "serve_kernel_port_as_iframe", None)
     if iframe is not None:
@@ -181,21 +222,7 @@ def _gib_port_frei(port: int) -> str | None:
             return FREIGABE_IFRAME
         except Exception as fehler:
             print(f"Colab-Port-Freigabe als iframe fehlgeschlagen: {fehler}", file=sys.stderr)
-
-    fenster = getattr(output, "serve_kernel_port_as_window", None)
-    if fenster is None:
-        return None
-
-    print(
-        "Fallback auf das veraltete serve_kernel_port_as_window (Deprecation-Warnung in Colab).",
-        file=sys.stderr,
-    )
-    try:
-        fenster(port)
-    except Exception as fehler:
-        print(f"Colab-Port-Freigabe als Fenster fehlgeschlagen: {fehler}", file=sys.stderr)
-        return None
-    return FREIGABE_FENSTER
+    return None
 
 
 def _laeuft_im_kernel() -> bool:

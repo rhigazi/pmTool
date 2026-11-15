@@ -4,7 +4,7 @@ Browserbasierte Oberfläche für **eine Person**, die ein OKF-Projekt in Mensch-
 
 Die App ist ein **Tracker**. Die eigentliche Projektarbeit läuft im OpenCode-CLI-Chat: der Projektmanager-Agent steuert `planner`, `coder`, `reviewer`, `tester` und `documenter`; die Oberfläche macht den Stand sichtbar und erlaubt die menschlichen Eingriffe (Nachtrag, „Klarung", „Geschlossen", owner umschalten).
 
-- **Status:** MVP abnahmefähig (alle Aufgaben A1–A20 abgeschlossen, Gesamtsuite 765 grün)
+- **Status:** MVP abnahmefähig (alle Aufgaben A1–A20 abgeschlossen, Gesamtsuite 768 grün)
 - **Projektstand & Historie:** [docs/uebergabeprotokoll.md](docs/uebergabeprotokoll.md), [wissen/log.md](wissen/log.md)
 - **Projektwissen:** [wissen/index.md](wissen/index.md)
 
@@ -21,7 +21,7 @@ Manuell in einer Colab-Sitzung:
 ```
 
 ```python
-%run /content/pmTool/definitions/app/start_colab.py   # Umgebung + App starten (App erscheint in der Zelle)
+%run /content/pmTool/definitions/app/start_colab.py   # Umgebung + App starten (neuer Browser-Tab)
 ```
 
 Alternativ relativ — dann `%cd` in einer eigenen Zeile davor:
@@ -35,13 +35,14 @@ Ohne `%cd` schlägt der relative Pfad fehl (`File not found`), weil das
 Notebook-Verzeichnis in einer frischen Sitzung `/content` ist.
 
 Der Start **muss** als Kernel-Aufruf (`%run`) erfolgen: Colabs Port-Freigabe
-(`serve_kernel_port_as_iframe`) wirkt nur im Notebook-Kernel. Ein `!`-Befehl
-läuft als Unterprozess ohne Kernel-Kanal — dann bleibt nur die unbrauchbare
-Adresse `127.0.0.1:5000` stehen (das Skript nennt dann den Ausweg).
+wirkt nur im Notebook-Kernel. Ein `!`-Befehl läuft als Unterprozess ohne
+Kernel-Kanal — dann bleibt nur die unbrauchbare Adresse `127.0.0.1:5000` stehen
+(das Skript nennt dann den Ausweg).
 
-Die App erscheint per **iframe in der Zelle**. Das veraltete
-`serve_kernel_port_as_window` liefert nur noch `https://localhost:5000/` (mit
-Deprecation-Warnung) und dient nur als Fallback.
+Die App öffnet sich in einem **neuen Browser-Tab** über den sicheren,
+authentifizierten Colab-Link (`google.colab.kernel.proxyPort`). Fallback ist
+`serve_kernel_port_as_window` (Nutzer-Snippet, in Colab als veraltet markiert),
+Notbehelf die Anzeige in der Zelle (`serve_kernel_port_as_iframe`).
 
 Schritt-für-Schritt-Anleitung inkl. Colab-Secrets und Telegram-Zelle: **[docs/colab-start.md](docs/colab-start.md)**.
 
@@ -89,7 +90,7 @@ Alles liegt im OKF-Bundle **[wissen/](wissen/index.md)** — Markdown mit YAML-F
 ## Entwicklung & Tests
 
 ```bash
-python3 -m pytest definitions/app/tests -q   # Gesamtsuite (aktuell 765 passed)
+python3 -m pytest definitions/app/tests -q   # Gesamtsuite (aktuell 768 passed)
 bash definitions/verify.sh .                 # Umgebungs-Check → Exit 0 = vollständig
 ```
 
