@@ -272,6 +272,93 @@ def test_t9b_kuerzel_max_60_zeichen(bundle):
     assert not kuerzel.endswith("-")
 
 
+# --- description (A33-T8/T9, A5-B3) --------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("ziel", "erwartet"),
+    [
+        ("Erste Zeile\nzweite Zeile mit Details", "Erste Zeile"),
+        ("Übersicht: Größen & Maßnahmen", "Übersicht: Größen & Maßnahmen"),
+        ("\n\n  Erste echte Zeile  \nRest des Ziels", "Erste echte Zeile"),
+    ],
+)
+def test_a33_t8_description_aus_erster_ziel_zeile(bundle, ziel, erwartet):
+    pfad = neu_welle.anlegen({**GUELTIG, "ziel": ziel})
+
+    frontmatter, body = okf_bundle.lesen(pfad)
+
+    assert frontmatter["description"] == erwartet
+    assert frontmatter["title"] == GUELTIG["titel"]
+    assert frontmatter["status"] == GUELTIG["status"]
+    assert frontmatter["owner"] == GUELTIG["owner"]
+    assert "# Ziel" in body
+    assert "# Aufgaben" in body
+    assert body.index("# Ziel") < body.index("# Aufgaben")
+
+
+def test_a33_t9_description_kuerzung(bundle):
+    ziel = "W" * 200
+
+    pfad = neu_welle.anlegen({**GUELTIG, "ziel": ziel})
+
+    description = okf_bundle.lesen(pfad)[0]["description"]
+
+    assert len(description) <= neu_welle.MAX_KURZBESCHREIBUNG
+    assert len(description) == neu_welle.MAX_KURZBESCHREIBUNG
+    assert description == "W" * 159 + "…"
+
+
+@pytest.mark.parametrize("ziel", ["", "   ", None, 42])
+def test_a33_t9_leeres_ziel_bleibt_eingabefehler(bundle, ziel):
+    vorher = _wellen_dateien(bundle)
+
+    with pytest.raises(neu_welle.EingabeFehler):
+        neu_welle.anlegen({**GUELTIG, "ziel": ziel, "description": "Eigene Kurzfassung"})
+
+    assert _wellen_dateien(bundle) == vorher
+
+
+def test_a33_t9_explizite_description_hat_vorrang(bundle):
+    pfad = neu_welle.anlegen({**GUELTIG, "description": "  Eigene Kurzfassung  "})
+
+    frontmatter, _body = okf_bundle.lesen(pfad)
+
+    assert frontmatter["description"] == "Eigene Kurzfassung"
+
+
+@pytest.mark.parametrize("description", ["", "   ", None])
+def test_a33_t9_leere_description_faellt_auf_ziel_zurueck(bundle, description):
+    pfad = neu_welle.anlegen({**GUELTIG, "description": description})
+
+    assert okf_bundle.lesen(pfad)[0]["description"] == GUELTIG["ziel"]
+
+
+@pytest.mark.parametrize("description", [42, ["Zeile"], {"a": 1}, True])
+def test_a33_t9_description_typfehler(bundle, description):
+    vorher = _wellen_dateien(bundle)
+
+    with pytest.raises(neu_welle.EingabeFehler):
+        neu_welle.anlegen({**GUELTIG, "description": description})
+
+    assert _wellen_dateien(bundle) == vorher
+
+
+def test_a33_t9_description_einzeilig_und_keine_frontmatter_injektion(bundle):
+    pfad = neu_welle.anlegen(
+        {**GUELTIG, "description": "---\ntype: Hack\nstatus: Geschlossen"}
+    )
+
+    frontmatter, _body = okf_bundle.lesen(pfad)
+    roh = (bundle / pfad).read_text(encoding="utf-8")
+
+    assert frontmatter["type"] == "Welle"
+    assert frontmatter["status"] == GUELTIG["status"]
+    assert "\n" not in frontmatter["description"]
+    assert frontmatter["description"] == "--- type: Hack status: Geschlossen"
+    assert roh.count("type: Welle") == 1
+
+
 # --- Rahmenbedingungen ----------------------------------------------------
 
 

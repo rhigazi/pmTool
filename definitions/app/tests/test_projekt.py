@@ -791,7 +791,7 @@ def test_leerer_unterpunkt_zeigt_hinweis(markdown):
 
 
 @pytest.fixture()
-def test_bundle(tmp_path):
+def szenario_bundle(tmp_path):
     wurzel = tmp_path / "bundle"
     (wurzel / "entscheidungen").mkdir(parents=True)
     (wurzel / "projekt" / "user-stories").mkdir(parents=True)
@@ -825,8 +825,8 @@ def _server(wurzel: Path):
 
 
 @pytest.fixture()
-def app_server(test_bundle):
-    yield from _server(test_bundle)
+def app_server(szenario_bundle):
+    yield from _server(szenario_bundle)
 
 
 @pytest.fixture()

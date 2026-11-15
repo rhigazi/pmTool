@@ -9,7 +9,7 @@ phase: 2 Planung
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: "PM: Plan bestätigt (5 PM-Entscheidungen) — B2/B3 gestartet, B1 nach A26-Review, B4–B6 nach A28-P0, B7–B9 nach A29"
+aktuell: "PM: B2+B3 umgesetzt (gruen, App-Suite 1107) — B1 nach A26-Ruecklauf, B4–B6 nach A28-P0, B7–B9 nach A29"
 ---
 
 # Ziel

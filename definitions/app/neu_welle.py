@@ -17,6 +17,7 @@ from okf_bundle import EingabeFehler
 
 WELLEN_ORDNER = "wellen"
 MAX_KUERZEL_LAENGE = 60
+MAX_KURZBESCHREIBUNG = 160
 MAX_KANDIDATEN = 1000
 FALLBACK_KUERZEL = "welle"
 OWNER_WERTE = ("mensch", "ai")
@@ -41,6 +42,8 @@ def anlegen(eingaben: dict) -> str:
     Validiert Titel, Ziel, ``status`` (nur die sechs UI-Werte) und ``owner``
     (``mensch``/``ai``) vollständig vor dem Schreiben; bei Verstoß wird keine
     Datei erzeugt. Bestehende Wellen werden nie überschrieben.
+    Die OKF-``description`` ist optional und wird sonst aus der ersten
+    Ziel-Zeile gebildet (siehe :func:`_beschreibung`).
     Den Ordner ``wellen/`` legt :func:`okf_bundle.schreiben` bei Erstanlage mit an.
     """
     if not isinstance(eingaben, dict):
@@ -62,8 +65,10 @@ def anlegen(eingaben: dict) -> str:
     if owner not in OWNER_WERTE:
         raise EingabeFehler(f"Ungültiger owner: {owner!r}")
 
+    beschreibung = _beschreibung(eingaben.get("description"), ziel)
+
     pfad = _freier_pfad(titel)
-    okf_bundle.schreiben(pfad, _inhalt(titel, ziel, status_wert, owner))
+    okf_bundle.schreiben(pfad, _inhalt(titel, beschreibung, ziel, status_wert, owner))
     return pfad
 
 
@@ -94,11 +99,12 @@ def _freier_pfad(titel: str) -> str:
     raise EingabeFehler(f"Kein freier Dateiname für {basis!r} gefunden")
 
 
-def _inhalt(titel: str, ziel: str, status_wert: str, owner: str) -> str:
+def _inhalt(titel: str, beschreibung: str, ziel: str, status_wert: str, owner: str) -> str:
     frontmatter = yaml.safe_dump(
         {
             "type": "Welle",
             "title": titel,
+            "description": beschreibung,
             "status": status_wert,
             "owner": owner,
         },
@@ -107,6 +113,27 @@ def _inhalt(titel: str, ziel: str, status_wert: str, owner: str) -> str:
         sort_keys=False,
     ).rstrip("\n")
     return f"---\n{frontmatter}\n---\n\n# Ziel\n\n{ziel}\n\n# Aufgaben\n"
+
+
+def _beschreibung(wert: object, ziel: str) -> str:
+    """Kurzbeschreibung für das Frontmatter (OKF-``description``, max. 160 Zeichen).
+
+    Ohne eigene Angabe dient die erste Ziel-Zeile als Beschreibung. Jede
+    Beschreibung wird auf eine Zeile normalisiert und bei Bedarf mit ``…``
+    gekürzt, damit das Frontmatter einzeilig und ohne Sonderfälle bleibt.
+    """
+    if wert is not None and not isinstance(wert, str):
+        raise EingabeFehler("description muss ein Text sein")
+
+    text = _einzeilig(wert or "") or _einzeilig(ziel.splitlines()[0])
+    if len(text) <= MAX_KURZBESCHREIBUNG:
+        return text
+    return text[: MAX_KURZBESCHREIBUNG - 1].rstrip() + "…"
+
+
+def _einzeilig(wert: str) -> str:
+    """Fasst einen Text zu einer Zeile zusammen (Whitespace wird normalisiert)."""
+    return " ".join(wert.split())
 
 
 def _text(wert: object) -> str | None:
