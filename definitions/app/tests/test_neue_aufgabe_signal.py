@@ -208,6 +208,33 @@ def test_t5_zugewiesene_unterkennung_gilt_als_vergeben(client, bundle):
     assert client.get(f"/api/file?path={AUFGABE}").get_json()["naechste_kennung"] == "A2"
 
 
+@pytest.mark.parametrize("titel", ["A34: Ohne Slug", "Ohne Kennung"])
+def test_t5_datei_ohne_slug_zaehlt_als_belegt(client, bundle, titel):
+    """W1 (Review): ``a34.md`` ist auch ohne Slug eine belegte Kennung.
+
+    Der alte ``overview``-Regex verlangte ``-`` (oder ``.``) nach der Nummer und
+    ignorierte ``a34.md`` — daraus konnte eine Doppelkennung entstehen.
+    """
+    _schreibe(
+        bundle,
+        "aufgaben/a34.md",
+        f"---\ntype: Task\ntitle: {titel!r}\ntask_status: offen\n---\n\n# Ziel\n",
+    )
+
+    assert client.get(f"/api/file?path={AUFGABE}").get_json()["naechste_kennung"] == "A35"
+
+
+def test_t5_unterdatei_ohne_slug_zaehlt_top_level_nicht(client, bundle):
+    """W1-Gegenprobe: ``a34.001.md`` ist Unter-Kennung, keine Top-Level-Nummer."""
+    _schreibe(
+        bundle,
+        "aufgaben/a34.001.md",
+        "---\ntype: Task\ntitle: \"A34.001: Unter\"\ntask_status: offen\n---\n\n# Ziel\n",
+    )
+
+    assert client.get(f"/api/file?path={AUFGABE}").get_json()["naechste_kennung"] == "A2"
+
+
 # --- T6: Detail-Felder ---------------------------------------------------
 
 

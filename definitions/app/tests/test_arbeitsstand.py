@@ -126,6 +126,12 @@ def test_t4_unbekannte_rolle_bleibt_originaltext(aktuell, label):
         {"aktuell": {}},
         None,
         [],
+        # A30-R1: MIT gültigem Typ laufen diese Fälle nicht mehr am Typ-Gate
+        # vorbei, sondern bis in ``_text`` (Mutante ``str(wert)`` stirbt hier).
+        {"type": "Task", "aktuell": 42},
+        {"type": "Task", "aktuell": True},
+        {"type": "Task", "aktuell": []},
+        {"type": "Task", "aktuell": {}},
     ],
 )
 def test_t5_leer_und_falscher_typ_ohne_anzeige(frontmatter):
@@ -252,15 +258,26 @@ def test_t12_api_file_liefert_felder_top_level(client, bundle):
 
     assert antwort.status_code == 200
     daten = antwort.get_json()
-    # A28 ergänzt weitere Top-Level-Felder (freigabe, neu, …) — hier zählen die A30-Felder.
-    assert {
+    # A33-K2: exakte Schlüsselmenge statt „enthalten / enthalten nicht". Der
+    # Vertrag von ``/api/file`` für ``type: Task`` umfasst A8 (Basis), A28
+    # (``neu``/``kennung``/``naechste_kennung``/``freigabe``), A29
+    # (``welle_freigabe``/``wirksam_freigegeben``) und A30 (Arbeitsstatus).
+    # ``freigabe_hinweis`` fehlt hier, weil der Rohwert fehlt/gültig ist — den
+    # Ungültig-Fall prüft ``test_freigabe.py``.
+    assert set(daten) == {
         "frontmatter",
         "markdown",
         "nachtraege",
         "arbeitsrolle",
         "arbeitsrolle_label",
         "arbeitsstatus",
-    } <= set(daten)
+        "neu",
+        "kennung",
+        "naechste_kennung",
+        "freigabe",
+        "welle_freigabe",
+        "wirksam_freigegeben",
+    }
     assert daten["arbeitsrolle"] == "coder"
     assert daten["arbeitsrolle_label"] == "Coder"
     assert daten["arbeitsstatus"] == "Umsetzung Paket 2"

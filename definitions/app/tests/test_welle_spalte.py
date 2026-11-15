@@ -26,6 +26,16 @@ APP_JS = STATIC_DIR / "js" / "app.js"
 API_JS = STATIC_DIR / "js" / "api.js"
 DETAIL_JS_PFAD = STATIC_DIR / "js" / "detail.js"
 
+# A31-K3: Im verteilten Projekt (installiertes Layout, ``<ziel>/app/tests/``)
+# fehlt ``setup.sh`` im Projektwurzelverzeichnis. T19–T21 prüfen nur den
+# Definitions-Arbeitsbaum (Baseline-Testdateien, Markup-Quellen) und liefern
+# dort keinen Verhaltensnachweis — Muster wie ``test_setup_verteilung.py``.
+NUR_DEFINITIONS_REPO = pytest.mark.skipif(
+    not (Path(__file__).resolve().parents[2] / "setup.sh").is_file(),
+    reason="Verteilte Installation: kein setup.sh im Wurzelverzeichnis, kein "
+    "Verhaltensnachweis (A31-K3)",
+)
+
 SPALTEN_FUENF = ["Titel", "Welle", "Status", "owner", "zuletzt geändert"]
 SPALTEN_VIER = ["Titel", "Status", "owner", "zuletzt geändert"]
 KEINE_ANGABE = "—"
@@ -48,9 +58,9 @@ def _aufgabe(pfad: str, titel: str, status: str = "In Arbeit", **felder) -> dict
         "status": status,
         "owner": "ai",
         "zuletzt_geaendert": "2026-11-15T10:00:00",
-        # A28: Die Lese-API liefert ``neu`` für Aufgaben; diese Fixtures tragen
-        # eine gültige Kennung (Titel und Dateiname passen) → keine Marke.
-        "neu": False,
+        # A28/A31-K1: Das Feld ``neu`` wird bewusst **weggelassen** (nicht auf
+        # ``false`` gesetzt) — fehlendes ``neu`` gilt wie ``false``, also keine
+        # Marke. Die Marke „standardmäßig an" decken A28-T23–T25 ab.
     }
     eintrag.update(felder)
     return eintrag
@@ -830,6 +840,7 @@ return {
 # --- E. Grenzen und Vertragswechsel (AK-7, AK-8, AK-9) -----------------
 
 
+@NUR_DEFINITIONS_REPO
 def test_t20_grenzen_ohne_backend_und_markup_aenderung():
     for datei in (INDEX_HTML, STYLE_CSS, APP_JS, API_JS, DETAIL_JS_PFAD):
         quelle = lies(datei)
@@ -868,6 +879,7 @@ def _kopf_erwartungen(datei: Path) -> set[tuple[str, ...]]:
     return erwartungen
 
 
+@NUR_DEFINITIONS_REPO
 def test_t21_a31_marker_lebt_nur_in_liste_js():
     """A31-H3: Die Wellen-Spalte lebt nur in ``liste.js``; die Wellenliste bleibt bei vier."""
     for datei in sorted((STATIC_DIR / "js").glob("*.js")):
@@ -893,6 +905,7 @@ return { kopf: kopfzeilen("tabelle-wellen"), texte: texte("tabelle-wellen") };
 # --- F. Vertragswechsel (AK-8) ------------------------------------------
 
 
+@NUR_DEFINITIONS_REPO
 @ohne_node
 def test_t19_baselines_erwarten_die_fuenf_spalten():
     """A31-H3: Die fünf Spalten kommen aus der Implementierung UND aus den Baselines."""

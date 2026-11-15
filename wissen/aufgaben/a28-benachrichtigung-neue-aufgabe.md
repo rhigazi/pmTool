@@ -9,7 +9,7 @@ phase: 4 Nachbesserung
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: "reviewer: Welle B (W1/K1/K2) + A30-R1/A31-K3 im Review"
+aktuell: "PM: Welle B + Nachträge Review-frei + committed — A28 komplett (Abschluss in der Doku-Runde)"
 welle: wellen/w2.md
 ---
 
