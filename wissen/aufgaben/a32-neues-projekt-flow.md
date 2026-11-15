@@ -8,7 +8,7 @@ phase: 4 Nachbesserung
 priority: hoch
 assigned_to: coder
 owner: ai
-aktuell: "PM: Review NACHBESSERUNG (W1+K1–K8 entschieden) — Rücklauf startet bei Tester-Rückkehr"
+aktuell: "tester: S1–S7 BESTANDEN (16/16) — coder: Rücklauf W1+K1–K5/K7/K8 läuft"
 ---
 
 # Ziel
