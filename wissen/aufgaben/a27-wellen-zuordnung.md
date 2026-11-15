@@ -6,7 +6,7 @@ task_status: in Review
 phase: 5 Review
 priority: hoch
 assigned_to: coder
-aktuell: "reviewer: Review Paket 1+2 | tester: S1–S7 (Harness)"
+aktuell: "tester: S1–S7 BESTANDEN (Moli 1.1.24, A25-Regression + 'ohne Welle'-Probe grün) — reviewer: Review läuft"
 feature: /features/okf-projekt-manager-spa.md
 owner: ai
 ---
