@@ -10,6 +10,14 @@ Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit *
 
 **Auswirkung:** [A32](/aufgaben/a32-neues-projekt-flow.md) angelegt (angenommen, ID + Titel, Sofort-Push); betroffen: `start.sh`, `test_start_skript.py`, README, `docs/colab-start.md`. Reihenfolge: parallel zu A30/A31 umsetzbar (keine Datei-Überschneidung mit der UI-Strecke).
 
+## 2026-11-15: A33-Plan bestätigt — Batches, Nummernvergabe A35–A38, A5-B2 entschieden
+
+**Entscheidung:** (1) Der A33-Plan (28 Befunde → 18 in 9 Batches B1–B9, 22 Tests) wird bestätigt; die 5 offenen Fragen sind entschieden: B9 durch den `coder`; B1 nur `lexists` + R8-Vermerk (`O_EXCL` post-MVP); B4/B5/B6 warten auf A28-P0, B1–B3 laufen (B1 zusätzlich erst nach A26-Review/-Testphase — Moving-Target-Schutz, die lesen die Werkzeug-Dateien). (2) **A5-B2 entfällt als Code-Punkt:** `FALLBACK_KUERZEL` bleibt bewusst robust (bestätigte PM-Entscheidung aus dem A5-Ergebnisprotokoll); die Asymmetrie zu A4 wird in B9 dokumentiert. (3) Die ausgegliederten großen Befunde erhalten die bestätigten Nummern **A35** (Status-Mapping server-seitig, A12-1), **A36** (`schreibgeschuetzt`-Signal), **A37** (DOM-Harness-Konsolidierung, A14-6), **A38** (Log-Anker, A14-9) — die ursprünglichen Planner-Vorschläge A34–A37 kollidierten mit dem zwischenzeitlich angelegten A34 (Unter-Aufgaben) und wurden verschoben. Die vier Aufgaben sind als Dateien angelegt und gepusht (Vormerkung, Umsetzung nach A29/A33).
+
+**Begründung:** Nichts verliert sich (Sofort-Push-Regel); die Nummernvergabe ist eindeutig; B1–B3 sind datei-disjunkt zu A28/A29 und laufen sofort; A33 bleibt klein und parallelisierbar.
+
+**Auswirkung:** Coder-Takt B2+B3 startet sofort; B1 bei A26-Rückkehr; B4–B6 nach A28-P0; B7–B9 nach A29. A35–A38 in der Warteschlange.
+
 ## 2026-11-15: A28 und A29 durch die Projektleitung freigegeben
 
 **Entscheidung:** Die Projektleitung hat A28 („Benachrichtigung bei neuer Aufgabe") und A29 („Wellen abarbeiten") am 2026-11-15 **ausdrücklich freigegeben** („A29,A28 sind freigegeben", Menschen-Kanal). Die Freigaben sind im Frontmatter der Aufgaben-Dateien vermerkt (`aktuell`); sobald das A28-Paket-0-Fundament (`freigabe`-Feld) existiert, werden sie als `freigabe: true` nachgetragen. Die Umsetzung startet in der festgelegten Reihenfolge **A27 (läuft) → A30 → A31 → A28 → A29** (Datei-Konflikte `liste.js`/`detail.js`/`meta.py`/`overview.py`; G15–G23). **A31 ist noch nicht freigegeben** — fail-closed: Umsetzung erst nach ausdrücklicher Freigabe; Rückfrage an die Projektleitung läuft.

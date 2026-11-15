@@ -5,6 +5,10 @@ Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in
 # Laufende Aufgaben
 
 * [A34: Unter-Aufgaben erstellen](a34-unter-aufgaben.md) - Unter einer Aufgabe Unter-Aufgaben anlegen und als Liste in der Detailansicht sehen; Nummernschema `A{xxx.uuu}` (u = 001–999) — **in Planung** (2026-11-15 aus der App angelegt, angenommen als A34; Konsistenz zu A28-Kennungsprüfung beachten)
+* [A35: Status-Mapping server-seitig](a35-status-mapping-serverseitig.md) - `overview.details` liefert `ui_status`/`hinweis`/`owner_default` aus `status.py`, JS-Spiegel in `detail.js` entfällt (A12-1) — **offen** (vorgemerkt, Umsetzung nach A29)
+* [A36: schreibgeschuetzt-Signal](a36-schreibgeschuetzt-signal.md) - API markiert reservierte Dateien, UI blendet Schreibaktionen aus; Server-403 bleibt zweite Barriere — **offen** (vorgemerkt, Umsetzung nach A35)
+* [A37: DOM-Harness-Konsolidierung](a37-dom-harness-konsolidierung.md) - `tests/dom_helfer.py` als einzige Harness-Quelle, Altkopien umstellen (A14-6) — **offen** (vorgemerkt, Umsetzung nach A29)
+* [A38: Log-Anker](a38-log-anker.md) - Anker je Log-Eintrag, Verweise öffnen den konkreten Eintrag (A14-9) — **offen** (vorgemerkt, Umsetzung nach A29)
 
 * [A33: Kleinbefunde-/Aufräum-Takt](a33-kleinbefunde-aufräum-takt.md) - Gebündelte Behebung der offenen Kleinbefunde aus Reviews/Post-MVP (A24-K1–K3, A23-Fixture, A12-1, A14-5/6/7/9, N5/N8 u. a.) in Batches mit je eigenem Commit — **in Planung** (2026-11-15 vom PM angelegt; Umsetzung nach A30/A31/A32)
 
