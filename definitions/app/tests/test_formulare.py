@@ -894,7 +894,8 @@ def test_t8_wellen_zuordnung_in_beiden_ansichten(client, bundle):
     # Detailansicht: Frontmatter und Kontext-Verweis zeigen auf die Welle.
     datei = (bundle / pfad).read_text(encoding="utf-8")
     assert "welle: wellen/w1.md" in datei
-    assert "- Welle: [w1](wellen/w1.md)" in datei
+    # A33-T10 (A13-3): Linktext ist der Wellen-Titel, nicht der Dateistamm.
+    assert "- Welle: [Welle 1: Fixture](wellen/w1.md)" in datei
     detail = client.get(f"/api/file?path={pfad}").get_json()
     assert detail["frontmatter"]["welle"] == "wellen/w1.md"
     assert "wellen/w1.md" in detail["markdown"]
