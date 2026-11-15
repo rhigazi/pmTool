@@ -1,10 +1,10 @@
 # Aufgaben
 
-Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in [/projekt/phasen.md](/projekt/phasen.md) definiert. **Stand 2026-11-15: MVP abnahmefähig** — die Aufgaben A1–A20 sind abgeschlossen, A23 und A25 sind in Umsetzung (parallel, disjunkte Dateimengen), A24 ist in Doku (Review/Testphase gebündelt offen), A26 ist offen (Umsetzung nach A23/A25); offen sind außerdem die Post-MVP-Vormerkungen A21/A22.
+Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in [/projekt/phasen.md](/projekt/phasen.md) definiert. **Stand 2026-11-15: MVP abnahmefähig** — die Aufgaben A1–A20 sind abgeschlossen, A23 ist in Review, A25 ist in Umsetzung (parallel, disjunkte Dateimengen), A24 ist in Doku (Review/Testphase gebündelt offen), A26 ist offen (Umsetzung nach A23/A25); offen sind außerdem die Post-MVP-Vormerkungen A21/A22.
 
 # Laufende Aufgaben
 
-* [A23: Feature-Liste](a23-feature-liste.md) - Menüpunkt „Feature List": Liste aller Features mit Status, Klick auf ein Feature zeigt die zugehörigen Aufgaben (offen / in Bearbeitung / erledigt) — **in Umsetzung** (Phase 3)
+* [A23: Feature-Liste](a23-feature-liste.md) - Menüpunkt „Feature List": Liste aller Features mit Status, Klick auf ein Feature zeigt die zugehörigen Aufgaben (offen / in Bearbeitung / erledigt) — **in Review** (Phase 5; Code fertig, 92 Tests grün, App-Suite 864)
 * [A25: Suche in der Listenansicht](a25-suche.md) - Suchfeld über der Tabelle in allen drei Listen (Übersicht, Wellen, Aufgaben), mehrere Wörter = UND, Umlaut-/ß-tolerant, kombiniert mit Status-/owner-Filter, Leerzustand „Keine Treffer.", „Filter zurücksetzen" leert auch die Suche — **in Umsetzung** (Phase 3, läuft parallel zu A23)
 * [A24: Neues Projekt beginnen (wissen/ zurücksetzen)](a24-neues-projekt.md) - `python3 tools/neues_projekt.py` ersetzt `wissen/` nach Plan-Vorschau (`--ja`) und Backup durch die OKF-Vorlage `definitions/wissen-vorlage/` — **in Doku** (Phase 7; Code fertig, 24 Tests grün, Review/Testphase gebündelt offen)
 * [A26: Werkzeug-Verteilung und Root-Suite-Konflikt](a26-verteilung-und-suite-konflikt.md) - `neues_projekt.py` nach `definitions/tools/` spiegeln (Verteilung durch `setup.sh`) und den Collection-Konflikt der Root-Suite (doppelte Testdateinamen in `tools/` und `definitions/tools/`) lösen — **offen** (Phase 2, Umsetzung nach A23/A25)

@@ -4,8 +4,8 @@ title: Die Feature List fehlt
 description: Die Feature List erscheint nicht im Menü, es sollte möglich sein über
   die Feature List zu jedem Feature zu sehen welche Aufgaben noch offen sind welche
   umgeset…
-task_status: in Umsetzung
-phase: 3 Umsetzung
+task_status: in Review
+phase: 5 Review
 priority: hoch
 assigned_to: coder
 owner: ai
@@ -111,12 +111,19 @@ Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das M
 # Betroffene Dateien
 
 - `definitions/app/static/js/features.js` (neu) — Parser `parseFeatures` (Abschnitts-/Status-/Prioritäts-/Link-Auswertung), `gruppeAufgaben` + Join gegen `/api/aufgaben`, Loader `ladeFeaturesAnsicht` für Liste und Feature-Detail in `#liste-features`.
-- `definitions/app/static/js/app.js` — additiv: `features` in `ANSICHTEN`, Import + `registriereAnsicht("features", …)`, Unterpunkt-Regel in `markiereNavigation` um `"features"` erweitern (T3).
+- `definitions/app/static/js/app.js` — additiv: `features` in `ANSICHTEN`, Import + `registriereAnsicht("features", …)`. `markiereNavigation` **funktional unverändert** (nur Kommentar): der Feature-Link trägt kein `data-unterpunkt`, daher greift die bestehende Regel und T3 ist ohne Erweiterung grün (bewusste Abweichung vom Plan, siehe Ergebnisse).
 - `definitions/app/static/index.html` — minimal: ein Menüeintrag „Feature List" (`href="#/features"`) und eine Sektion `id="ansicht-features"` mit `div id="liste-features"`; sonst unverändert.
 - `definitions/app/tests/test_features.py` (neu) — T1–T23 inkl. Harness-Kopie, Stub- und HTTP-Läufe gegen `tmp_path`-Bundles, Fehler-/Randfall-Bundles.
-- `definitions/app/static/style.css` — nur falls nötig additiv (Gruppen-/Badge-Abstände); angestrebt: unverändert, Wiederverwendung bestehender Klassen.
+- `definitions/app/static/style.css` — additiv: 2 Regeln (`.feature-meta`, `.feature-gruppe`) für Statuszeile und Gruppenköpfe; alle übrigen Klassen wiederverwendet.
 - **Nicht geändert:** `server.py`, `overview.py`, `status.py`, `api.js`, `liste.js`, `detail.js`, `projekt.js`, `formulare.js`.
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-15 — coder (Umsetzung, abgeschlossen)
+
+- **Ergebnis:** `features.js` (neu, 485 Zeilen: `parseFeatures`, `gruppeAufgaben`, `zaehleGruppen`, `verbindeAufgaben`, `ohneZuordnung`, `ladeFeaturesAnsicht`), `test_features.py` (neu, 92 Tests), `index.html` additiv (Menüeintrag „Feature List" direkt nach „Aufgaben" + Sektion `ansicht-features` mit `liste-features`), `app.js` additiv (Ansicht, Import, Registrierung), `style.css` additiv (2 Regeln). Red-Green-Takt in Blöcken: 41 rot → 48 → 63 → 90 → 92 Tests grün; T1–T23 inkl. DOM-/HTTP-Läufen gegen `tmp_path`-Bundles.
+- **Belege:** App-Suite **864 grün** (769 + 3 A16 + 92 A23). `verify.sh` Exit 0; ein einmaliger Flaky-Fehlschlag in der bekannten Parallel-Zone (paralleler Testlauf), nicht reproduzierbar. Parser nur lesend gegen die reale `wissen/features.md` verifiziert: 1 Feature, Titel/Status korrekt, 22 Aufgaben-Links (A1–A22) in Dateireihenfolge, A21 („vorgemerkt", ohne Dateilink) korrekt ohne Eintrag.
+- **Befunde:** Bewusste Planabweichung — `markiereNavigation` ist funktional **unverändert**; die im Plan vorgesehene Unterpunkt-Erweiterung hätte T3 rot gemacht, weil der Feature-Link kein `data-unterpunkt` trägt (die bestehende Regel wertet Unterpunkte nur für `projekt` aus und markiert den Link daher bereits auf Detailrouten). Ergänzt wurde nur ein Kommentar; die Review-Bestätigung dieser Abweichung steht aus. Weitere bewusste Punkte: Aufgaben-Bullets zählen nicht als Features (Abschnittsgrenzen, T7); kein Rendering der Feature-Datei im Detail (vom AK nicht verlangt); `style.css` additiv aus Layoutgründen (2 Regeln statt der angestrebten Unverändertheit).
+- **Offene Punkte:** Status **A23 → in Review** (Review läuft parallel); danach reif für Doku/Abschluss. Die Planabweichung zu `markiereNavigation` ist durch den Reviewer zu bestätigen.
