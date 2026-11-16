@@ -4,7 +4,7 @@ Browserbasierte Oberfläche für **eine Person**, die ein OKF-Projekt in Mensch-
 
 Die App ist ein **Tracker**. Die eigentliche Projektarbeit läuft im OpenCode-CLI-Chat: der Projektmanager-Agent steuert `planner`, `coder`, `reviewer`, `tester` und `documenter`; die Oberfläche macht den Stand sichtbar und erlaubt die menschlichen Eingriffe (Nachtrag, „Klarung", „Geschlossen", owner umschalten).
 
-- **Status:** MVP abnahmefähig (Aufgaben A1–A20 sowie A23, A24 und A25 abgeschlossen; **Gesamtsuite-Basis 1011** = App 942 + `tools/tests` 69, Stand `07ad675`, 2026-11-15; Zeitstände Arbeitsbaum: App-Suite **1039** (Stand A27), Root-Suite **1118** (Stand A26) — laufende Takte zählen nach)
+- **Status (2026-11-16):** MVP + Feature-Strecke abgeschlossen — A1–A20 sowie A23–A34 erledigt (u. a. Suche, Wellen-Zuordnung/-Filter, Arbeitsstatus, Freigabe-Gate, Unter-Aufgaben); A26/A34 in den Abschluss-Checks. **Root-Suite 1632 grün** (App-Suite 1544 + `definitions/tools/tests` 88; Sammellauf 2026-11-16). Offen (Post-MVP, gesperrt ohne Weisung): A35–A38, A21, A22. Laufend: **A39** (gemeinsame Test-/Abstimmungsrunde — [Lückenliste](docs/lueckenliste-a39.md)).
 - **Projektstand & Historie:** [docs/uebergabeprotokoll.md](docs/uebergabeprotokoll.md), [wissen/log.md](wissen/log.md)
 - **Projektwissen:** [wissen/index.md](wissen/index.md)
 
@@ -93,9 +93,12 @@ Beenden mit **Strg+C** (kein Traceback). `start.sh` ist ein Werkzeug der Repo-Wu
 
 ## Funktionen der Oberfläche
 
-- **Listenansicht:** Tabelle aller Punkte mit Status, `owner` und „zuletzt geändert"; Filter nach den 6 UI-Status und nach `owner` (alle/mensch/ai/ohne). „Klarung"-Zeilen sind hervorgehoben; Einträge werden nie automatisch ausgeblendet.
-- **Detailansicht:** Frontmatter-Kopf und gerendertes Markdown (eigener, XSS-sicherer Minimal-Renderer), Formular „Nachtrag einfügen", owner-Umschalter sowie **ausschließlich** die Status-Buttons `Klarung` und `Geschlossen`.
-- **Formulare:** neue **Aufgabe** oder **Welle** anlegen — mit Erfolgsanzeige und kopierbarem Kurzkontext für die Übergabe an die KI.
+- **Listenansicht (Übersicht):** Tabelle aller Punkte mit Status, `owner`, „zuletzt geändert", **Welle** (A31) und Arbeitsstatus-Zeile (A30: `aktuell` der Subagenten); Filter nach den 6 UI-Status und nach `owner` (alle/mensch/ai/ohne), Filter nach Welle (A27); **Suchfeld** (A25, mehrere Wörter = UND, umlaut-/ß-tolerant, kombinierbar mit den Filtern). „Klarung"-Zeilen sind hervorgehoben; Aufgaben ohne zugewiesene Kennung tragen die Marke **„neu"** (A28) mit Kennungs-Hinweis und Freigabe-Knopf (Menschen-Kanal `POST /api/freigabe`).
+- **Detailansicht:** Frontmatter-Kopf und gerendertes Markdown (eigener, XSS-sicherer Minimal-Renderer), Formular „Nachtrag einfügen", owner-Umschalter, ausschließlich die Status-Buttons `Klarung` und `Geschlossen`; **Wellen-Zuordnung** per Dropdown (A27) und **Sperrgrund-Anzeige**, solange Aufgabe oder zugeordnete Welle nicht freigegeben sind (A29).
+- **Unter-Aufgaben (A34):** Knopf „Unter-Aufgabe anlegen" in der Detailansicht einer Aufgabe (Inline-Formular, Kennung `A{xxx}.{uuu}` vergibt die App, `welle` wird geerbt); Abschnitt „Unter-Aufgaben (n)" mit Tabelle, Tiefe genau eine Ebene.
+- **Wellen:** Freigabe-Marke „freigegeben/nicht freigegeben" in der Wellen-Liste (A29), Freigabe-Knopf im Wellen-Detail (Menschen-Kanal), Ansicht „Aufgaben dieser Welle (n)".
+- **Formulare:** neue **Aufgabe** oder **Welle** anlegen — mit Erfolgsanzeige und kopierbarem Kurzkontext für die Übergabe an die KI (Wellen-Linktext zeigt den Wellen-Titel).
+- **Feature-Liste (A23):** Menüpunkt „Feature List" zeigt alle Features mit Status; Klick öffnet die zugehörigen Aufgaben (offen/in Bearbeitung/erledigt).
 - **Entscheidungen-/Projekt-Ansicht:** zeigt die Einträge aus `wissen/entscheidungen/log.md` sowie die Projekt-Unterpunkte (Konzept, Technische Spec, User Stories, Phasen, Log) — über den bestehenden Datei-Endpunkt, ohne zusätzliche API.
 
 **Statuswerte (UI):** `Klarung` · `Offen` · `In Arbeit` · `Testing` · `Dokumentation` · `Geschlossen`.
@@ -113,7 +116,8 @@ Alles liegt im OKF-Bundle **[wissen/](wissen/index.md)** — Markdown mit YAML-F
 ## Entwicklung & Tests
 
 ```bash
-python3 -m pytest definitions/app/tests -q   # App-Suite (zuletzt 1039, Stand A27; Basis-Stand 07ad675: 942)
+python3 -m pytest definitions/app/tests -q   # App-Suite (2026-11-16: 1544 grün)
+python3 -m pytest -q                        # Root-Suite = App-Suite + definitions/tools/tests (1632 grün)
 bash definitions/verify.sh .                 # Umgebungs-Check → Exit 0 = vollständig
 ```
 
@@ -132,6 +136,8 @@ bash definitions/verify.sh /pfad/zum/projekt         # Installation prüfen (Exi
 ```
 
 Optionen von `setup.sh`: `--wissen`, `--global` (Subagenten nach `~/.config/opencode/agents/`, Skills nach `~/.agents/skills/`, optional `moli`), `--force`. Vorhandene Dateien werden ohne `--force` nie überschrieben.
+
+> **Hinweis:** `verify.sh` prüft das **vollständige** Projekt — inklusive OKF-Wissensgerüst (`wissen/index.md`, `features.md`, `log.md` u. a.). Ein Ziel **ohne** `--wissen` hat dieses Gerüst nicht und endet bei der Verify-Prüfung mit Exit 1. Für neue Projekte daher `setup.sh --wissen` nutzen (oder das Wissensgerüst separat anlegen).
 
 Die **mitverteilte Vorlagen-README** liegt in [definitions/README.md](definitions/README.md) — sie beschreibt die Installation in Zielprojekten und wird hier bewusst nicht dupliziert.
 
