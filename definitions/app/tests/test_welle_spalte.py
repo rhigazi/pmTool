@@ -32,8 +32,9 @@ DETAIL_JS_PFAD = STATIC_DIR / "js" / "detail.js"
 # dort keinen Verhaltensnachweis — Muster wie ``test_setup_verteilung.py``.
 NUR_DEFINITIONS_REPO = pytest.mark.skipif(
     not (Path(__file__).resolve().parents[2] / "setup.sh").is_file(),
-    reason="Verteilte Installation: kein setup.sh im Wurzelverzeichnis, kein "
-    "Verhaltensnachweis (A31-K3)",
+    reason="Setup-Skripte nur im Definitions-Repo vorhanden (setup.sh fehlt im "
+    "installierten Zielprojekt; T19-T21 pruefen Definitions-Arbeitsbaum-Marker "
+    "und liefern dort keinen Verhaltensnachweis, A31-K3)",
 )
 
 SPALTEN_FUENF = ["Titel", "Welle", "Status", "owner", "zuletzt geändert"]

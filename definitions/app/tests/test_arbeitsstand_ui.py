@@ -320,6 +320,8 @@ return {
     assert "In Arbeit" in mit["status"]
     # Titel-/owner-Zellen bleiben unverändert.
     assert mit["zellen"][0] == "A30: Was passiert gerade"
+    # Härtungs-Kandidat (B10, nur Vermerk): owner-Zelle über Index [3]
+    # ist brüchig; langfristig über die Klasse "arbeitsstand"/Spaltenname prüfen.
     assert mit["zellen"][3] == "ai"
     # Aufgabe ohne Angabe: keine Zusatzzeile.
     assert ohne["arbeitsstaende"] == []

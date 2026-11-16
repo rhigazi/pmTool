@@ -191,6 +191,8 @@ def backup_erstellen(wissen, ziel):
     zwischen ``lexists`` und dem Öffnen des Archivs kann das Ziel ausgetauscht
     werden — ein atomares ``O_EXCL``-Öffnen ist bewusst Post-MVP.
     """
+    # lexists-Defensive (B1-K3): baumelnder Symlink gilt als belegt,
+    # damit tarfile nicht durch den Link in ein fremdes Ziel schreibt.
     if os.path.lexists(ziel):
         raise BackupFehler(
             f"Backup-Ziel existiert bereits ({ziel}). Es wurde nichts gelöscht."

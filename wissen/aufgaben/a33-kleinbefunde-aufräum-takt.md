@@ -4,12 +4,12 @@ title: "A33: Kleinbefunde-/Aufräum-Takt (gebündelt)"
 description: Gebündelte Behebung der offenen Kleinbefunde aus Reviews und Post-MVP (A24-K1–K3,
   A23-Fixture, A4-1/2, A5-B3/B4, A6-1/2, A7-2, A9-K3/K4, A13-3, A14-5/6/7/9, A16-1/4, N5/N8,
   A20-Pin-Pflege) in eigenen Batches mit je eigenem Commit.
-task_status: in Planung
-phase: 2 Planung
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: "PM: B1 committed (Review frei) — Batches B1–B9 komplett; K-Nachträge → Doku-Runde; Pause 2026-11-15"
+aktuell: ""
 ---
 
 # Ziel
@@ -191,4 +191,37 @@ Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das M
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-15 — planner (Planung abgeschlossen)
+
+- **Ergebnis:** 28 Befunde → 18 in 9 Batches (B1 Werkzeug-Härtung, B2 Fixture-Rename, B3 Wellen-`description`, B4–B6 nach A28-P0, B7–B9 nach A29), 6 entfallen begründet (A4-1, A14-7, A16-4, N5, N8, A20-Pin), 4 große Befunde als eigene Aufgaben A35–A38 ausgegliedert. 5 PM-Entscheidungen protokolliert. Belege: `wissen/log.md` (2026-11-15, A33-Planung).
+
+## 2026-11-15 — coder/reviewer (B2 + B3, Takt 5/Parallelwelle)
+
+- **Ergebnis B2 (A23-H1):** Fixture `test_bundle` → `szenario_bundle` in `test_projekt.py`/`test_features.py` (Diff 3 Zeilen je Datei); Sammelbild byte-identisch 63/63 + 98/98; Test-IDs unverändert.
+- **Ergebnis B3 (A5-B3):** optionales `description`-Feld in `neu_welle.py` (Herleitung aus erster Ziel-Zeile, max. 160 Zeichen, Kürzung mit `…`, Typfehler → `EingabeFehler`); Tests 56 → 73 (13 rot → grün); App-Suite 1107 passed. Belege: `wissen/log.md` (2026-11-15, A33-B2+B3).
+
+## 2026-11-15 — coder/reviewer (B4 + B7 + A27-K1, Takt 2)
+
+- **Ergebnis B4 (A13-3):** Wellen-Linktext zeigt den Wellen-Titel (`- Welle: [W2](wellen/w2.md)`), fail-safe Dateistamm bei fehlender/unlesbarer/titelloser Welle.
+- **Ergebnis B7 (A5-B4):** Slug-Logik in neuem `definitions/app/slug.py` konsolidiert; Delegations-Strukturtest + T15-Matrix.
+- **Ergebnis A27-K1:** `meta.py:_wellen_pfad` weist kodierte Pfade (`unquote(text) != text`) mit `EingabeFehler`/400 ab.
+- **Belege:** 272 grün (60/90/50/72), 8 Mutantenproben (coder + reviewer), Restore per SHA-256. `wissen/log.md` (2026-11-15, A33-B4+B7+A27-K1).
+
+## 2026-11-15 — coder/reviewer (B1 A24-Werkzeug-Härtung, Takt 6)
+
+- **Ergebnis:** T1 zweite Barriere direkt in `backup_erstellen`; T2/T3 `lexists` statt `exists` (baumelnder Symlink → Ausweichname `…-2.tar.gz`, Linkziel nie angelegt, `BackupFehler`); T4 Determinismus `_backup_name` inkl. Symlink-Fall; T5 Eigenschaft statt Wortlaut (keine unbelegte Verify-Behauptung); T6 Wiederherstellungsschritt bei Rollback-Fehler (`Wiederherstellen: mv …`). R8-Rest-TOCTOU als Docstring-Vermerk, `O_EXCL` Post-MVP. Quelle + verteilter Spiegel byte-identisch. 38 grün je Testdatei; Tools-Suite 86 passed (2 `test_verteilung`-Fälle umgebungsfremd rot). 6 Mutantenproben. Review-K1–K3 (T6-Zielpfad-Assertion, entfallener Negativ-Check, ungetestete `lexists`-Defensive) → Doku-Runde (B1-K1–K3 umgesetzt, s. Doku-Runde 2026-11-16). Belege: `wissen/log.md` (2026-11-15, A33-B1).
+
+## 2026-11-15 — coder/reviewer (B9 Doku-Sammelbatch, Takt 5)
+
+- **Ergebnis:** A4-2 `welle` im Aufgaben-Format (`phasen.md`) + Read-Modell (Spec); A6-1 Vermerk in `planung.md` (H-Belege im Doku-Eintrag 2026-11-14; H-Definitionen fehlen im Bundle → offener Doku-Punkt an PM); A9-K3 Fehlercodes auf den Meta-Pfad eingegrenzt; A9-K4 R8/TOCTOU-Vermerk; A16-1 R11 korrigiert (Default 5000, kein automatischer Ausweichport); A24-H2 ehrlich dokumentiert (Testlücken a–e nicht rekonstruierbar); A5-B2-Asymmetrie als PM-Entscheidung; slug-Docstring präzisiert. Review-K1–K4 nachgezogen. Belege: `wissen/log.md` (2026-11-15, A33-B9).
+
+## 2026-11-15 — coder/reviewer (B3-Nachtrag, Takt 7)
+
+- **Ergebnis:** `test_formulare` T8 an Wellen-Linktext-Vertrag angeglichen (83 grün, Mutantenprobe). Belege: `wissen/log.md` (2026-11-15, Takt 7).
+
+## 2026-11-16 — documenter (Doku-Runde, K-Sammlung)
+
+- **Ergebnis:** B1-K1 T6-Zielpfad-Assertion in `definitions/tools/tests/test_neues_projekt.py` geschärft (Zielpfad-Verifikation statt nur Pfad-als-String); B1-K3 `lexists`-Defensive als Code-Kommentar in `definitions/tools/neues_projekt.py` (+ Spiegel `tools/`); K2 skipif-Reason-Wortlaut in `definitions/app/tests/test_welle_spalte.py` präzisiert (Analogie zu `test_setup_verteilung.py`); K3 W1-Kommentar zur Mutanten-Schärfe in `test_neue_aufgabe_signal.py`; K10 Klammer-Vermerk in `test_arbeitsstand_ui.py`; K11/K12/K13 Vermerke in `features.md`/`a7-server.md`/`a16-start-colab.md`; K15a–e Vermerke (type="button"-Kommentar in `unteraufgaben.js` vorhanden + Test, Fokus-Stub in Test + `a37`-Kontext, Request-Budget 3 in A27/A29, Fehlerkopf-Muster in A34 AK-7, Anrainer-Zahl geklärt). Tests laufen: `test_welle_spalte.py` 27 passed, `test_neue_aufgabe_signal.py` 36 passed, `test_unteraufgabe_ui.py` 36 passed, `test_arbeitsstand_ui.py` 25 passed, `test_neues_projekt.py` 38 passed. K14 (A29-„Freigabe:"-Formulierungen) bewusst als Protokoll stehen gelassen — bestätigt.
+- **Korrektur (PM, 2026-11-16):** Die Batches **B5/B6/B8 sind umgesetzt** — Beleg Commit `ef68598` („A33-B5/B6/B8 fertig (alle Nachtraege, 1444 gruen)") + Code-Verifikation: B5 (A7-2) `server.py` wirft `StartFehler` ohne Pfad-Leak („BUNDLE_ROOT ist kein Verzeichnis (z. B. BUNDLE_ROOT=./wissen)."); B6 (A6-2) `test_meta.py` prüft den Body-Hash (`_hash(body_nachher) == _hash(body_vorher)`); B8 (A14-5) `istDateiAntwort` in `api.js` konsolidiert, genutzt von `detail.js`/`features.js`. B2+B3 sind über `1609e5a` belegt. **Protokolllücke (bleibt):** die detaillierten Einzel-Einträge zu B5/B6/B8 fehlen im Ergebnisprotokoll (nur der Sammel-Stand „1444 gruen" ist belegt) — nicht als „verschoben/in Planung" zu führen.

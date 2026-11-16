@@ -466,6 +466,9 @@ def test_t35_validierung_ohne_post(werte, feld, erwartet):
     ergebnis = detail_lauf(
         f"""
 let fokus = null;
+// Fokus-Stub (Überbrückung bis A37 DOM-Harness-Konsolidierung): der Mini-DOM
+// kennt `Knoten.prototype.focus` nicht — lokaler Stub, damit die Fokus-Assertion
+// laufen kann. Kein Produktivcode-Weg; fällt weg, sobald A37 den Harness konsolidiert.
 Knoten.prototype.focus = function () {{ fokus = this.id; }};
 await detail.ladeDetail({{ unterpunkt: AUFGABE }});
 await ausloesen(bei("detail-unteraufgabe-anlegen"), "click");

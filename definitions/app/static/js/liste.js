@@ -508,6 +508,13 @@ function ermittleWellen(basis, daten) {
  * Pfad → Titel für die Spalte „Welle". Die Übersicht ist die vollständige
  * Quelle und baut die Map neu auf; andere Ansichten ergänzen sie nur.
  */
+// Cache-Verhalten nach Wellen-Loeschen (A31-H2): ``wellenTitel`` wird nur bei
+// einem frischen Uebersichts-Laden geleert und neu aufgebaut; eine in der Sitzung
+// geloeschte Welle bleibt bis zum naechsten Uebersichts-Reload als Stale-Titel in
+// der Map. Die Spalte zeigt dann den (veralteten) Titel statt des Pfad-Fallbacks.
+// Bewusste Grenze: kein explizites Entfernen aus ``wellenTitel`` bei Loeschung
+// (kein Extra-Request, A25-Request-Budget bleibt unveraendert); der Titel
+// aktualisiert sich beim naechsten ``ladeUebersicht()``.
 function merkeWellenTitel(basis, wellen) {
   if (basis === "uebersicht") wellenTitel.clear();
   for (const eintrag of wellen) {

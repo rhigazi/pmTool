@@ -4,12 +4,12 @@ title: "A29: Wellen abarbeiten"
 description: Wellen die eine Aufgabe zugeordnet wurden werden erst ab gearbeitet wenn
   die gesamte Welle freigegeben wurde
 freigabe: true
-task_status: in Review
-phase: 5 Review
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: "PM: Review FREIGEGEBEN (K1–K3 → A34-P3) — Takt 3 committed"
+aktuell: ""
 ---
 
 # Ziel
@@ -71,7 +71,7 @@ Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das M
 - **T16 Freigeben im Wellen-Detail:** Klick (Zustand nicht freigegeben) → genau ein `POST /api/freigabe` mit `{path: "wellen/w1.md", wert: true}`; Meldung „Welle freigegeben."; nach Neuladen „Freigegeben"; Knopf während des Requests `disabled`.
 - **T17 Entziehen im Wellen-Detail:** Zustand freigegeben → Klick → genau ein `POST` mit `{path, wert: false}`; Meldung „Freigabe entzogen.".
 - **T18 Fehlerpfad:** Stub antwortet 403 `{error: "…"}` → Fehlerbereich zeigt die Servermeldung, Anzeige bleibt beim alten Zustand (kein Neuladen), Knopf wieder bedienbar; Doppelklick während des Requests → genau ein POST.
-- **T19 Requests:** Wellen-Detail = `GET /api/file` **+** `GET /api/aufgaben` (A27-Aufgaben-Sicht der Welle; **kein** `/api/wellen`); Aufgaben-Detail = `GET /api/file` + `/api/wellen` (A27) — kein neuer Request für die Sperre (Felder kommen aus `/api/file`).
+- **T19 Requests:** Wellen-Detail = `GET /api/file` **+** `GET /api/aufgaben` (A27-Aufgaben-Sicht der Welle; **kein** `/api/wellen`); Aufgaben-Detail = `GET /api/file` + `/api/wellen` (A27) (+ `/api/...` Unter-Aufgaben nach A34: 3 Requests) — kein neuer Request für die Sperre (Felder kommen aus `/api/file`).
 - **T20 Sperrhinweis Aufgaben-Detail:** `wirksam_freigegeben: false`, `freigabe: true`, `welle_freigabe: false` → `#detail-sperre-hinweis` mit „Umsetzung gesperrt: Welle nicht freigegeben."; `freigabe: true` und `welle_freigabe: null` (fehlende/unbekannte Welle, A29-T1) → ebenfalls „… Welle nicht freigegeben."; `freigabe: false`, `welle_freigabe: true` → „… Aufgabe nicht freigegeben."; beide `false` → „… Aufgabe und Welle nicht freigegeben."; `freigabe: false` ohne Welle (`welle_freigabe: null`) → „… Aufgabe nicht freigegeben."; `wirksam_freigegeben: true` → kein Hinweis; Aufgabe ohne Welle und `freigabe: true` → kein Hinweis; Welle/Projektdatei → kein Hinweis. Der A28-Freigabe-Knopf bleibt in allen Fällen sichtbar und bedienbar.
 - **T21 XSS/Fail-loud:** `freigabe_hinweis` mit HTML-Payload wird als Text gerendert; `/api/wellen` liefert `null` → Wellenliste zeigt die A11-Meldung (kein stilles Leer-Ergebnis), die Aufgabenliste bleibt unberührt; Nicht-Array → Formatmeldung.
 - **T22 A27-Regression:** `test_welle_zuordnung.py` unverändert grün (Dropdown, Filter, Wellen-Sicht, XSS); `test_liste.py`/`test_detail.py`/`test_suche.py` unverändert grün; `index.html`/`style.css` unverändert (`git diff --stat`).

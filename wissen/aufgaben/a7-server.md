@@ -39,7 +39,7 @@ owner: ai
 - **Abhängigkeiten:** A1; **zwingend seriell** vor A8 und A9.
 - **Konfliktgruppe G7a:** `server.py` wird von A7/A8/A9 nacheinander bearbeitet — nicht parallelisieren.
 - **Nachfolger:** A8 hängt die Lese-Routen, A9 die Schreib-Routen in dieselbe App; A16 startet `server.py` als Subprozess.
-- **Entscheidungen:** R11 (Default-Port 5000, Ausweichport mit klarer Meldung bei Belegung wird in A16 umgesetzt), R7 („zuletzt geändert" als mtime, Auslieferung in A8).
+- **Entscheidungen:** R11 (Default-Port 5000, Ausweichport mit klarer Meldung bei Belegung wird in A16 umgesetzt *(historisch; durch A16-1/B9 korrigiert: kein automatischer Ausweichport, Default 5000)*), R7 („zuletzt geändert" als mtime, Auslieferung in A8).
 - **Verweise:** Architektur und Startbefehle in [Technischer Spec](/projekt/technische-spec.md#build--start--test-befehle).
 
 # Betroffene Dateien

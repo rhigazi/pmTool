@@ -2,11 +2,11 @@
 type: Task
 title: "A27: Wellen-Zuordnung (nachträglich zuordnen, filtern, Wellen-Sicht)"
 description: Aufgaben nachträglich einer Welle zuordnen, umsortieren und die Zuordnung entfernen (Detail-Dropdown über POST /api/meta), Aufgaben nach Welle filtern (Listen) und die Aufgaben einer Welle im Wellen-Detail aus dem welle-Feld ableiten.
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: hoch
 assigned_to: coder
-aktuell: "PM: FREIGEGEBEN + S1–S7 bestanden — reif für Abschluss (Doku-Runde)"
+aktuell: ""
 feature: /features/okf-projekt-manager-spa.md
 owner: ai
 ---
@@ -96,7 +96,7 @@ Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das M
 - **T35 Leer/fail-loud:** Keine Aufgabe mit dieser Welle → „Keine Aufgaben dieser Welle." (kein leerer Tabellenkörper); `/api/aufgaben` `null` → „Aufgaben konnten nicht geladen werden."; Nicht-Array → „Aufgaben haben ein unerwartetes Format."; der restliche Detailinhalt bleibt sichtbar.
 - **T36 Keine Doppelpflege:** Wellen-Datei-SHA256 vor/nach `ladeDetail` und nach einer Zuordnungsänderung (via `/api/meta`) identisch; `# Aufgaben` unverändert; nach der Änderung listet das neu geladene Wellen-Detail die Aufgabe in der neuen Welle und nicht mehr in der alten.
 - **T37 XSS in der Wellen-Sicht:** Aufgabentitel `<img src=x onerror=alert(1)>` wird als Text in der Tabelle gerendert (kein `img`-Knoten, kein `alert`).
-- **T38 Abgrenzung:** Aufgaben-Detail (`aufgaben/a1.md`) und andere Dateien → kein Abschnitt, **kein** `GET /api/aufgaben`; Wellen-Detail → kein `GET /api/wellen` (Request-Budget: Aufgabe = file + wellen, Welle = file + aufgaben, sonst = file).
+- **T38 Abgrenzung:** Aufgaben-Detail (`aufgaben/a1.md`) und andere Dateien → kein Abschnitt, **kein** `GET /api/aufgaben`; Wellen-Detail → kein `GET /api/wellen` (Request-Budget: Aufgabe = file + wellen + unter-aufgaben (nach A34: 3 Requests), Welle = file + aufgaben, sonst = file).
 
 **F. Regression (AK-12)**
 

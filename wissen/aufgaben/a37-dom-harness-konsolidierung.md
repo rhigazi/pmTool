@@ -28,6 +28,7 @@ Noch keine Einträge — der `planner` ergänzt die Testfälle.
 - **Reihenfolge:** nach A29 (alle Testdateien stabil); nutzt `dom_helfer.py` aus A30.
 - **Nachtrag (A28-Review, K3):** Beim Umstellen auch die Harness-Lücke beheben, der `detail.js` aktuell ausweicht (`document.createTextNode` fehlt im A12-Harness → Produktivcode nutzt leeres `span` mit `" "` als Trenner, `detail.js:585-588`); `dom_helfer.py` kann `createTextNode` — nach dem Umstieg den Produktivcode-Weg rückgängig machen (Trenner sauber) und `test_detail.py` schärfen.
 - Aufwand laut A33-Plan: 5–8 h.
+- **Nachtrag (A34-P3-Review, 2026-11-16):** `definitions/app/tests/test_unteraufgabe_ui.py` (T35) nutzt einen lokalen `Knoten.prototype.focus`-Stub, weil der Mini-DOM `focus` nicht kennt. Diese Überbrückung fällt weg, sobald A37 den Harness konsolidiert — dann die Fokus-Assertion über den echten DOM prüfen.
 
 # Betroffene Dateien
 

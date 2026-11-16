@@ -215,6 +215,11 @@ def test_t5_datei_ohne_slug_zaehlt_als_belegt(client, bundle, titel):
     Der alte ``overview``-Regex verlangte ``-`` (oder ``.``) nach der Nummer und
     ignorierte ``a34.md`` — daraus konnte eine Doppelkennung entstehen.
     """
+    # Mutanten-Schärfe (W1): scharf ist die Variante ohne Titel-Kennung
+    # (``titel = "Ohne Kennung"``) — sie deckt den Pfad ab, bei dem nur der
+    # Dateiname ``a34.md`` die Kennung trägt; der andere Parametrisierungsfall
+    # (``"A34: Ohne Slug"``) prüft den Titel-Pfad. Beide müssen grün sein,
+    # sonst überlebt der Mutant ``_DATEI`` ohne ``(?:-|$)``-Alternative.
     _schreibe(
         bundle,
         "aufgaben/a34.md",

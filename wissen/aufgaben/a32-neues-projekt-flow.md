@@ -3,12 +3,12 @@ type: Task
 title: "A32: Neues-Projekt-Flow — start.sh --neu + Erststart-Hinweis"
 description: Nach einem Repo-Pull startet start.sh in einem neuen Container mit pmTool-Projektdaten
   vorbefüllt — start.sh soll den Reset auf die saubere Vorlage anbieten (Hinweis + --neu-Flag).
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: hoch
 assigned_to: coder
 owner: ai
-aktuell: "PM: Bestätigungs-Review FREIGEBEN (H1–H6 → A33) — Nachträge H1/H2/H3/H6 (start.sh) umgesetzt — reviewer: Review — 2026-11-15"
+aktuell: ""
 ---
 
 # Ziel
@@ -95,4 +95,25 @@ hinzu. Nach der Umsetzung 34 passed. K2 (Werkzeug im TTY-Hinweis) prüft
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-15 — coder (Umsetzung, Paket 1)
+
+- **Ergebnis:** `start.sh` um Marker-Erkennung (Referenzdateien `wissen/aufgaben/a1-okf-bundle.md` und `wissen/features/okf-projekt-manager-spa.md`), interaktiven Hinweis mit Ja/Nein-Rückfrage, Flag `--neu` (Reset ohne Rückfrage, mit Backup) und Schritt „Projektstand" (vor `verify.sh`/App-Start) erweitert; Reset ausschließlich über `tools/neues_projekt.py`. 13 neue Tests in `test_start_skript.py` (tmp-Projekt + pty); Help-Test um `--neu` ergänzt. Rot-Stand 12 failed/10 passed → 22 passed (9 bestehende + 13 neue). Belege: `wissen/log.md` (2026-11-15, A32-Umsetzung).
+- **Bewusste Abweichungen:** Marker am Reset-Ziel `<Projekt>/wissen` (nach W1); kein Fallback auf `definitions/tools/` (K1); `--neu` legt fehlendes `wissen/` aus der Vorlage an (K3).
+
+## 2026-11-15 — coder (Nachbesserung W1 + K1–K8)
+
+- **Ergebnis:** Reset-Ziel auf `<Projekt>/wissen` ausgerichtet (Warnung bei abweichendem `BUNDLE_ROOT` in jedem Zweig, beide Richtungen getestet), toter Fallback entfernt („Werkzeug fehlt", Exit 1), Werkzeug im TTY-Hinweis, `--neu` ohne `wissen/`, parametrisierte Randfälle (Enter/`y`/`Y`/`YES`/`yes`, `BUNDLE_ROOT`-Override), Portprüfung vor Rückfrage/Reset, Kopfzeile korrigiert. 33 → 34 Tests grün (7 rot in der Nachbesserung). Belege: `wissen/log.md` (2026-11-15, A32-Nachbesserung).
+
+## 2026-11-15 — coder (Nachträge H1/H2/H3/H6, Takt 1)
+
+- **Ergebnis:** H1 keine Doppelmeldung am belegten Port, H2 `--neu` bei belegtem Port fail-loud (Meldung + Exit 1), H3 `warnung_reset_ziel` vergleicht normalisierte Pfade (`pwd -P`), H6 K7-Test mit expliziter Assertion „kein Serverstart". 34 → 41 Tests grün; Smoke `start.sh --dry-run` Exit 0. Mutantenproben doppelt (coder + reviewer). Belege: `wissen/log.md` (2026-11-15, A32-Nachträge).
+
+## 2026-11-15 — tester (Testphase S1–S7)
+
+- **Ergebnis:** 16/16 Prüfungen auf frischen tmp-Projekten bestanden (S1 TTY+`j`, S2 `n`/leer/Strg+D, S3 kein TTY fail-safe, S4 `--neu`/`--neu --dry-run`, S5 Marker-Matrix, S6 Fehlerpfade, S7 Flag-Kombinationen); Reihenfolge-Nachweis Schritt 5 vor verify/Start; Live-Repo unschädlich bewiesen (`start.sh --neu --dry-run` Hash identisch). `test_start_skript.py` 22 passed (3× stabil), App-Suite 1107/1052, `verify.sh` Exit 0. Belege: `wissen/log.md` (2026-11-15, A32-Testphase).
+
+## 2026-11-15 — reviewer (Bestätigungs-Review)
+
+- **Ergebnis:** FREIGEGEBEN (Snapshot `22ad505`): W1 substanziell bestätigt, K1/K2/K3/K5/K7/K8 erfüllt; Rot-Stichproben exakt (12/10 bzw. 8/26 reproduziert), 22 Alt-Tests unverändert grün. Hinweise H1–H6 → A33 (H1/H2/H3/H6 umgesetzt, H4/H5 Vermerke). Belege: `wissen/log.md` (2026-11-15, A32-Bestätigungs-Review). **Protokolllücke:** exakte Uhrzeiten und Reviewer-Identität nicht im Bundle rekonstruierbar (nur Rolle `reviewer`).

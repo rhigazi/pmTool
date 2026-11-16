@@ -284,9 +284,14 @@ def test_backup_pfad_im_wissen_verzeichnis_wird_abgelehnt(projekt, capsys):
 
     exit_code = reset(projekt, "--ja", "--backup", str(ziel))
 
+    captured = capsys.readouterr()
     assert exit_code == 1
     assert baum(projekt / "wissen") == vorher
-    assert "Fehler" in capsys.readouterr().err
+    assert not ziel.exists()
+    assert "Fehler" in captured.err
+    # Zielpfad-Verifikation (B1-K1): Ablehnung erfolgt wegen des Ziel-Pfads
+    # innerhalb von wissen/, nicht nur als generischer Fehler.
+    assert "wissen" in captured.err
 
 
 def test_wissen_als_datei_wird_abgelehnt(projekt, capsys):

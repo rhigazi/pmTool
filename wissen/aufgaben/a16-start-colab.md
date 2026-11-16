@@ -38,7 +38,7 @@ Alle Testfälle laufen mit gemockten Abhängigkeiten (Colab-Output, `Popen`, `pi
 
 - **Abhängigkeiten:** A7 (`server.py`).
 - **Konfliktgruppe G11:** `README.md` nur in Abstimmung mit A15 — **A15 zuerst**.
-- **Entscheidungen:** R11 (Default-Port 5000, Ausweichport + klare Meldung bei Belegung), R14 (`start_colab.py` installiert `flask`/`pyyaml` bei Bedarf; keine neuen Abhängigkeiten zur Spec).
+- **Entscheidungen:** R11 (Default-Port 5000, Ausweichport + klare Meldung bei Belegung *(historisch; durch A16-1/B9 korrigiert: kein automatischer Ausweichport, Default 5000)*), R14 (`start_colab.py` installiert `flask`/`pyyaml` bei Bedarf; keine neuen Abhängigkeiten zur Spec).
 - **Verweise:** Startbefehle in [Technischer Spec](/projekt/technische-spec.md#build--start--test-befehle), [US-6](/projekt/user-stories/us-6.md).
 
 # Betroffene Dateien

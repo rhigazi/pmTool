@@ -4,13 +4,13 @@ title: "A30: Was passiert gerade"
 description: Wenn ich die Übersicht Liste Aufrufe und den Status "in Arbeit" sehe
   ich die Aufgaben die im Moment von dir bearbeitet werden, allerdings weiß ich nicht
   wo wir…
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: hoch
 assigned_to: coder
 welle: wellen/w2.md
 owner: ai
-aktuell: "PM: Review FREIGEGEBEN + S1–S4 bestanden — reif für Abschluss"
+aktuell: ""
 ---
 
 # Ziel
@@ -19,7 +19,7 @@ Der Projektleitung fehlt in der Übersichtsliste die Information, **wo wir uns g
 
 A30 macht den **Arbeitsstatus** sichtbar, ohne eine zweite Datenquelle zu schaffen:
 
-1. **Ableitung aus `aktuell`:** Das im Frontmatter bereits gepflegte Feld `aktuell: "<Rolle>: <Was passiert gerade>"` (PM-Regel „Live-Arbeitsstand pflegen") wird serverseitig in normalisierte Rolle + Text zerlegt und im Read-Modell (`/api/overview`, `/api/aufgaben`, `/api/file`) ausgeliefert. Kein neues Frontmatter-Feld, keine Doppelpflege, keine Schreiblogik.
+1. **Ableitung aus `aktuell`:** Das im Frontmatter bereits gepflegte Feld `aktuell: ""` (PM-Regel „Live-Arbeitsstand pflegen") wird serverseitig in normalisierte Rolle + Text zerlegt und im Read-Modell (`/api/overview`, `/api/aufgaben`, `/api/file`) ausgeliefert. Kein neues Frontmatter-Feld, keine Doppelpflege, keine Schreiblogik.
 2. **Anzeige:** In Übersicht und Aufgabenliste erscheint der Arbeitsstatus in der **Status-Zelle** (unter „In Arbeit") als Zeile „Coder: Umsetzung Paket 2"; im Detail als `dl`-Feld „Arbeitsstatus". Fehlt/leert `aktuell`, gibt es keine Anzeige und keinen Fehler.
 3. **Grenzen:** keine neue Spalte (A11/A25/A27-Vertrag), `index.html` bleibt eingefroren, `style.css` unverändert, keine neuen Abhängigkeiten, keine neuen Endpunkte.
 
@@ -85,7 +85,7 @@ Harness: `tests/dom_helfer.py` (neu) mit dem Mini-DOM aus `test_welle_zuordnung.
 
 **UI-Szenarien für den `tester` (Moli-Browser, laufende App gegen Test-Bundle):**
 
-- **S1 Übersicht:** Aufgabe mit `task_status: in Umsetzung` und `aktuell: "coder: Umsetzung Paket 2"` → Übersichtsliste zeigt „In Arbeit" und darunter „Coder: Umsetzung Paket 2"; Aufgabe ohne `aktuell` zeigt keine Zusatzzeile; keine Konsolenfehler.
+- **S1 Übersicht:** Aufgabe mit `task_status: in Umsetzung` und `aktuell: ""` → Übersichtsliste zeigt „In Arbeit" und darunter „Coder: Umsetzung Paket 2"; Aufgabe ohne `aktuell` zeigt keine Zusatzzeile; keine Konsolenfehler.
 - **S2 Mehrere Aufgaben:** zwei Aufgaben in Arbeit mit „tester: …" und „reviewer: …" → jede Zeile zeigt ihre eigene Rolle, keine Vermischung.
 - **S3 Detail:** Aufgabe öffnen → Feld „Arbeitsstatus" mit Rolle + Text; A27-Feld „Welle" weiterhin vorhanden; owner-Umschalter und Statusknöpfe funktionieren.
 - **S4 Grenzfälle:** `aktuell` auf `"Architekt: Konzept"` setzen → Anzeige „Architekt: Konzept" (kein Fehler); `aktuell` leeren → Zeile verschwindet nach Neuladen; Aufgabe auf `abgeschlossen` setzen → keine Arbeitsstatus-Zeile; HTML in `aktuell` → nur Text, kein Dialog.
@@ -157,7 +157,7 @@ Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkt
 ## 2026-11-15 — coder (Umsetzung Paket 1 + Paket 3; Paket 2 gated)
 
 - **Ergebnis Paket 1 (Modul + Backend, G21):** `definitions/app/arbeitsstand.py` neu — framework-frei, ohne I/O: Rollen-/Alias-Tabelle (`planner`/`planer`, `coder`, `tester`, `reviewer`/`review`, `documenter`/`doku`, `pm`/`projektmanager`/`projektleitung` → „Planer"/„Coder"/„Tester"/„Review"/„Documenter"/„PM") und `ermittle(frontmatter)` → `arbeitsrolle` (nur bei bekannter Rolle), `arbeitsrolle_label` (bei unbekannter Rolle der Originaltext), `arbeitsstatus` (Text nach dem **ersten** Doppelpunkt). Normalisierung: trimmen + Leerraumfolgen (inkl. Zeilenumbruch) zu einem Leerzeichen; Rolle case-insensitiv; ohne Doppelpunkt ist alles Text; leere Rolle → keine Rolle, Text bleibt; `aktuell` fehlt/leer/Nicht-String → `{}`; Abschluss-Guard über `status.ui_status` („Geschlossen" → `{}`); Nicht-Tasks → `{}`. `overview._eintrag` und `overview.details` übernehmen die Felder **top-level** nur bei `typ == "Task"`; `frontmatter` (inkl. `aktuell`) bleibt roh, kein Schreibpfad, kein neuer Endpunkt. Deckt AK-1, AK-2, AK-3, AK-7 ab.
-- **Ergebnis Paket 3 (Doku, G23):** `wissen/projekt/phasen.md` — Aufgaben-Format um `aktuell: "<Rolle>: <Was passiert gerade>"` ergänzt, mit dem Satz „Live-Feld, nur Anzeige, bei Abschluss leeren" und der vollständigen Rollen-/Aliasliste (deckungsgleich mit AGENTS.md). `wissen/projekt/technische-spec.md` — Read-Modell-Tabelle um `arbeitsrolle?`, `arbeitsrolle_label?`, `arbeitsstatus?` bei `/api/overview`, `/api/file` und den Rohlisten ergänzt, plus Regelblock „abgeleitet, nur lesend": nur `typ: Task`, fehlend = keine Anzeige, „Geschlossen" ohne Felder, `frontmatter.aktuell` roh, kein neuer Endpunkt. `AGENTS.md` und `definitions/AGENTS.md` — in „Live-Arbeitsstand pflegen" ein Satz zur Anzeige als Arbeitsstatus (Status-Zelle + Detail-Feld) und zur verbindlichen Schreibweise `<Rolle>: <Text>` inkl. Rollenliste. Deckt AK-9 (T23/T24) ab.
+- **Ergebnis Paket 3 (Doku, G23):** `wissen/projekt/phasen.md` — Aufgaben-Format um `aktuell: ""` ergänzt, mit dem Satz „Live-Feld, nur Anzeige, bei Abschluss leeren" und der vollständigen Rollen-/Aliasliste (deckungsgleich mit AGENTS.md). `wissen/projekt/technische-spec.md` — Read-Modell-Tabelle um `arbeitsrolle?`, `arbeitsrolle_label?`, `arbeitsstatus?` bei `/api/overview`, `/api/file` und den Rohlisten ergänzt, plus Regelblock „abgeleitet, nur lesend": nur `typ: Task`, fehlend = keine Anzeige, „Geschlossen" ohne Felder, `frontmatter.aktuell` roh, kein neuer Endpunkt. `AGENTS.md` und `definitions/AGENTS.md` — in „Live-Arbeitsstand pflegen" ein Satz zur Anzeige als Arbeitsstatus (Status-Zelle + Detail-Feld) und zur verbindlichen Schreibweise `<Rolle>: <Text>` inkl. Rollenliste. Deckt AK-9 (T23/T24) ab.
 - **Gate eingehalten:** Paket 2 (UI: `liste.js`, `detail.js`, `tests/dom_helfer.py`, `tests/test_arbeitsstand_ui.py`) **nicht** begonnen — A27-Review/-Testphase lesen diese Dateien; Start erst auf PM-Freigabe. T14–T20 sowie T21/T22 (Baselines/Dateiinventar) bleiben offen.
 - **Belege:** TDD-Red-Green. Erster Lauf: `test_arbeitsstand.py` rot (Collection-Error, Modul fehlt). Nach dem Modul: 33 grün / 4 rot (`/api/aufgaben`, `/api/overview`, `/api/file`, Schreibpfad). Nach dem Einbau in `overview.py`: **38 grün** (T1–T13 inkl. `test_t9b_nur_tasks`; T2 mit 10 Rollen-Fällen, T5 mit 10 Negativfällen). Angrenzende Suiten unverändert grün (549 Tests: `test_api_lesen`, `test_api_schreiben`, `test_welle_zuordnung`, `test_features`, `test_projekt`, `test_liste`, `test_detail`, `test_static`). Gesamtsuite serialisiert (`python3 -m pytest definitions/app/tests -q -p no:randomly`): **1107 passed, 0 failed** (6:27). Ein früherer Gesamtlauf blieb bei 78 % in `test_start_skript.py` hängen (Fremd-Ursache: `start.sh`/`test_start_skript.py` wurden parallel von einem anderen Agenten geschrieben); die Datei lief isoliert danach mit **22 passed** durch.
 - **Bewusste Abweichung/Ergänzung:** Der Typ-Guard (`nur typ == "Task"`) liegt zusätzlich **im Modul** (nicht nur im Aufrufer) — dadurch kann kein künftiger Aufrufer die Felder für Wellen/Projekte erhalten; Verhalten der API unverändert. Testfall `T9b` dokumentiert das. `details`/`_eintrag` behalten den expliziten Guard zusätzlich bei.
