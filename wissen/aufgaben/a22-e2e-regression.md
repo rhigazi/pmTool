@@ -2,13 +2,13 @@
 type: Task
 title: "A22: E2E-Regressionstest (test_e2e.py)"
 description: Die T1/T2/T7-Kette des A17-Abnahmelaufs als dauerhaften, eingecheckten E2E-Test überführen.
-task_status: im Review
-phase: 5 Review
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: mittel
 assigned_to: coder
 user_story: /projekt/user-stories/us-7.md
 owner: ai
-aktuell: "reviewer: A22 Review (Mutantenproben gegen Produktivcode + Urteil)"
+aktuell: ""
 freigabe: true
 ---
 
@@ -44,4 +44,13 @@ Die im A17-Abnahmelauf ad hoc gefahrene T1/T2/T7-Kette (aus den Skripten `/tmp/o
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+## 2026-11-16 — reviewer: Review FREIGEGEBEN → **abgeschlossen**
+
+- **Urteil:** FREIGEGEBEN (keine W-Befunde; 8 K-Punkte, davon 2 Doku). Mutantenproben gegen den Produktivcode: **8/11 getötet** (Marker-Dopplung/-Fehlen, echter Append-Bruch ×2, fehlender Body-Abschnitt, fehlendes `freigabe: false`, Freigabe-Durchgriff `/api/meta`, Status-Feld, fail-open-Freigabe); 3 Überlebende = belegte Schichtungs-/Redundanz-Fälle (M6 Meta-Guard redundant zum Server-Guard; M10 `bool(raw)` deckt `test_freigabe.py`; M11 Whitelist-Aufweichung deckt `test_meta.py`). SHA-Restaurierung aller Mutanten belegt. Testläufe: `test_e2e.py` 4 passed (Snapshot **und** aktueller Arbeitsbaum), Anrainer 89/475 passed, App-Suite ohne Setup-Verteilung **1571 passed / 0 failed**.
+- **K-Punkte (Klammer):** K1 tautologische Schluss-Assertion (Schrittnamen-Liste) — optional straffen; K2 „byte-identisch/403" im E2E nur semantisch geprüft (Hash vor/nach Schritt 11 ergänzen); K3/K4 Negativfälle der Meta-Whitelist/Fail-closed-Schwäche bewusst in `test_meta.py`/`test_freigabe.py` geschichtet (dort scharf belegt); K5 Mitternachts-Kante bei `heute` (Datum vor/nach vergleichen — seltener Flake-Pfad); K8 Isolationsprobe T3 überspringt still bei fehlendem `wissen/`. K1/K2/K5/K8 → Härtungs-Klammer (Lückenliste).
+- **„Nicht rekonstruierbar" (A17-Ad-hoc-Skripte) akzeptabel, keine Vertragslücke:** Die Skripte `/tmp/opencode/a17_*.py` waren nie im Repo (Einmal-Nachweis lt. Entscheidungslog 2026-11-14); ein 1:1-Port ist unmöglich. Die Kette ist eine dokumentationsgetreue Nachbildung, überzeichnet nicht (keine „23/23"-Behauptung) und prüft an den Zuständen mehr als der damalige Einmal-Lauf. **Restvermerk:** die exakte A17-Schrittfolge ist nachträglich nicht mehr verifizierbar — als Lücke dokumentiert (dieser Eintrag).
+
+## 2026-11-16 — coder (Welle A): `test_e2e.py` umgesetzt — 4 grün
+
+- **Ergebnis:** Neue Datei `definitions/app/tests/test_e2e.py` (4 Tests, 114 Assertions): **T1** durchgängige API-Kette über `server.create_app(...).test_client()` gegen tmp-Kopie von `fixtures/bundle_min` unter `/tmp/opencode/a22-e2e-*` (Overview → Nachtrag append-only → Aufgabe A99 → Welle → owner/status/welle per `POST /api/meta` → Freigabe-Gate Welle+Aufgabe (UND, beide Zwischenzustände) → KI-Weg `freigabe` 403 → Endkonsistenz, Datei-SHA-256 im Protokoll); **T2** Frontmatter-Invarianten (vor/nach exakt gleich, 1 Marker, append-only); **T7** Reset reproduzierbar (Bundle zurückgesetzt → Kette erneut → identisches Protokoll mtime-frei, inkl. Datei-SHA-256); **T3** echtes `wissen/` unberührt (Baum-SHA-256 vor/nach, Bundles ausschließlich unter `/tmp/opencode`).
+- **TDD-Beleg:** rot (Datei fehlt, Exit 4) → grün (4 passed, wiederholt stabil).
