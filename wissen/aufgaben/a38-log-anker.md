@@ -35,6 +35,10 @@ Noch keine Einträge — der `planner` ergänzt die Testfälle.
 Noch keine Einträge — die Planung ergänzt die betroffenen Dateien.
 
 # Ergebnisse
+## 2026-11-16 — reviewer (kombiniert mit A40): FREIGEGEBEN — Rücklauf W1 läuft
+
+- **Urteil:** FREIGEGEBEN — 7/8 Mutanten getötet (Sanitizing, Duplikat-Zähler, `trenneAnker`, `focus`, Renderer-IDs, Link-Anker, Umlaut-Mapping); M8 (Sanitizer lässt `é` durch) überlebt = **Testlücke W1** (Test prüft `islower()` statt ASCII-Whitelist). Produktivcode korrekt. Link-Format (`%2F`-Konvention), Parser-Erweiterung, Fokus-Hervorhebung ohne CSS: alle akzeptiert. **K-Klammern:** K1 `trenneAnker` bei `#` im Pfad (Test ergänzen), K2 globale `getElementById`-Auflösung (Slug vs. feste Seiten-IDs), K3 CSS-Hervorhebung `.anker-ziel` (späterer Takt), K4 Doku zeigt künftig die `%2F`-Form, K5 AK-Block nachziehen (Doku-Runde), K6 keine UI-Liste für Log-Eintragslinks (A14-9-Kernfall: Entscheidungen — erfüllt).
+
 ## 2026-11-16 — coder (Welle C): Log-Anker — 24 neue Tests grün
 
 - **Ergebnis:** `detail.js`: `erstelleAnker` (stabiler Slug `[a-z0-9-]+`, Umlaute `ae/oe/ue/ss`, max. 80 Zeichen, Fallback `abschnitt` — XSS-sicher als `id`), `erstelleAnkerVergabe` (Duplikate `-2`, `-3`; dieselbe Vergabe für Renderer und Verweis-Liste), `rendereMarkdown` vergibt `id` je Überschrift (nur `textContent`/`id`), `springeZuAnker` (Klasse `anker-ziel`, `tabindex=-1`, `scrollIntoView` + `focus()`), `trenneAnker` (`pfad#anker` — `ladeDetail` lädt nur den Pfad und springt danach). `projekt.js`: `parseEntscheidungen` liefert `{datum, titel, anker}` (Anker-Vergabe über alle Überschriften, exakt deckungsgleich zum Renderer); Entscheidungen-Links `#/detail/<pfad>#<anker>`; `ladeProjektAnsicht` akzeptiert `unterpunkt#anker`.

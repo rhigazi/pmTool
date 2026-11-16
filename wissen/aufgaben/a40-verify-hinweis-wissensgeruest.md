@@ -41,6 +41,10 @@ Sammellauf-Befund V1 der A39-Testrunde (2026-11-16): Ein per `setup.sh` (ohne `-
 - `definitions/README.md` (ggf. ein Satz zur Verify-Erwartung)
 
 # Ergebnisse
+## 2026-11-16 — reviewer (kombiniert mit A38): NACHBESSERUNG (W1) — Rücklauf läuft
+
+- **Urteil:** NACHBESSERUNG — Kernmeldung/Testlage grün, 3/3 eigene Mutanten getötet. **W1 (echter Befund):** Die Remediation „`setup.sh --wissen`" stimmt bei **Teilgerüst** nicht — (a) bei vorhandenem `wissen/index.md` überspringt `setup.sh --wissen` Abschnitt 5 (fehlende Datei bleibt fehlend), (b) bei fehlendem `index.md` überschreibt `cp -r` vorhandene Wissensdateien (widerspricht der Meldung „vorhandene Dateien bleiben unangetastet") — beides mit Temp-Zielen belegt. Fix: Meldung nach Voll-/Teilgerüst unterscheiden, T14 um echten Remediation-Lauf erweitern. **K-Klammern:** K1 `-e` statt `-f` (geerbt), K2 Testlücke (nur erste fehlende Datei genügt beiden Tests → parametrisieren, im Rücklauf), K3 Leerzeile am Dateiende, K4 `WISSEN_DATEIEN` doppelt gepflegt (Drift-Risiko), K5 kein fester Skriptpfad (bewusst, akzeptiert).
+
 ## 2026-11-16 — coder (Welle A): Verify-Hinweis — 3 neue Tests grün
 
 - **Ergebnis:** `definitions/verify.sh` Abschnitt 1 geteilt (allgemeine Dateien / 8 OKF-Pflichtdateien); fehlt mindestens eine, erscheint **eine** gebündelte Meldung: „✗ OKF-Wissensgerüst fehlt (N von 8 Pflichtdateien): … → Lösung: setup.sh --wissen ausführen — legt das Gerüst unter <ziel>/wissen/ an (vorhandene Dateien bleiben unangetastet)". Zählung/Liste dynamisch („1 von 8 …" im Einzelfall); FAIL bleibt gesetzt (Exit 1); vorhandene Dateien weiterhin einzeln ✓, Reihenfolge unverändert.
