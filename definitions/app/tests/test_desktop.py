@@ -287,6 +287,36 @@ def test_t7c_fensterfehler_exit_eins(bundle, monkeypatch, server_handle, capsys)
     assert "Traceback" not in ausgabe.err
 
 
+def test_t7d_server_thread_laeuft_als_daemon(monkeypatch):
+    """K2: Der Server-Thread ist ein Daemon — sonst blockiert er den Prozess-Exit."""
+    from werkzeug import serving
+
+    erzeugte_threads: list = []
+
+    class ErfassenderThread:
+        """Stub statt echtem Thread: zeichnet ``daemon``/``name`` auf."""
+
+        def __init__(self, *args, **kwargs):
+            self.daemon = kwargs.get("daemon")
+            self.name = kwargs.get("name")
+            self.gestartet = False
+            erzeugte_threads.append(self)
+
+        def start(self):
+            self.gestartet = True
+
+    handle = FakeServerHandle()
+    monkeypatch.setattr(serving, "make_server", lambda *a, **k: handle)
+    monkeypatch.setattr(desktop.threading, "Thread", ErfassenderThread)
+
+    assert desktop._starte_server(object(), 0) is handle
+
+    assert len(erzeugte_threads) == 1
+    assert erzeugte_threads[0].gestartet is True
+    assert erzeugte_threads[0].name == "okf-desktop-server"
+    assert erzeugte_threads[0].daemon is True
+
+
 def test_t8_echter_inprozess_server(bundle, monkeypatch):
     app = server.create_app(bundle)
     prozess_aufrufe: list = []
@@ -295,6 +325,9 @@ def test_t8_echter_inprozess_server(bundle, monkeypatch):
     handle = desktop._starte_server(app, 0)
     port = handle.server_port
     try:
+        # K1: Der Server bindet nur Loopback — 0.0.0.0 wäre eine LAN-Freigabe.
+        assert desktop.HOST == "127.0.0.1"
+        assert handle.server_address[0] == "127.0.0.1"
         with urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=10) as antwort:
             assert antwort.status == 200
             assert "<html" in antwort.read().decode("utf-8").lower()

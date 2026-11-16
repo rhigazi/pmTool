@@ -3,12 +3,12 @@ type: Task
 title: "A21: Desktop-Modus/Lokal-Betrieb"
 description: Die App läuft als Desktop-Fenster (pywebview, Option B) mit direktem Zugriff auf die lokalen Domänen-Module — als eigener Startweg neben dem Browser-Betrieb.
 freigabe: true
-task_status: im Review
-phase: 5 Review
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: niedrig
 assigned_to: coder
 owner: ai
-aktuell: "reviewer: A21 Review (Mutanten + Urteil)"
+aktuell: ""
 ---
 
 # Ziel
@@ -274,6 +274,14 @@ Testaufbau: `baue_testprojekt` bekommt einen `desktop.py`-Stub
   (keine vorhanden), übrige UI-/Backend-Module.
 
 # Ergebnisse
+## 2026-11-16 — coder (Rücklauf) + PM: W1/K1/K2 behoben → **abgeschlossen**
+
+- **W1:** `hilfe()`-Range jetzt beidseitig gewacht (`assert "fail-safe" in stdout` + `assert "!/usr/bin/env bash" not in stdout`) — Proben: `2,17p` rot, `1,17p` rot, `1,18p` rot (beide Grenzen sichtbar).
+- **K1:** T8 assertiert `desktop.HOST == "127.0.0.1"` **und** `handle.server_address[0] == "127.0.0.1"` (Konstante + effektive Bind-Adresse) — Literal-Mutante `0.0.0.0` tot.
+- **K2:** neuer Test `test_t7d_server_thread_laeuft_als_daemon` (Stub-Server + Thread-Stub, kein zusätzlicher echter Socket) — `daemon=False`-Mutante tot.
+- 50 + **20** = **70 grün**; Produktivcode unverändert (byte-identisch). **A21 abgeschlossen** (PM, 2026-11-16).
+- **Restvermerk (ausdrücklich offen):** echter Fenster-Smoke auf Maschine mit Display (Linux-Backend/macOS-Hauptthread) — bei der Abnahme der Projektleitung nachzuholen. K3–K7 (Socket-Release-Formulierung, `_port_belegt`-Delegation, README-Zahlen → Sammellauf-Sync, Berichtstreue, Port-Race-Meldung englisch) → Härtungs-/Doku-Klammern.
+
 ## 2026-11-16 — reviewer: NACHBESSERUNG (klein — nur Testwächter) — Rücklauf läuft
 
 - **Urteil:** NACHBESSERUNG (klein) — Umsetzung funktional vollständig und korrekt (AK-1…AK-6 alle erfüllt, App-Suite **1670 passed**, `verify.sh` Exit 0, `bash -n`/`py_compile` sauber, keine neue Abhängigkeit, kein `innerHTML`). 18 Mutantenproben: 13/17 getötet (+1 äquivalent); 4 überlebt: **W1** `hilfe()`-Range-Wächter greift nicht (Mutant f: zu enge Range → Hilfe sichtbar kaputt, Test grün) — blockierend; **K1** Bind-Adresse nicht direkt geprüft (Literal `0.0.0.0` überlebt); **K2** `daemon=True` ungetestet; **l** Fenstergröße (bewusst offen, akzeptiert); **n** `server_close()` im Bedien-Thread = äquivalent (verifiziert). Rücklauf W1/K1/K2 läuft (nur Tests).

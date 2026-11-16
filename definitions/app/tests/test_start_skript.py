@@ -805,6 +805,11 @@ def test_help_nennt_desktop_und_zeigt_keine_shelloptionen():
     assert "--colab" in ergebnis.stdout
     assert "--neu" in ergebnis.stdout
     assert "--dry-run" in ergebnis.stdout
+    # Beide Grenzen der ``hilfe()``-Range sind sichtbar: die letzte Kommentarzeile
+    # (fail-safe) muss enthalten sein, die erste Shell-Zeile (Shebang) nicht.
+    # Damit sterben zu enge (2,17p) und nach oben zu weite (1,18p) Ranges.
+    assert "fail-safe" in ergebnis.stdout
+    assert "!/usr/bin/env bash" not in ergebnis.stdout
     assert "set -euo" not in ergebnis.stdout
 
 
