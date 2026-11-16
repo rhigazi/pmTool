@@ -2,6 +2,14 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-16: Gesamt-Freigabe der Rest-Strecke („alles frei") + Wellen-Plan
+
+**Entscheidung:** Die Projektleitung hat die gesamte Rest-Liste freigegeben („hiermit gebe ich alles frei", Menschen-Kanal 2026-11-16): **A35** (Status-Mapping server-seitig), **A36** (`schreibgeschuetzt`-Signal), **A37** (DOM-Harness-Konsolidierung), **A38** (Log-Anker), **A22** (E2E-Regression), **A21** (Desktop-Modus/Lokal-Betrieb, inkl. neuer optionaler Abhängigkeit `pywebview` — damit ist die Abhängigkeits-Frage von 2026-11-14 entschieden), sowie die aus der A39-Lückenliste abgeleiteten neuen Aufgaben **A40** (Verify-Hinweis bei fehlendem Wissens-Gerüst, aus V1), **A41** (A6-1 H-Definitionen klären) und **A42** (Härtungs-Klammern B1-K2/T15/O_EXCL). Die Aufgaben A40–A42 wurden im Moment der Annahme angelegt (ID + Titel + Sofort-Push); `freigabe: true` wurde für alle neun Aufgaben über den Menschen-Kanal `freigabe.setzen(..., herkunft=MENSCH)` gesetzt (K6-Präzedenz, dokumentierter Menschen-Befehl — der KI-Weg blieb 403). **Wellen-Plan (Parallelität, Datei-Konflikte beachtend):** Welle A = A35 ∥ A37 ∥ A22 ∥ A40 ∥ A41 (disjunkte Dateien); Welle B = A36 (nach A35, `detail.js`) ∥ A42 (nach A37 wg. `test_arbeitsstand_ui.py`); Welle C = A38 (nach A36, `detail.js`/`projekt.js`); Welle D = A21 (zuletzt, größtes Stück, Planung durch `planner` vorab). Reviews je Takt (Mutantenproben + Urteil), kombinierter Testlauf + Sicherungs-Push am Ende. Subagenten laufen ab sofort mit `deepseek-v4.1-flash`.
+
+**Begründung:** Ausdrückliche Freigabe-Gesamtweisung der Projektleitung mit dem Auftrag zu maximaler Parallelität; die Wellen-Ordnung verhindert Datei-Kollisionen im gemeinsamen Arbeitsbaum (`detail.js` dreifach belegt, `test_arbeitsstand_ui.py` zweifach) und hält die Testläufe stabil (serialisierte Voll-Läufe am Ende).
+
+**Auswirkung:** Die Post-MVP-Sperre entfällt vollständig; A35–A38/A21/A22/A40–A42 werden in der genannten Reihenfolge umgesetzt (je Aufgabe: Coder → Review → Test; Abschluss-Commits je Takt). A39 (Test-Befunde der Projektleitung) bleibt Vorrang-Kanal für Nutzer-Befunde.
+
 ## 2026-11-16: Subagent-Modell zurück auf `deepseek-v4.1-flash` (revidiert die Beam-Entscheidung)
 
 **Entscheidung:** Auf Anweisung der Projektleitung (2026-11-16, Menschen-Kanal: „Ab jetzt lass die neuen SubAgenten mit Modell deepseek-v4.1-flash laufen") laufen **alle neuen Subagenten-Aufträge** wieder mit `deepseek-v4.1-flash` (Projektstandard). Die bereits laufenden Stränge (A26-Bestätigungs-Review, Delta-Bestätigungs-Lauf) beenden ihren Lauf mit Beam — nur **neue** Aufträge sind betroffen. Die Beam-Entscheidung von heute Morgen ist damit für die Zukunft aufgehoben (für die Historie unverändert stehen).

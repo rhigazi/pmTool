@@ -1,16 +1,20 @@
 # Aufgaben
 
-Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in [/projekt/phasen.md](/projekt/phasen.md) definiert. **Stand 2026-11-16: Doku-Runde abgeschlossen** — A1–A20, A23–A33 abgeschlossen (A26 zuletzt per Bestätigungs-Review); A34 abschlussfähig (S1–S5 + Sammellauf bestanden, Delta-Bestätigung läuft); A35–A39 offen/vorgemerkt; Post-MVP-Vormerkungen A21/A22.
+Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in [/projekt/phasen.md](/projekt/phasen.md) definiert. **Stand 2026-11-16: A34 abgeschlossen** — A1–A34 abgeschlossen (A34 per Sammellauf + Delta-Bestätigung); **freigegeben und in Umsetzung:** A35–A38, A22, A21, A40–A42 (Freigabe der Projektleitung „alles frei", 2026-11-16); A39 läuft (Test-Befunde der Projektleitung offen).
 
 # Laufende Aufgaben
 
 * [A39: Gemeinsame Test- und Abstimmungsrunde + README-Abschluss](a39-testrunde-readme-abschluss.md) - Abschluss-Meilenstein: nach allen ausstehenden Features gemeinsam mit der Projektleitung ausgiebig testen (Lückenliste „sauber zusammenarbeiten"), danach README final aktualisieren, dann bewusste Pause — **offen** (Vorgabe der Projektleitung 2026-11-15; Start nach A28–A38 + A33-Batches; `owner: mensch`)
 
-* [A34: Unter-Aufgaben erstellen](a34-unter-aufgaben.md) - Unter einer Aufgabe Unter-Aufgaben anlegen und als Liste in der Detailansicht sehen; Nummernschema `A{xxx.uuu}` (u = 001–999) — **in Planung** (2026-11-15 aus der App angelegt, angenommen als A34; Konsistenz zu A28-Kennungsprüfung beachten)
-* [A35: Status-Mapping server-seitig](a35-status-mapping-serverseitig.md) - `overview.details` liefert `ui_status`/`hinweis`/`owner_default` aus `status.py`, JS-Spiegel in `detail.js` entfällt (A12-1) — **offen** (vorgemerkt, Umsetzung nach A29)
+* [A35: Status-Mapping server-seitig](a35-status-mapping-serverseitig.md) - `overview.details` liefert `ui_status`/`hinweis`/`owner_default` aus `status.py`, JS-Spiegel in `detail.js` entfällt (A12-1) — **in Umsetzung** (2026-11-16 freigegeben „alles frei")
 * [A36: schreibgeschuetzt-Signal](a36-schreibgeschuetzt-signal.md) - API markiert reservierte Dateien, UI blendet Schreibaktionen aus; Server-403 bleibt zweite Barriere — **offen** (vorgemerkt, Umsetzung nach A35)
 * [A37: DOM-Harness-Konsolidierung](a37-dom-harness-konsolidierung.md) - `tests/dom_helfer.py` als einzige Harness-Quelle, Altkopien umstellen (A14-6) — **offen** (vorgemerkt, Umsetzung nach A29)
 * [A38: Log-Anker](a38-log-anker.md) - Anker je Log-Eintrag, Verweise öffnen den konkreten Eintrag (A14-9) — **offen** (vorgemerkt, Umsetzung nach A29)
+
+* [A21: Desktop-Modus/Lokal-Betrieb](a21-desktop-modus.md) - Desktop-Fenster (pywebview, Option B) als zusätzlicher Startweg neben dem Browser-Betrieb — **offen** (2026-11-16 angelegt + freigegeben „alles frei"; Planung vor Umsetzung, zuletzt)
+* [A40: Verify-Hinweis bei fehlendem Wissens-Gerüst](a40-verify-hinweis-wissensgeruest.md) - `verify.sh` nennt bei fehlendem OKF-Gerüst gezielt `setup.sh --wissen` statt generischem Exit 1 — **offen** (2026-11-16 angelegt + freigegeben; aus Lückenliste V1)
+* [A41: A6-1 — fehlende H-Definitionen klären](a41-a6-1-h-definitionen.md) - H1/H5/H7 belegt rekonstruieren oder abschließend als nicht rekonstruierbar dokumentieren — **offen** (2026-11-16 angelegt + freigegeben)
+* [A42: Härtungs-Klammern (B1-K2, T15-Index, O_EXCL-Backup)](a42-haertungs-klammern.md) - Negativ-Check „Pflichtdateien vollständig", robuste T15-Assertion, `O_EXCL`-Öffnen im Backup-Werkzeug — **offen** (2026-11-16 angelegt + freigegeben; T15 erst nach A37)
 
 # Abgeschlossene Aufgaben
 
@@ -39,6 +43,7 @@ Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in
 * [A25: Suche in der Listenansicht](a25-suche.md) - Suchfeld über der Tabelle in allen drei Listen (Übersicht, Wellen, Aufgaben), mehrere Wörter = UND, Umlaut-/ß-tolerant, kombiniert mit Status-/owner-Filter, Leerzustand „Keine Treffer.", „Filter zurücksetzen" leert auch die Suche — **abgeschlossen** (**72 Tests** (`test_suche.py`), Testphase S1–S6 bestanden 44/44 (tester, 2026-11-15), Review freigegeben; die 2 Klein-Befunde sind in A27 behoben und werden dort abgeschlossen)
 
 * [A33: Kleinbefunde-/Aufräum-Takt](a33-kleinbefunde-aufräum-takt.md) - Gebündelte Behebung der offenen Kleinbefunde aus Reviews/Post-MVP (A24-K1–K3, A23-Fixture, A12-1, A14-5/6/7/9, N5/N8 u. a.) in Batches mit je eigenem Commit — **abgeschlossen** (2026-11-15 vom PM angelegt; Umsetzung nach A30/A31/A32)
+* [A34: Unter-Aufgaben erstellen](a34-unter-aufgaben.md) - Unter einer Aufgabe Unter-Aufgaben anlegen und als Liste in der Detailansicht sehen; Nummernschema `A{xxx.uuu}` (u = 001–999) — **abgeschlossen** (P1–P4 inkl. UI-Szenarien S1–S5 + Sammellauf/Delta bestanden, Reviews frei; 2026-11-16)
 
 * [A32: Neues-Projekt-Flow — start.sh --neu + Erststart-Hinweis](a32-neues-projekt-flow.md) - Nach Repo-Pull erkennt `start.sh` pmTool-Projektdaten in `wissen/` und schlägt interaktiv den Reset vor (mit Backup); zusätzlich Flag `--neu` — **abgeschlossen** (2026-11-15, Entscheidung der Projektleitung; Reset-Logik nur über A24-Werkzeug, keine zweite Lösch-Implementierung)
 

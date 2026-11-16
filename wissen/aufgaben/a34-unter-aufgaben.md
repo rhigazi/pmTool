@@ -4,13 +4,13 @@ title: "A34: Unter-Aufgaben erstellen"
 description: Als Mensch muss ich in der Lage sein unter Aufgaben so eine Aufgabe zu
   erstellen
 freigabe: true
-task_status: in Doku
-phase: 7 Dokumentation
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: mittel
 assigned_to: coder
 welle: wellen/w3.md
 owner: ai
-aktuell: "PM: P3-Review FREIGEGEBEN (Takt 8) — A34-P4 Doku folgt (documenter)"
+aktuell: ""
 ---
 
 # Ziel
@@ -656,6 +656,12 @@ fehl (`ohne_node`-Skip wie A11/A27).
   `wissen/aufgaben/index.md` und Statusfelder pflegt ausschließlich PM/`documenter`.
 
 # Ergebnisse
+
+## 2026-11-16 — tester/PM: Sammellauf + Delta-Bestätigung → **abgeschlossen**
+
+- **Sammellauf (tester, Snapshot `661ade2`):** App-Suite 1544/1544 grün, Root-Suite 1632/1632 grün, `verify.sh` Exit 0, Verteilungs-Probe sauber (Drift Quelle↔Spiegel byte-identisch, kein zweites `app/`; K-Befund V1 → [A40](/aufgaben/a40-verify-hinweis-wissensgeruest.md)), **UI-Szenarien S1–S5 (Moli 1.1.25) alle grün** ohne Konsolenfehler (S1 Datei mit `parent`, `freigabe: false`, geerbter `welle`, Titel `A34.001: …`; S2 Tiefe-1-Grenze; S3 Abschnitt erst bei Kindern; S4 XSS textuell; S5 Gate intakt).
+- **Delta-Bestätigung (tester, Arbeitsbaum `c7e1c5c`):** App-Suite 1544/1544, `verify.sh` Exit 0; ein K-Befund (Spiegel-Drift `tools/tests/test_neues_projekt.py` aus der Doku-Runde) — per Spiegel-Sync behoben, `test_verteilung` T7 wieder 13/13 grün.
+- Alle vier Pakete (P1 Kennungsgrammatik/Read-Modell, P2 Anlage `parent`, P3 UI, P4 Doku) sind bestanden, T49/T50 belegt — **A34 abgeschlossen** (PM, 2026-11-16).
 
 ## 2026-11-16 — reviewer (Beam): A34-P3-Review nachgeholt → **FREIGEGEBEN** (Takt 8)
 

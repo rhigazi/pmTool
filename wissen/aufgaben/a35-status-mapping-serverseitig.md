@@ -8,6 +8,7 @@ phase: 2 Planung
 priority: mittel
 assigned_to: coder
 owner: ai
+freigabe: true
 ---
 
 # Ziel

@@ -8,6 +8,7 @@ priority: mittel
 assigned_to: coder
 user_story: /projekt/user-stories/us-7.md
 owner: ai
+freigabe: true
 ---
 
 # Ziel
