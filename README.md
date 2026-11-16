@@ -4,7 +4,7 @@ Browserbasierte Oberfläche für **eine Person**, die ein OKF-Projekt in Mensch-
 
 Die App ist ein **Tracker**. Die eigentliche Projektarbeit läuft im OpenCode-CLI-Chat: der Projektmanager-Agent steuert `planner`, `coder`, `reviewer`, `tester` und `documenter`; die Oberfläche macht den Stand sichtbar und erlaubt die menschlichen Eingriffe (Nachtrag, „Klarung", „Geschlossen", owner umschalten).
 
-- **Status (2026-11-16):** MVP + Feature-Strecke abgeschlossen — A1–A38 sowie A40–A42 erledigt. Vormittag: A23–A34 + A26 (u. a. Suche, Wellen-Zuordnung/-Filter, Arbeitsstatus, Freigabe-Gate, Unter-Aufgaben). Umsetzungs-Welle „alles frei": **A21, A22, A35, A36, A37, A38, A40, A41, A42** — jeweils mit Review, Mutantenproben und Rücklauf, wo nötig. **Root-Suite 1789 Tests** (App-Suite 1690 + `definitions/tools/tests` 99; Collect 2026-11-16); zuletzt belegte Läufe: App-Suite **1670 passed** (A21-Review), Root-Suite **1632/1632** (A26-Volllauf) — beide vor den letzten Rückläufen, **finaler Sammellauf folgt**. Offen: **A39** (Test-Befunde der Projektleitung + README-Abschluss — [Lückenliste](docs/lueckenliste-a39.md)), **Fenster-Smoke A21** (Abnahme), **K-Klammern** (Restpunkte der Lückenliste).
+- **Status (2026-11-16):** MVP + Feature-Strecke abgeschlossen — A1–A38 sowie A40–A42 erledigt. Vormittag: A23–A34 + A26 (u. a. Suche, Wellen-Zuordnung/-Filter, Arbeitsstatus, Freigabe-Gate, Unter-Aufgaben). Umsetzungs-Welle „alles frei": **A21, A22, A35, A36, A37, A38, A40, A41, A42** — jeweils mit Review, Mutantenproben und Rücklauf, wo nötig. **Sammellauf 2026-11-16 bestanden: App-Suite 1690/1690 grün, Root-Suite 1789/1789 grün** (0 failed, 0 skipped; = App 1690 + `definitions/tools/tests` 99), `verify.sh` Exit 0, Verteilungs-Probe sauber, UI-Szenarien ohne Konsolenfehler. Offen: **A39** (Test-Befunde der Projektleitung + README-Abschluss — [Lückenliste](docs/lueckenliste-a39.md)), **Fenster-Smoke A21** (Abnahme), **K-Klammern** (Restpunkte der Lückenliste).
 - **Projektstand & Historie:** [docs/uebergabeprotokoll.md](docs/uebergabeprotokoll.md), [wissen/log.md](wissen/log.md)
 - **Projektwissen:** [wissen/index.md](wissen/index.md)
 
@@ -142,8 +142,8 @@ Alles liegt im OKF-Bundle **[wissen/](wissen/index.md)** — Markdown mit YAML-F
 ## Entwicklung & Tests
 
 ```bash
-python3 -m pytest definitions/app/tests -q   # App-Suite (2026-11-16: 1690 Tests; zuletzt belegt 1670 passed — finaler Sammellauf folgt)
-python3 -m pytest -q                        # Root-Suite = App-Suite + definitions/tools/tests (1789 Tests = 1690 + 99)
+python3 -m pytest definitions/app/tests -q   # App-Suite (2026-11-16: 1690 passed / 0 failed — Sammellauf bestanden)
+python3 -m pytest -q                        # Root-Suite = App-Suite + definitions/tools/tests (2026-11-16: 1789 passed / 0 failed)
 bash definitions/verify.sh .                 # Umgebungs-Check → Exit 0 = vollständig
 ```
 

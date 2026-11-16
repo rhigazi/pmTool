@@ -16,6 +16,12 @@ Vorgabe der Projektleitung (2026-11-15): nach Abschluss der Feature-Strecke geme
 - Stand 2026-11-16: **keine Test-Befunde eingegangen** (Testklon `/content/pmTool-test` wurde nicht angelegt; Abfrage per Telegram läuft). Dieser Abschnitt wird ergänzt, sobald Befunde vorliegen — sie haben Vorrang vor allem Folgenden.
 - Getestet werden kann laut README jederzeit: frischer Klon in einer frischen Runtime („Test-Instanz / Abnahme-Instanz"), Smoke-Check siehe README.
 
+# 2b. Finale Sammellauf-Welle 2026-11-16 (Snapshot `bbb36c6`) — BESTANDEN
+
+- **App-Suite 1690/1690 grün, Root-Suite 1789/1789 grün** (0 failed, 0 skipped), `verify.sh` Exit 0 (28 × ✓, kein OKF-Hinweis — Gerüst vollständig), Verteilungs-Probe: A40-Hinweis im frischen Ziel **live bestätigt** (Exit 1 ausschließlich wegen des erwarteten Gerüst-Hinweises), Tools im Ziel 86 passed + 13 erwartete Skips, Drift byte-identisch, kein zweites `app/`. UI S1–S5 + Kurzchecks A35/A36/A38/K4 grün, **null Konsolenfehler**.
+- **V1 (K, A11y-Klammer):** Unter-Aufgaben-Zeilen sind nur per Mausklick (globaler `tr[data-path]`-Handler) erreichbar — kein `<a>`/`tabindex`; Tastatur-Bedienung/Affordanz fehlt. Kosmetisch, nicht testrelevant.
+- **V2 (Umwelt):** `moli`/`duckdb-docs`/globale Subagenten nicht im PATH (verify-Abschnitt 6) — Umgebung, kein Projektdefekt.
+
 # 2. Befunde aus dem kombinierten Testlauf (2026-11-16, Snapshot `661ade2` + Delta `c7e1c5c`)
 
 **Ergebnis: bestanden** — App-Suite 1544/1544 grün, Root-Suite 1632/1632 grün, `verify.sh` Exit 0, Verteilungs-Probe (Setup Exit 0, verteilte Tests grün, Quelle↔Spiegel byte-identisch, kein zweites `app/`), UI-Szenarien S1–S5 (Moli) grün ohne Konsolenfehler, `test_formulare` T8 bestätigt (83/83).
