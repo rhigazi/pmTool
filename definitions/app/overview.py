@@ -62,8 +62,12 @@ def liste(praefix: str | None = None) -> list[dict]:
 def details(pfad: str) -> dict:
     """Dateiinhalt als ``{frontmatter, markdown, nachtraege}``.
 
+    ``ui_status``, ``hinweis`` und ``owner_default`` werden für jede Datei
+    top-level aus :mod:`status` abgeleitet (A35) — die einzige Mapping-Quelle;
+    die Detailansicht spiegelt die Tabelle nicht mehr. ``owner_default`` ist die
+    wirksame Anzeige-Zuständigkeit (explizites ``owner`` vor Status-Default).
     Aufgaben (``type: Task``) erhalten zusätzlich die abgeleiteten
-    Arbeitsstatus-Felder top-level; ``frontmatter`` bleibt roh.
+    Arbeitsstatus-Felder; ``frontmatter`` bleibt roh.
 
     Wirft :class:`okf_bundle.BundlePfadFehler` bei Pfadausbruch oder nicht
     zulässiger Endung, :class:`FileNotFoundError`, wenn die Datei fehlt, und
@@ -77,10 +81,14 @@ def details(pfad: str) -> dict:
         raise FileNotFoundError(MELDUNG_NICHT_GEFUNDEN)
 
     frontmatter, markdown = _lesen(pfad)
+    ui_status_wert, hinweis = status.ui_status(frontmatter)
     daten = {
         "frontmatter": frontmatter,
         "markdown": markdown,
         "nachtraege": nachtraege(markdown),
+        "ui_status": ui_status_wert,
+        "hinweis": hinweis,
+        "owner_default": status.owner_default(frontmatter),
     }
     if _text(frontmatter.get("type")) == TYP_AUFGABE:
         titel = _text(frontmatter.get("title"))

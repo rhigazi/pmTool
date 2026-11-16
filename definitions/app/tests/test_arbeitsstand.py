@@ -261,9 +261,10 @@ def test_t12_api_file_liefert_felder_top_level(client, bundle):
     # A33-K2: exakte Schlüsselmenge statt „enthalten / enthalten nicht". Der
     # Vertrag von ``/api/file`` für ``type: Task`` umfasst A8 (Basis), A28
     # (``neu``/``kennung``/``naechste_kennung``/``freigabe``), A29
-    # (``welle_freigabe``/``wirksam_freigegeben``) und A30 (Arbeitsstatus).
-    # ``freigabe_hinweis`` fehlt hier, weil der Rohwert fehlt/gültig ist — den
-    # Ungültig-Fall prüft ``test_freigabe.py``.
+    # (``welle_freigabe``/``wirksam_freigegeben``), A30 (Arbeitsstatus) und
+    # A35 (``ui_status``/``hinweis``/``owner_default`` — Status-Mapping
+    # server-seitig). ``freigabe_hinweis`` fehlt hier, weil der Rohwert
+    # fehlt/gültig ist — den Ungültig-Fall prüft ``test_freigabe.py``.
     assert set(daten) == {
         "frontmatter",
         "markdown",
@@ -277,10 +278,16 @@ def test_t12_api_file_liefert_felder_top_level(client, bundle):
         "freigabe",
         "welle_freigabe",
         "wirksam_freigegeben",
+        "ui_status",
+        "hinweis",
+        "owner_default",
     }
     assert daten["arbeitsrolle"] == "coder"
     assert daten["arbeitsrolle_label"] == "Coder"
     assert daten["arbeitsstatus"] == "Umsetzung Paket 2"
+    assert daten["ui_status"] == "In Arbeit"
+    assert daten["hinweis"] is None
+    assert daten["owner_default"] == "ai"
     # Das Roh-Feld bleibt unverändert erhalten.
     assert daten["frontmatter"]["aktuell"] == AKTUELL
     assert daten["markdown"] == markdown_vorher

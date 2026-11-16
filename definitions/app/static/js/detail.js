@@ -25,7 +25,6 @@ const TEXT_ID = "nachtrag-text";
 const FEHLER_ID = "nachtrag-fehler";
 
 const KEINE_ANGABE = "—";
-const OHNE_STATUS = "ohne Status";
 const LEER_KEINE_AUSWAHL = "Keine Datei ausgewählt.";
 const LADE_FEHLER = "Datei konnte nicht geladen werden.";
 const FORMAT_FEHLER = "Datei hat ein unerwartetes Format.";
@@ -75,40 +74,6 @@ const WELLEN_ORDNER = "wellen/";
 // R1: Nur diese beiden Status sind über die UI setzbar; Pipeline-Status nicht.
 export const STATUS_KNOEPFE = ["Klarung", "Geschlossen"];
 const OWNER_WERTE = ["mensch", "ai"];
-
-// Spiegel von status.py (Mapping-Tabelle der Technischen Spec):
-// task_status -> [UI-Status, Hinweis, owner-Default].
-const TASK_STATUS_UI = {
-  offen: ["Offen", null, "ai"],
-  "in Klärung": ["Klarung", null, "mensch"],
-  "in Planung": ["Offen", null, "ai"],
-  geplant: ["Offen", null, "ai"],
-  "in Umsetzung": ["In Arbeit", null, "ai"],
-  "im Review": ["Testing", null, "ai"],
-  "im Test": ["Testing", null, "ai"],
-  "in Doku": ["Dokumentation", null, "ai"],
-  "zur Abnahme": ["Klarung", null, "mensch"],
-  abgeschlossen: ["Geschlossen", null, null],
-  pausiert: ["Offen", "pausiert", null],
-};
-
-const UI_STATUS_WERTE = [
-  "Klarung",
-  "Offen",
-  "In Arbeit",
-  "Testing",
-  "Dokumentation",
-  "Geschlossen",
-];
-
-const OWNER_DEFAULTS = {
-  Klarung: "mensch",
-  Offen: "ai",
-  "In Arbeit": "ai",
-  Testing: "ai",
-  Dokumentation: "ai",
-  Geschlossen: null,
-};
 
 // Blockmarker des Minimal-Renderers; `ZAUN` umschließt Codeblöcke.
 const ZAUN = "```";
@@ -274,33 +239,28 @@ function erstelleBlock(block) {
   }
 }
 
-/** UI-Status und Hinweis aus dem Frontmatter (Spiegel von `status.ui_status`). */
-export function ermittleStatus(frontmatter) {
-  const taskStatus = feld(frontmatter, "task_status");
-  if (taskStatus) {
-    const eintrag = Object.hasOwn(TASK_STATUS_UI, taskStatus) ? TASK_STATUS_UI[taskStatus] : null;
-    if (eintrag) return { status: eintrag[0], hinweis: eintrag[1] };
-    return { status: "Offen", hinweis: taskStatus };
-  }
-
-  const status = feld(frontmatter, "status");
-  if (!status) return { status: "Offen", hinweis: OHNE_STATUS };
-  if (UI_STATUS_WERTE.includes(status)) return { status, hinweis: null };
-  return { status: "Offen", hinweis: status };
+/** Getrimmter String aus der Server-Antwort; sonst ``null``. */
+function serverText(daten, name) {
+  const wert = daten?.[name];
+  if (typeof wert !== "string") return null;
+  const text = wert.trim();
+  return text || null;
 }
 
-/** Anzeige-owner: explizites Feld vor Status-Default (R3). */
-export function ermittleOwner(frontmatter) {
-  const owner = feld(frontmatter, "owner");
-  if (owner) return owner;
+/**
+ * UI-Status und Hinweis aus der Server-Ableitung (``status.ui_status``, A35).
+ * Ohne Server-Feld gilt „Offen" — es gibt keinen JS-Spiegel der Mapping-Tabelle.
+ */
+export function ermittleStatus(daten) {
+  return {
+    status: serverText(daten, "ui_status") ?? "Offen",
+    hinweis: serverText(daten, "hinweis"),
+  };
+}
 
-  const taskStatus = feld(frontmatter, "task_status");
-  if (taskStatus) {
-    const eintrag = Object.hasOwn(TASK_STATUS_UI, taskStatus) ? TASK_STATUS_UI[taskStatus] : null;
-    return eintrag ? eintrag[2] : null;
-  }
-
-  return OWNER_DEFAULTS[feld(frontmatter, "status")] ?? null;
+/** Anzeige-owner aus der Server-Ableitung (R3); Altantworten nutzen das Rohfeld. */
+export function ermittleOwner(daten) {
+  return serverText(daten, "owner_default") ?? feld(daten?.frontmatter, "owner");
 }
 
 /**
@@ -707,7 +667,7 @@ function erstelleSperrHinweis(daten) {
 function erstelleKopf(pfad, daten, wellen, anlegeKnopf = null) {
   const frontmatter =
     daten.frontmatter && typeof daten.frontmatter === "object" ? daten.frontmatter : {};
-  const { status, hinweis } = ermittleStatus(frontmatter);
+  const { status, hinweis } = ermittleStatus(daten);
 
   const kopf = document.createElement("div");
   kopf.className = "detail-kopf";
@@ -723,7 +683,7 @@ function erstelleKopf(pfad, daten, wellen, anlegeKnopf = null) {
   // Arbeitsstatus (A30): abgeleitet aus `aktuell`, nur wenn vorhanden.
   const arbeitsstand = formatiereArbeitsstand(daten);
   if (arbeitsstand) anhaengenFeld(angaben, "Arbeitsstatus", arbeitsstand);
-  anhaengenFeld(angaben, "owner", erstelleOwnerAuswahl(pfad, ermittleOwner(frontmatter)));
+  anhaengenFeld(angaben, "owner", erstelleOwnerAuswahl(pfad, ermittleOwner(daten)));
   if (istAufgabe(pfad, frontmatter)) {
     anhaengenFeld(
       angaben,
@@ -875,7 +835,7 @@ function zeichne(ziel, pfad, daten, zusatz) {
   // Unter-Aufgaben (Tiefe 1) bekommen weder Anlegen-Knopf noch Abschnitt.
   const istUnteraufgabe = Boolean(feld(frontmatter, "parent"));
   const anlege =
-    aufgabe && !istUnteraufgabe && ermittleStatus(frontmatter).status !== GESCHLOSSEN
+    aufgabe && !istUnteraufgabe && ermittleStatus(daten).status !== GESCHLOSSEN
       ? erstelleAnlegeSicht(pfad, () => ladeDetail({ unterpunkt: pfad }))
       : null;
 
