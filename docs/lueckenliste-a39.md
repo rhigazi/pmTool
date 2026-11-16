@@ -26,7 +26,6 @@ Vorgabe der Projektleitung (2026-11-15): nach Abschluss der Feature-Strecke geme
 
 # 3. Offene Dokumentations-/Prozesspunkte (aus Reviews/Doku-Runde)
 
-- **A6-1 — H-Definitionen fehlen im Bundle:** Die H1/H5/H7-Definitionen zum Doku-Eintrag 2026-11-14 sind im Bundle nicht auffindbar (1:1-Zuordnung nicht belegbar). **Klärung PM/Review nötig** — der einzige inhaltlich offene Punkt aus der Feature-Strecke.
 - **A33-B5/B6/B8 — Detail-Protokolle fehlen:** Umsetzung ist code-belegt (Commit `ef68598`; `server.py` ohne Pfad-Leak, Body-Hash-Assertions, `istDateiAntwort` konsolidiert), die einzelnen Ergebnis-Einträge sind nicht rekonstruierbar (Protokolllücke, ehrlich ausgewiesen).
 - **Protokolllücken A32/A33:** Uhrzeiten/Coder-Identität bei rekonstruierten Rückwärts-Einträgen nicht belegbar — jeweils als Protokolllücke gekennzeichnet.
 - **Härtungs-Klammer (gesammelt, Post-MVP-Kandidaten):** B1-K2 Negativ-Check „Pflichtdateien vollständig"; Rest-Index-Assertion `test_arbeitsstand_ui` T15 (`zellen[3]`); A24-R8 Rest-TOCTOU (`O_EXCL`-Öffnen); Fehlerkopf „Unter-Aufgaben" ohne Zähler ist dokumentiertes Muster (keine Aktion).
@@ -34,6 +33,7 @@ Vorgabe der Projektleitung (2026-11-15): nach Abschluss der Feature-Strecke geme
 # 4. War eine Lücke, ist erledigt (2026-11-16)
 
 - Welle-3-Freigabe (formal) — von der Projektleitung über die App gesetzt, Gate-UND für A34 sauber.
+- **A6-1 (H-Definitionen) geklärt und abgeschlossen** ([A41](../wissen/aufgaben/a41-a6-1-h-definitionen.md)): nicht rekonstruierbar — der H-Katalog existiert nur in einem Commit-Text (`9f42200`), nie im Bundle; 6 Zusatztests vs. 3 genannte Nummern, jede Zuordnung wäre Spekulation. Bewusste Dokumentationslücke mit vollständiger Belegkette; Nebenbefund: die Härtungstests liegen in `17d5320`, nicht in `9f42200`.
 - A26-Ergebnisprotokoll fehlte komplett — **nachgetragen** (Rückwärts-Einträge aus belegten Quellen + Bestätigungs-Review; Protokolllücken für die Testphase 2026-11-15 ausgewiesen).
 - **A26 Bestätigungs-Review FREIGEGEBEN** (2026-11-16): alle 6 Prüfpunkte erfüllt, Root-Suite 1632/1632 im Volllauf, Dev-Selbstlauf hash-identisch; K-Reste (colab-start-Vermerk, README-Wortlaut Abschnitt 5) in der Abschluss-Runde bereinigt. A26 damit **abgeschlossen**.
 - Anrainer-Zahl „78+222" war uneindeutig — aufgelöst: 222 = 5 UI-Dateien ohne `test_detail`, 278 = alle 6.
@@ -42,17 +42,12 @@ Vorgabe der Projektleitung (2026-11-15): nach Abschluss der Feature-Strecke geme
 - K-Sammlung der Reviews (15 Punkte) — vollständig abgearbeitet.
 - A27/A28/A29/A30/A31/A32/A33 — abgeschlossen (Doku-Runde).
 
-# 5. Kandidaten für Folgeaufgaben
+# 5. Folgeaufgaben — aus der Freigabe 2026-11-16 in Umsetzung
 
-**Bewusst keine neuen Aufgaben ohne Weisung angelegt** (Arbeitsanweisung: „keine neuen Feature-Takte ohne Weisung"). Kandidaten bei Bedarf auf Zuruf mit ID + Titel + Sofort-Push:
-
-1. *(Kandidat A40)* `verify.sh`: eigene Meldung „Wissens-Gerüst fehlt" bei verteiltem Ziel ohne `--wissen` (aus V1) — oder Doku-Lösung beibehalten.
-2. *(Kandidat A41)* A6-1 H-Definitionen rekonstruieren/dokumentieren (aus Abschnitt 3).
-3. Post-MVP-Strecke A35–A38, A22, A21 — gesperrt ohne Freigabe der Projektleitung (A35–A38 sind angelegt und tragen ihre Scope-Definitionen).
+Die Projektleitung hat am 2026-11-16 „alles frei" gegeben. Daraus sind angelegt/freigegeben: **A40** (Verify-Hinweis, aus V1 — in Umsetzung), **A41** (A6-1 — **abgeschlossen**, s. Abschnitt 4), **A42** (Härtungs-Klammern — in Umsetzung, T15 nach A37) sowie **A35–A38, A22, A21** (Post-MVP-Strecke, freigegeben; Wellen-Plan A–D siehe Entscheidungslog 2026-11-16).
 
 # 6. Stand der Feature-Strecke (Abschlussbild 2026-11-16)
 
-- **Abgeschlossen:** A1–A20 (MVP), A23, A24, A25, A26 (Bestätigungs-Review 2026-11-16), A27, A28, A29, A30, A31, A32, A33.
-- **Abschlussfähig, Abschluss-Check läuft noch:** A34 (Delta-Bestätigung des Sammellaufs auf dem finalen Baum läuft; Pakete 1–4 inkl. UI-Szenarien S1–S5 sind bestanden).
-- **Offen (Post-MVP, gesperrt):** A35 (Status-Mapping server-seitig), A36 (`schreibgeschuetzt`-Signal), A37 (DOM-Harness-Konsolidierung), A38 (Log-Anker), A22 (E2E-Regression), A21 (Desktop-Modus).
+- **Abgeschlossen:** A1–A20 (MVP), A23–A34, A26 (Bestätigungs-Review), A41 (H-Definitionen geklärt).
+- **In Umsetzung (Freigabe „alles frei"):** A35 (Status-Mapping server-seitig), A37 (DOM-Harness), A22 (E2E-Regression), A40 (Verify-Hinweis), A42 (Härtungs-Klammern) — Welle A; danach A36/A42 (Welle B), A38 (Welle C), A21 (Welle D).
 - **A39 selbst:** diese Test-/Abstimmungsrunde + README-Abschluss — Abschluss nach Eingang der Projektleitungs-Befunde.

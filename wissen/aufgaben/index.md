@@ -13,7 +13,6 @@ Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in
 
 * [A21: Desktop-Modus/Lokal-Betrieb](a21-desktop-modus.md) - Desktop-Fenster (pywebview, Option B) als zusätzlicher Startweg neben dem Browser-Betrieb — **offen** (2026-11-16 angelegt + freigegeben „alles frei"; Planung vor Umsetzung, zuletzt)
 * [A40: Verify-Hinweis bei fehlendem Wissens-Gerüst](a40-verify-hinweis-wissensgeruest.md) - `verify.sh` nennt bei fehlendem OKF-Gerüst gezielt `setup.sh --wissen` statt generischem Exit 1 — **offen** (2026-11-16 angelegt + freigegeben; aus Lückenliste V1)
-* [A41: A6-1 — fehlende H-Definitionen klären](a41-a6-1-h-definitionen.md) - H1/H5/H7 belegt rekonstruieren oder abschließend als nicht rekonstruierbar dokumentieren — **offen** (2026-11-16 angelegt + freigegeben)
 * [A42: Härtungs-Klammern (B1-K2, T15-Index, O_EXCL-Backup)](a42-haertungs-klammern.md) - Negativ-Check „Pflichtdateien vollständig", robuste T15-Assertion, `O_EXCL`-Öffnen im Backup-Werkzeug — **offen** (2026-11-16 angelegt + freigegeben; T15 erst nach A37)
 
 # Abgeschlossene Aufgaben
@@ -44,6 +43,7 @@ Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in
 
 * [A33: Kleinbefunde-/Aufräum-Takt](a33-kleinbefunde-aufräum-takt.md) - Gebündelte Behebung der offenen Kleinbefunde aus Reviews/Post-MVP (A24-K1–K3, A23-Fixture, A12-1, A14-5/6/7/9, N5/N8 u. a.) in Batches mit je eigenem Commit — **abgeschlossen** (2026-11-15 vom PM angelegt; Umsetzung nach A30/A31/A32)
 * [A34: Unter-Aufgaben erstellen](a34-unter-aufgaben.md) - Unter einer Aufgabe Unter-Aufgaben anlegen und als Liste in der Detailansicht sehen; Nummernschema `A{xxx.uuu}` (u = 001–999) — **abgeschlossen** (P1–P4 inkl. UI-Szenarien S1–S5 + Sammellauf/Delta bestanden, Reviews frei; 2026-11-16)
+* [A41: A6-1 — fehlende H-Definitionen klären](a41-a6-1-h-definitionen.md) - H1/H5/H7 belegt rekonstruieren oder abschließend als nicht rekonstruierbar dokumentieren — **abgeschlossen** (2026-11-16: nicht rekonstruierbar — H-Katalog existiert nur in einem Commit-Text, nie im Bundle; bewusste Dokumentationslücke, Belegkette im A41-Protokoll)
 
 * [A32: Neues-Projekt-Flow — start.sh --neu + Erststart-Hinweis](a32-neues-projekt-flow.md) - Nach Repo-Pull erkennt `start.sh` pmTool-Projektdaten in `wissen/` und schlägt interaktiv den Reset vor (mit Backup); zusätzlich Flag `--neu` — **abgeschlossen** (2026-11-15, Entscheidung der Projektleitung; Reset-Logik nur über A24-Werkzeug, keine zweite Lösch-Implementierung)
 

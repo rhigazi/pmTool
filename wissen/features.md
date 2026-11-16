@@ -55,7 +55,7 @@ tags: [features, steuerung]
 * [A13-3] Linktext-Kosmetik (bräuchte Wellen-Titel-Lookup) — bewusst ausgelassen.
 * [A4-1] `ziel`-Zeilen mit `#`-Beginn maskieren erwägen; [A4-2] `welle`-Feld in [Phasenmodell](/projekt/phasen.md)/Spec als optionales Feld ergänzen.
 * [A5-B3] `description`-Feld bei Wellen; [A5-B4] Slug-Logik-Duplikat zu `neu_aufgabe`.
-* [A6-1/A6-2] H1/H5/H7-Belege je H-Punkt mit Testnamen (H-Definitionen fehlen im Bundle); T2 Body-Hash optional.
+* [A6-1] **abgeschlossen** (2026-11-16, [A41](aufgaben/a41-a6-1-h-definitionen.md)): H1/H5/H7-Definitionen **nicht rekonstruierbar** — bewusste Dokumentationslücke (Kennungen nur im Sammel-Commit-Text `9f42200`; die Härtungstests kamen bereits mit `17d5320`, kein H-Katalog im Bundle). Testbelege je Testname bleiben in [A6](aufgaben/a6-meta.md); [A6-2] **erledigt** (A33-B6, `ef68598`): T2 prüft den Body-Hash.
 * [A7-2] Startfehler-Meldung nennt absoluten Pfad.
 * [A9-K3] 403-Notiz präzisieren (im Ergebnisprotokoll erfolgt; Spec-Abgleich offen); [A9-K4] TOCTOU als R8-Einschränkung (bekanntes Risiko).
 * [A14-5] `istDatei`/Meldungen nach `api.js` ziehen; [A14-6] DOM-Harness-Fork `MINI_DOM` in `tests/harness_dom.py` konsolidieren; [A14-7] Request-Sequenz-Guard gegen Races (geerbt von A12); [A14-9] Anker je Log-Eintrag (UX).

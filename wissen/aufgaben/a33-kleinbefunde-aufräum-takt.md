@@ -58,7 +58,7 @@ Das Ergebnis der Prüfung gegen den aktuellen Code-Stand (2026-11-15, nach A26/A
 | **A4-2** | `welle` fehlt im Aufgaben-Format (`phasen.md`) und in der Read-Modell-Tabelle (`technische-spec.md`) | **B9** (Doku) | 0,5 h |
 | **A5-B3** | `neu_welle._inhalt` schreibt kein `description` (Aufgaben tun es) | **B3** (Fix + Test) | 0,5 h |
 | **A5-B4** | Slug-Logik in `neu_aufgabe.slug_aus_titel` und `neu_welle.kuerzel` dupliziert; leichter Unicode-Unterschied (`encode ascii` vs. Combining-Filter) | **B7** (Refactor + Test) | 2–3 h |
-| **A6-1** | Doku-Eintrag vom 2026-11-14 vorhanden; H1/H5/H7-Definitionen fehlen im Bundle (1:1-Zuordnung nicht belegbar) | **B9** (Vermerk) | 0,25 h |
+| **A6-1** | Doku-Eintrag vom 2026-11-14 vorhanden; H1/H5/H7-Definitionen fehlen im Bundle (1:1-Zuordnung nicht belegbar) | **B9** (Vermerk) → [A41](/aufgaben/a41-a6-1-h-definitionen.md) **abgeschlossen** (2026-11-16, nicht rekonstruierbar) | 0,25 h |
 | **A6-2** | T2 (`owner → mensch`) prüft keinen Body-Hash | **B6** (Test) | 0,25 h |
 | **A7-2** | `StartFehler` nennt den absoluten Pfad (`BUNDLE_ROOT ist kein Verzeichnis: /…`); Test prüft nur `"BUNDLE_ROOT" in err` | **B5** (Fix + Test) | 0,5 h |
 | **A9-K3** | 403-Semantik im A9-Ergebnis präzisiert; die Spec nennt „bekannt, aber verboten → 403" nicht | **B9** (Doku) | 0,5 h |
@@ -134,7 +134,7 @@ Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das M
 - **T19 (A9-K4)** Spec/Entscheidungslog ergänzt R8: atomares Schreiben, kein Locking im MVP, TOCTOU (KI + App) bekanntes Risiko. *Dokumentierte Prüfung.*
 - **T20 (A16-1)** R11 in `planung.md` beschreibt das tatsächliche Verhalten (Default 5000, **kein** automatischer Ausweichport, klare Meldung bei Belegung) — oder der Ausweichport wird als eigener Post-MVP-Punkt vorgemerkt; Code unverändert. *Dokumentierte Prüfung.*
 - **T21 (A24-H2)** A24-Ergebnis enthält eine a–e-Tabelle mit Testnamen oder den Vermerk „a–e im Review-Text, nicht im Bundle rekonstruierbar"; keine erfundene Zuordnung. *Dokumentierte Prüfung.*
-- **T22 (A6-1)** A24/A6-Vermerk: H1/H5/H7-Belege im Doku-Eintrag vom 2026-11-14; H-Definitionen fehlen im Bundle → offener Doku-Punkt an den PM (kein Code). *Dokumentierte Prüfung.*
+- **T22 (A6-1)** A24/A6-Vermerk: H1/H5/H7-Belege im Doku-Eintrag vom 2026-11-14; H-Definitionen fehlen im Bundle → offener Doku-Punkt an den PM (kein Code). *Dokumentierte Prüfung.* **Abschluss 2026-11-16:** in [A41](/aufgaben/a41-a6-1-h-definitionen.md) geklärt — Definitionen **nicht rekonstruierbar** (bewusste Dokumentationslücke, A6-1 geschlossen).
 
 # Kontext
 
