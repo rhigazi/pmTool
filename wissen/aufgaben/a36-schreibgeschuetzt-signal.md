@@ -45,6 +45,11 @@ Die Schreib-UI bietet auf reservierten Dateien (index.md/features.md/log.md) Akt
 - `definitions/app/tests/test_detail.py` (+2 Trenner-Assertions), `test_arbeitsstand.py` (T12 +`schreibgeschuetzt`)
 
 # Ergebnisse
+## 2026-11-16 — coder (K-Sammlung): K4 behoben, K5 dokumentiert
+
+- **K4:** Welle-Feld zeigt bei gesperrten Aufgaben jetzt `Titel (Pfad)` wie überall (fail-safe Dateistamm `w1` bei fehlendem/unlesbarem Titel); `/api/wellen` wird nur bei gesetzter `welle` geladen. 4 neue Tests (9 → 13).
+- **K5 (Kosmetik):** nicht umsetzbar ohne `style.css`-Eingriff (der `.detail-aktionen`-Container ist nie leer — immer der Zurück-Link; Abstand aus `style.css`) → Vermerk für einen späteren CSS-Takt. `istSchreibgeschuetzt`-Export bewusst belassen.
+
 ## 2026-11-16 — documenter: AK-/Testfall-Blöcke nachgezogen (Review A36-K2)
 
 - Aus den Ergebnis-Einträgen und dem Code-Stand belegt: AK-1–AK-6 (Signal, reservierte Dateien/Symlink, UI-Ausblendung nur bei exakt `true`, Fail-open ohne Signal, Server-403, Listen) und die Testzuordnung (16 Server + 9 UI + Regression). K5 (Kosmetik) bleibt als Klammer offen.

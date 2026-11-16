@@ -45,6 +45,11 @@ Log-Einträge (`wissen/log.md`, `wissen/entscheidungen/log.md`) verlinken alle a
 - `definitions/app/static/js/app.js` — unverändert (Router-Vertrag)
 
 # Ergebnisse
+## 2026-11-16 — coder (K-Sammlung): K2 behoben (Scoping), Rest notiert
+
+- **K2:** `springeZuAnker(anker, bereich)` sucht nur noch Nachfahren des Detail-Containers (Attribut-Selektor für sichere `[a-z0-9-]`-IDs + `parentElement`-Kette im Mini-DOM-Rückfall); Kollisionstests für die Slugs `fehler`/`detail` (rot-Probe: ohne Bereich beide rot). 3 neue Tests (58 → 61). Bewusst **Scoping statt Präfix** (Präfixe hätten `projekt.js`-Links + `test_log_anker`-Verträge gebrochen).
+- **Rest notiert:** `projekt.js` ruft `springeZuAnker` weiterhin ohne Bereich auf (Dateigrenze) — kleiner Folgeschritt „Bereich in `projekt.js` übergeben" → Klammer. K3 (CSS-Hervorhebung `.anker-ziel`) und K6 (UI-Liste für Log-Links) bleiben Klammer.
+
 ## 2026-11-16 — documenter: AK-/Testfall-/Datei-Blöcke + Link-Format nachgezogen (Reviews A38-K4/K5)
 
 - Aus dem Code-Stand belegt: AK-1–AK-6 (Anker-Slug, Duplikate, Verweise, Sprung, Projekt-Ansicht, Bestand) und die Testzuordnung (24 neue Tests + `test_projekt.py` 63). **Tatsächliches Link-Format:** `#/detail/entscheidungen%2Flog.md#<anker>` (kodierter Slash = bestehende Konvention; der Router akzeptiert auch die unkodierte Form `#/detail/entscheidungen/log.md#<anker>`) — im Kontext ergänzt.

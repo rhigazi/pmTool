@@ -761,3 +761,100 @@ def test_a12_t4_leerer_nachtrag_zeigt_fehlertext_ohne_schreibzugriff(bundle, app
     ]
     assert schreibungen == []
     assert _sha256(datei) == vorher
+
+
+# --- A38-K2: Ankersuche bleibt im Detailbereich ---------------------------
+
+# Seiten-Gerüst wie in index.html; die festen IDs stehen im Baum vor dem
+# Detailbereich. `getElementById` liefert damit bei einer Kollision das
+# Seitenelement — genau der Fall, den die bereichsgebundene Suche abfängt.
+ANKER_UMGEBUNG = r"""
+const seite = document.createElement("div");
+const seitenFehler = document.createElement("div");
+seitenFehler.id = "fehler";
+seitenFehler._imDokument = true;
+const meldung = document.createElement("div");
+meldung.id = "meldung";
+meldung._imDokument = true;
+const ziel = document.createElement("div");
+ziel.id = "detail";
+ziel._imDokument = true;
+seite.append(seitenFehler, meldung, ziel);
+seite._imDokument = true;
+
+// Browser-Semantik bei doppelten IDs: das erste Element im Baum gewinnt.
+document.getElementById = (id) => {
+  const treffer = sammle(seite).filter((knoten) => knoten !== seite && knoten.id === id);
+  return treffer[0] ?? null;
+};
+
+// Mini-DOM kennt nur Klassen-Selektoren; hier kommt der Attribut-Selektor
+// hinzu, den `springeZuAnker` für die Suche im Detailbereich nutzt.
+Knoten.prototype.querySelectorAll = function (auswahl) {
+  const treffer = /^\[id="([^"]+)"\]$/.exec(auswahl);
+  if (!treffer) return [];
+  return sammle(this).filter((knoten) => knoten !== this && knoten.id === treffer[1]);
+};
+
+globalThis.gescrollt = [];
+Knoten.prototype.scrollIntoView = function () {
+  gescrollt.push(this.id);
+};
+
+globalThis.fetch = async () => ({
+  ok: true,
+  status: 200,
+  headers: { get: () => "application/json" },
+  text: async () => JSON.stringify({ frontmatter: {}, markdown: `# ${SLUG}\n\nText.\n` }),
+});
+"""
+
+
+def anker_lauf(slug: str) -> dict:
+    """Lädt ``log.md#<slug>``; die Überschrift trägt exakt diesen Slug als ID."""
+    skript = (
+        MINI_DOM
+        + f"const SLUG = {json.dumps(slug)};\n"
+        + ANKER_UMGEBUNG
+        + f'import * as detail from {json.dumps(DETAIL_JS.as_uri())};\n'
+        + "await detail.ladeDetail({ unterpunkt: `log.md#${SLUG}` });\n"
+        + "const kopf = sammle(ziel).find((knoten) => knoten.marke === 'h1') ?? null;\n"
+        + "console.log(JSON.stringify({\n"
+        + "  gescrollt,\n"
+        + "  kopf: kopf ? kopf.id : null,\n"
+        + "  kopfKlasse: Boolean(kopf && kopf.classList.contains('anker-ziel')),\n"
+        + "  kopfTabindex: kopf ? kopf.getAttribute('tabindex') : null,\n"
+        + "  fokusIstKopf: document.activeElement === kopf,\n"
+        + "  seitenKlasse: seitenFehler.classList.contains('anker-ziel'),\n"
+        + "  seitenTabindex: seitenFehler.getAttribute('tabindex'),\n"
+        + "  zielKlasse: ziel.classList.contains('anker-ziel'),\n"
+        + "}));\n"
+    )
+    return node_ausfuehren(skript)
+
+
+@ohne_node
+@pytest.mark.parametrize("slug", ["fehler", "detail"])
+def test_a38_k2_anker_slug_kollidiert_nicht_mit_seiten_ids(slug):
+    ergebnis = anker_lauf(slug)
+
+    # Der Sprung trifft die Überschrift — nicht das Seitengerüst.
+    assert ergebnis["kopf"] == slug
+    assert ergebnis["kopfKlasse"] is True
+    assert ergebnis["kopfTabindex"] == "-1"
+    assert ergebnis["fokusIstKopf"] is True
+    assert ergebnis["gescrollt"] == [slug]
+    # Feste Seiten-IDs bleiben unangetastet.
+    assert ergebnis["seitenKlasse"] is False
+    assert ergebnis["seitenTabindex"] is None
+    assert ergebnis["zielKlasse"] is False
+
+
+@ohne_node
+def test_a38_k2_anker_ohne_kollision_springt_wie_bisher():
+    ergebnis = anker_lauf("log")
+
+    assert ergebnis["kopf"] == "log"
+    assert ergebnis["kopfKlasse"] is True
+    assert ergebnis["gescrollt"] == ["log"]
+    assert ergebnis["seitenKlasse"] is False

@@ -251,12 +251,38 @@ export function rendereMarkdown(markdown) {
   return fragment;
 }
 
+/**
+ * Sucht die Anker-ID ausschließlich unterhalb von ``bereich`` (A38-K2). Ein
+ * Slug wie „detail" oder „fehler" kann mit einer festen Seiten-ID kollidieren;
+ * ``getElementById`` würde dann das Seitengerüst statt der Überschrift treffen.
+ */
+function findeAnker(bereich, id) {
+  // Attribut-Selektor statt `#id`: Anker dürfen mit einer Ziffer beginnen.
+  if (typeof bereich.querySelectorAll === "function" && /^[a-z0-9-]+$/.test(id)) {
+    const treffer = bereich.querySelectorAll(`[id="${id}"]`);
+    if (treffer.length > 0) return treffer[0];
+  }
+
+  // Rückfall ohne Element-Selektoren (Mini-DOM der Tests): global suchen, aber
+  // nur ein Ziel innerhalb des Bereichs akzeptieren.
+  const element = document.getElementById(id);
+  return element && istImBereich(element, bereich) ? element : null;
+}
+
+/** Liegt ``element`` im Teilbaum von ``bereich`` (inklusive ``bereich``)? */
+function istImBereich(element, bereich) {
+  for (let knoten = element; knoten; knoten = knoten.parentElement) {
+    if (knoten === bereich) return true;
+  }
+  return false;
+}
+
 /** Springt zu einem Anker und hebt das Ziel leicht hervor (A38). */
-export function springeZuAnker(anker) {
+export function springeZuAnker(anker, bereich = null) {
   const ziel = typeof anker === "string" ? anker.trim() : "";
   if (!ziel) return null;
 
-  const element = document.getElementById(ziel);
+  const element = bereich ? findeAnker(bereich, ziel) : document.getElementById(ziel);
   if (!element) return null;
 
   // Klasse plus Fokus: die Klasse markiert das Ziel, der Fokusring macht es
@@ -550,6 +576,27 @@ function erstelleWellenAuswahl(pfad, welle, wellen) {
   return bereich;
 }
 
+/**
+ * Lesbare Wellen-Angabe für gesperrte Aufgaben (A36-K4): gleiches Format wie
+ * die Auswahl (`Titel (Pfad)`), damit nur die Bedienung entfällt, nicht die
+ * Information. Fehlt der Titel (Liste nicht ladbar, unbekannter Pfad), bleibt
+ * der Dateistamm — wie der Fallback in A33-B4, nie der rohe Pfad.
+ */
+function formatiereWellenAnzeige(welle, wellen) {
+  if (!welle) return KEINE_ANGABE;
+
+  const eintraege = Array.isArray(wellen?.eintraege) ? wellen.eintraege : [];
+  const treffer = eintraege.find((eintrag) => eintrag?.path === welle);
+  const titel = typeof treffer?.titel === "string" ? treffer.titel.trim() : "";
+  return titel ? `${titel} (${welle})` : dateistamm(welle);
+}
+
+/** Dateiname ohne Ordner und `.md`; bleibt bei ungewöhnlichen Pfaden stabil. */
+function dateistamm(pfad) {
+  const name = pfad.slice(pfad.lastIndexOf("/") + 1).replace(/\.md$/i, "");
+  return name || pfad;
+}
+
 function erstelleStatusKnopf(status, aktiv) {
   const knopf = document.createElement("button");
   knopf.type = "button";
@@ -809,7 +856,9 @@ function erstelleKopf(pfad, daten, wellen, anlegeKnopf = null) {
     anhaengenFeld(
       angaben,
       "Welle",
-      gesperrt ? welle ?? KEINE_ANGABE : erstelleWellenAuswahl(pfad, welle, wellen),
+      gesperrt
+        ? formatiereWellenAnzeige(welle, wellen)
+        : erstelleWellenAuswahl(pfad, welle, wellen),
     );
     anhaengenFeld(angaben, "Freigabe", erstelleFreigabeAnzeige(pfad, daten, gesperrt));
   } else if (pfad.startsWith(WELLEN_ORDNER)) {
@@ -1041,19 +1090,24 @@ export async function ladeDetail({ unterpunkt } = {}) {
 
   const frontmatter =
     daten.frontmatter && typeof daten.frontmatter === "object" ? daten.frontmatter : {};
-  // A36: Schreibgeschützte Dateien brauchen keine Wellenliste (keine Auswahl).
+  const aufgabe = istAufgabe(pfad, frontmatter);
+  const gesperrt = istSchreibgeschuetzt(daten);
+  // A36: Schreibgeschützte Dateien brauchen keine Auswahl; eine gesperrte
+  // Aufgabe mit Welle braucht aber die Liste für das Label `Titel (Pfad)`
+  // (A36-K4) — sonst bleibt nur der rohe Pfad.
   const wellen = await ladeWellenListe(
-    istAufgabe(pfad, frontmatter) && !istSchreibgeschuetzt(daten),
+    aufgabe && (!gesperrt || Boolean(feld(frontmatter, "welle"))),
   );
   // A34: Unter-Aufgaben kommen aus `GET /api/aufgaben`; Aufgaben brauchen die
   // Liste auch dann, wenn sie als Unter-Aufgabe keinen Abschnitt zeigen (T43).
   const wellenSicht = pfad.startsWith(WELLEN_ORDNER);
   const aufgaben = await ladeAufgabenListe(
-    wellenSicht || istAufgabe(pfad, frontmatter),
+    wellenSicht || aufgabe,
     wellenSicht ? AUFGABEN_LADE_FEHLER : UNTERAUFGABEN_LADE_FEHLER,
     wellenSicht ? AUFGABEN_FORMAT_FEHLER : UNTERAUFGABEN_FORMAT_FEHLER,
   );
 
   zeichne(ziel, pfad, daten, { wellen, aufgaben });
-  springeZuAnker(anker);
+  // A38-K2: nur innerhalb der Detailansicht suchen, nicht global.
+  springeZuAnker(anker, ziel);
 }

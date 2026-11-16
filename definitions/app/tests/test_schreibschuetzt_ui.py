@@ -209,13 +209,78 @@ return {
     assert ergebnis["wellenAuswahl"] is False
     assert ergebnis["freigabeKnopf"] is False
     assert ergebnis["nachtrag"] is False
-    # Gesperrte Aufgabe: weder Anlegen-Bereich noch Wellenliste (M8/M9).
+    # Gesperrte Aufgabe: kein Anlegen-Bereich (M8).
     assert ergebnis["anlegen"] is False
-    assert "/api/wellen" not in ergebnis["aufrufe"]
+    # A36-K4: Die Wellenliste wird nur noch für das lesbare Label geladen;
+    # eine Auswahl entsteht daraus nicht (M9 bleibt für Dateien ohne Welle).
+    assert ergebnis["aufrufe"].count("/api/wellen") == 1
     assert ergebnis["zustand"] == "Nicht freigegeben"
     # Werte bleiben als Text sichtbar (kein stilles Verschwinden).
     assert ergebnis["felder"]["owner"] == "mensch"
-    assert ergebnis["felder"]["Welle"] == "wellen/w1.md"
+    assert ergebnis["felder"]["Welle"] == "Welle 1 (wellen/w1.md)"
+
+
+@ohne_node
+def test_t3_gesperrte_aufgabe_zeigt_welle_wie_ungesperrt():
+    """A36-K4: gesperrt und ungesperrt nennen die Welle gleich (Titel (Pfad))."""
+    arbeitsablauf = r"""
+await detail.ladeDetail({ unterpunkt: "aufgaben/a1.md" });
+const auswahl = bei("detail-welle");
+const gewaehlt = auswahl ? auswahl.kinder.find((kind) => kind.value === "wellen/w1.md") : null;
+return {
+  text: felder()["Welle"],
+  option: gewaehlt ? gewaehlt.textContent : null,
+};
+"""
+    frontmatter = {"type": "Task", "title": "A1: Aufgabe", "welle": "wellen/w1.md"}
+    wellen = [{"path": "wellen/w1.md", "titel": "Welle 1"}]
+
+    gesperrt = detail_lauf(arbeitsablauf, _reserviert(frontmatter, freigabe=False), wellen=wellen)
+    offen = detail_lauf(arbeitsablauf, _frei(frontmatter, freigabe=False), wellen=wellen)
+
+    assert gesperrt["text"] == "Welle 1 (wellen/w1.md)"
+    assert offen["option"] == gesperrt["text"]
+
+
+@ohne_node
+@pytest.mark.parametrize(
+    "wellen",
+    [
+        pytest.param([], id="leere-liste"),
+        pytest.param([{"path": "wellen/w1.md", "titel": "  "}], id="ohne-titel"),
+    ],
+)
+def test_t3_gesperrte_aufgabe_faellt_auf_den_dateistamm_zurueck(wellen):
+    """A36-K4 fail-safe: ohne lesbaren Titel bleibt der Dateistamm, nie der Pfad."""
+    ergebnis = detail_lauf(
+        r"""
+await detail.ladeDetail({ unterpunkt: "aufgaben/a1.md" });
+return { text: felder()["Welle"] };
+""",
+        _reserviert(
+            {"type": "Task", "title": "A1: Aufgabe", "welle": "wellen/w1.md"},
+            freigabe=False,
+        ),
+        wellen=wellen,
+    )
+
+    assert ergebnis["text"] == "w1"
+    assert "wellen/" not in ergebnis["text"]
+
+
+@ohne_node
+def test_t3_gesperrte_aufgabe_ohne_welle_laedt_keine_liste():
+    """A36-K4: ohne Welle bleibt es beim bisherigen sparsamen Verhalten (M9)."""
+    ergebnis = detail_lauf(
+        r"""
+await detail.ladeDetail({ unterpunkt: "aufgaben/a1.md" });
+return { text: felder()["Welle"], aufrufe: endpunkte() };
+""",
+        _reserviert({"type": "Task", "title": "A1: Aufgabe"}, freigabe=False),
+    )
+
+    assert ergebnis["text"] == "—"
+    assert "/api/wellen" not in ergebnis["aufrufe"]
 
 
 # --- T4: ohne Signal bleibt die volle Schreib-UI --------------------------
