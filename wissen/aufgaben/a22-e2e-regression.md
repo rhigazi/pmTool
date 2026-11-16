@@ -2,12 +2,13 @@
 type: Task
 title: "A22: E2E-Regressionstest (test_e2e.py)"
 description: Die T1/T2/T7-Kette des A17-Abnahmelaufs als dauerhaften, eingecheckten E2E-Test überführen.
-task_status: offen
-phase: 2 Planung
+task_status: im Review
+phase: 5 Review
 priority: mittel
 assigned_to: coder
 user_story: /projekt/user-stories/us-7.md
 owner: ai
+aktuell: "reviewer: A22 Review (Mutantenproben gegen Produktivcode + Urteil)"
 freigabe: true
 ---
 
