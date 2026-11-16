@@ -3,12 +3,12 @@ type: Task
 title: "A40: Verify-Hinweis bei fehlendem Wissens-Gerüst"
 description: verify.sh meldet bei einem verteilten Ziel ohne OKF-Wissensgerüst gezielt, dass setup.sh --wissen fehlt — statt generisch mit Exit 1 zu enden.
 freigabe: true
-task_status: offen
-phase: 2 Planung
+task_status: im Review
+phase: 5 Review
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: ""
+aktuell: "reviewer: A38+A40 Review (Mutanten + Urteil)"
 ---
 
 # Ziel
@@ -41,5 +41,11 @@ Sammellauf-Befund V1 der A39-Testrunde (2026-11-16): Ein per `setup.sh` (ohne `-
 - `definitions/README.md` (ggf. ein Satz zur Verify-Erwartung)
 
 # Ergebnisse
+## 2026-11-16 — coder (Welle A): Verify-Hinweis — 3 neue Tests grün
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle, Ergebnis, Befunde und Belege.
+- **Ergebnis:** `definitions/verify.sh` Abschnitt 1 geteilt (allgemeine Dateien / 8 OKF-Pflichtdateien); fehlt mindestens eine, erscheint **eine** gebündelte Meldung: „✗ OKF-Wissensgerüst fehlt (N von 8 Pflichtdateien): … → Lösung: setup.sh --wissen ausführen — legt das Gerüst unter <ziel>/wissen/ an (vorhandene Dateien bleiben unangetastet)". Zählung/Liste dynamisch („1 von 8 …" im Einzelfall); FAIL bleibt gesetzt (Exit 1); vorhandene Dateien weiterhin einzeln ✓, Reihenfolge unverändert.
+- **Tests:** `test_setup_verteilung.py` T12 (Ziel ohne `--wissen`: Exit 1 + Meldungsnachweis), T13 (mit `--wissen`: Exit 0, kein Hinweis — R12/Bestandsschutz), T14 (Einzelfall: eine Datei gelöscht → „1 von 8", exakte Liste). TDD: 2 failed/1 passed → 6 passed (Auswahl); Vollauf der Datei **17 passed** (925 s).
+- **Zusatzbelege:** `bash -n` sauber; Alt-/Neu-Skript gegen dasselbe Ziel mit vollständigem Gerüst → stdout **byte-identisch**; Dev-Repo `bash definitions/verify.sh .` → Exit 0 ohne neuen Hinweis; `definitions/README.md` um einen Satz ergänzt.
+- **Bewusst:** Meldung nennt keinen festen Skriptpfad (im verteilten Ziel existiert kein `setup.sh` im Root); parallele Fremd-Änderungen verursachten zwischenzeitlich 3 flüchtige Fehlschläge (kopierendes Setup-Fixture) — nach stabilem Baum 17/17 grün, kein A40-Befund.
+- **Offen:** Review (kombiniert mit A38) läuft.
+

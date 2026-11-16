@@ -19,13 +19,32 @@ echo "→ Prüfe Setup in: $TARGET"
 
 echo "1) Projektdateien"
 for f in AGENTS.md opencode.jsonc \
-         tools/telegram_send.py tools/tests/test_telegram_send.py \
-         wissen/index.md wissen/features.md wissen/log.md \
-         wissen/entscheidungen/log.md wissen/aufgaben/index.md \
-         wissen/projekt/phasen.md wissen/projekt/konzept.md \
-         wissen/projekt/technische-spec.md; do
+         tools/telegram_send.py tools/tests/test_telegram_send.py; do
   [ -e "$TARGET/$f" ] && ok "$f" || bad "$f fehlt"
 done
+
+# OKF-Wissensgerüst: nur mit `setup.sh --wissen` verteilt. Fehlt es, ist die
+# generische „fehlt"-Meldung wenig hilfreich — daher ein eigener Hinweis.
+WISSEN_DATEIEN="wissen/index.md wissen/features.md wissen/log.md
+wissen/entscheidungen/log.md wissen/aufgaben/index.md
+wissen/projekt/phasen.md wissen/projekt/konzept.md
+wissen/projekt/technische-spec.md"
+WISSEN_GESAMT=0
+WISSEN_FEHLT=0
+WISSEN_FEHLT_LISTE=""
+for f in $WISSEN_DATEIEN; do
+  WISSEN_GESAMT=$((WISSEN_GESAMT + 1))
+  if [ -e "$TARGET/$f" ]; then
+    ok "$f"
+  else
+    WISSEN_FEHLT=$((WISSEN_FEHLT + 1))
+    WISSEN_FEHLT_LISTE="$WISSEN_FEHLT_LISTE${WISSEN_FEHLT_LISTE:+, }$f"
+  fi
+done
+if [ "$WISSEN_FEHLT" -gt 0 ]; then
+  bad "OKF-Wissensgerüst fehlt ($WISSEN_FEHLT von $WISSEN_GESAMT Pflichtdateien): $WISSEN_FEHLT_LISTE"
+  echo "    → Lösung: setup.sh --wissen ausführen — legt das Gerüst unter $TARGET/wissen/ an (vorhandene Dateien bleiben unangetastet)."
+fi
 
 echo "2) Subagenten"
 for a in planner coder reviewer tester documenter; do

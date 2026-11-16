@@ -57,6 +57,8 @@ bash /app/definitions/verify.sh /app
 
 Exit 0 = Setup vollständig und funktionsfähig. Der Test kann auch gegen ein frisch installiertes Projekt laufen: `bash definitions/verify.sh <projekt>`.
 
+Fehlt in einem verteilten Ziel das OKF-Wissensgerüst (`wissen/`), meldet `verify.sh` das gezielt und nennt `setup.sh --wissen` als Lösung; Exit 0 gibt es nur mit vollständigem Gerüst.
+
 ### Neues Projekt
 
 ```sh

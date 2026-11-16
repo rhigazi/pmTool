@@ -261,3 +261,46 @@ def test_t11_moli_installer_nur_geprueft_ausfuehren():
     assert "sha256sum" in quelle
     assert quelle.index("sha256sum") < quelle.index('sh "$installer"')
     assert not re.search(r"\|\s*sh\b", quelle)
+
+
+# --- T12–T14: Verify-Hinweis bei fehlendem Wissensgerüst (A40) -------------
+
+
+@pytest.fixture(scope="module")
+def verteilung_ohne_wissen(tmp_path_factory):
+    """Verteiltes Ziel ohne ``--wissen`` — das OKF-Gerüst fehlt bewusst."""
+    ziel = tmp_path_factory.mktemp("ohne-wissen") / "projekt"
+    ergebnis = _setup(ziel)
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    return ziel, _verify(ziel)
+
+
+def test_t12_fehlendes_wissensgeruest_nennt_setup_wissen(verteilung_ohne_wissen):
+    ziel, ergebnis = verteilung_ohne_wissen
+
+    assert not (ziel / "wissen/index.md").exists(), "--wissen wurde mitverteilt"
+    assert ergebnis.returncode == 1, ergebnis.stdout + ergebnis.stderr
+    assert "OKF-Wissensgerüst fehlt (8 von 8 Pflichtdateien)" in ergebnis.stdout
+    assert "wissen/index.md" in ergebnis.stdout
+    assert "setup.sh --wissen" in ergebnis.stdout
+
+
+def test_t13_wissensgeruest_vorhanden_ohne_hinweis(verify_lauf):
+    _, ergebnis = verify_lauf
+
+    assert ergebnis.returncode == 0, ergebnis.stdout + ergebnis.stderr
+    assert "OKF-Wissensgerüst" not in ergebnis.stdout
+    assert "setup.sh --wissen" not in ergebnis.stdout
+
+
+def test_t14_einzelne_fehlende_wissensdatei_nennt_hinweis(ziel):
+    (ziel / "wissen/projekt/phasen.md").unlink()
+
+    ergebnis = _verify(ziel)
+
+    assert ergebnis.returncode == 1, ergebnis.stdout + ergebnis.stderr
+    assert (
+        "OKF-Wissensgerüst fehlt (1 von 8 Pflichtdateien): wissen/projekt/phasen.md"
+        in ergebnis.stdout
+    )
+    assert "setup.sh --wissen" in ergebnis.stdout
