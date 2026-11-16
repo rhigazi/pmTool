@@ -81,6 +81,7 @@ Der Server lauscht nur lokal. Nützliche Optionen:
 | Aufruf | Wirkung |
 |---|---|
 | `bash start.sh` | lokal starten (`BUNDLE_ROOT=$PROJEKT/wissen`, Port 5000) |
+| `bash start.sh --desktop` | Desktop-Fenster (pywebview, **optional**) auf `http://127.0.0.1:5000` — siehe „Desktop-Modus (optional)" |
 | `bash start.sh --colab` | startet nur den Server ohne Port-Freigabe (Unterprozess); in Colab stattdessen `%run /content/pmTool/definitions/app/start_colab.py` in einer Code-Zelle |
 | `bash start.sh --neu` | Reset von `wissen/` auf die leere Vorlage (mit Backup), dann Start — siehe „Neues Projekt beginnen" |
 | `bash start.sh --dry-run` | Trockenlauf: zeigt nur, was getan würde (installiert/löscht/startet nichts; `verify.sh` wird dabei still übersprungen) |
@@ -88,6 +89,29 @@ Der Server lauscht nur lokal. Nützliche Optionen:
 | `bash start.sh --help` | Hilfe |
 
 Beenden mit **Strg+C** (kein Traceback). `start.sh` ist ein Werkzeug der Repo-Wurzel und wird nicht in Zielprojekte verteilt.
+
+### Desktop-Modus (optional)
+
+Die App kann statt im Browser als eigenes Fenster laufen. Der Desktop-Modus ist ein **zusätzlicher** Startweg: Der Prozess hostet dieselbe Flask-App im eigenen Prozess und lädt dieselbe Oberfläche über Loopback (`http://127.0.0.1:5000`) — kein zweites Frontend, keine LAN-Freigabe.
+
+```bash
+bash start.sh --desktop          # Fenster auf http://127.0.0.1:5000
+PORT=5001 bash start.sh --desktop  # wenn 5000 schon belegt ist
+```
+
+Voraussetzung ist das **optionale** Paket `pywebview` (wird bewusst nicht automatisch installiert und ist nicht Teil der Pflicht-Pakete in `start.sh`):
+
+```bash
+python3 -m pip install pywebview
+```
+
+- **Fehlt pywebview**, bricht nur der Desktop-Start mit einer deutschen Meldung und Exit 1 ab; der normale Server-/Browser-Betrieb funktioniert unverändert.
+- **Linux:** pip-pywebview allein genügt oft nicht — zusätzlich wird ein Fenster-Backend (GTK/WebKit, z. B. `python3-gi`/`gir1.2-webkit2-4.1`) benötigt. Die Meldung weist auf diesen Abschnitt hin.
+- **`BUNDLE_ROOT`:** gleiche Semantik wie im Browser-Betrieb — die Umgebungsvariable hat Vorrang, sonst `<Projekt>/wissen`. Das Bundle wird nur lesend verwendet.
+- **Port:** `PORT` aus der Umgebung, Default 5000; ist er belegt, bricht der Start mit einem Hinweis auf `PORT=<frei>` ab. `--desktop` ist mit `--neu`, `--dry-run` und `--skip-verify` kombinierbar, aber **nicht** mit `--colab` (die Modi schließen sich aus).
+- **Nicht der Colab-Weg:** In Colab gibt es kein Fenster-Backend; dort bleibt `%run /content/pmTool/definitions/app/start_colab.py` der Start (siehe [docs/colab-start.md](docs/colab-start.md)).
+
+Direkt ohne `start.sh` (z. B. in einem per `setup.sh` verteilten Projekt): `python3 app/desktop.py`.
 
 ---
 

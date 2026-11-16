@@ -5,6 +5,7 @@
 # Aufruf:
 #   bash start.sh            lokal: Server auf http://localhost:5000 (BUNDLE_ROOT=$PROJEKT/wissen, absolut)
 #   bash start.sh --colab    Colab: startet definitions/app/start_colab.py (Port-Freigabe im Browser)
+#   bash start.sh --desktop  Desktop: Fenster über pywebview (optional), Server im eigenen Prozess (Port 5000)
 #   bash start.sh --neu      wissen/ auf die leere Vorlage zurücksetzen (mit Backup), dann starten
 #
 # Optionen:
@@ -52,12 +53,13 @@ warn()   { printf '  ! %s\n' "$*"; }
 fehler() { printf '  ✗ %s\n' "$*" >&2; }
 
 hilfe() {
-  sed -n '2,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  sed -n '2,18p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 for arg in "$@"; do
   case "$arg" in
     --colab)       MODUS="colab" ;;
+    --desktop)     MODUS="desktop" ;;
     --neu)         NEU=1 ;;
     --dry-run)     DRY_RUN=1 ;;
     --skip-verify) MIT_VERIFY=0 ;;
@@ -65,6 +67,13 @@ for arg in "$@"; do
     *) echo "Unbekannte Option: $arg (bash start.sh --help)" >&2; exit 1 ;;
   esac
 done
+
+# Beide Modi gleichzeitig wären ein stiller Fehlstart — deshalb fail-loud,
+# bevor irgendetwas geprüft oder gestartet wird.
+if [[ " $* " == *" --desktop "* && " $* " == *" --colab "* ]]; then
+  fehler "--desktop und --colab schließen sich aus — bitte nur einen Modus wählen."
+  exit 1
+fi
 
 pruefe_python() {
   if command -v python3 >/dev/null 2>&1; then
@@ -356,6 +365,28 @@ starte_colab() {
   PORT="$PORT" python3 "$start"
 }
 
+starte_desktop() {
+  local desktop="$PROJEKT/app/desktop.py"
+  [ -f "$desktop" ] || desktop="$PROJEKT/definitions/app/desktop.py"
+  if [ ! -f "$desktop" ]; then
+    warn "desktop.py nicht gefunden (app/ oder definitions/app/) — bitte zuerst setup.sh ausführen."
+    exit 1
+  fi
+
+  if [ "$DRY_RUN" -eq 1 ]; then
+    info "→ würde starten: BUNDLE_ROOT=$BUNDLE_ROOT PORT=$PORT python3 $desktop"
+    return 0
+  fi
+
+  if [ "$PORT_BELEGT" -eq 1 ]; then
+    # Der Hinweis kam bereits in Schritt 5 — ohne Server kein Fensterstart.
+    return 0
+  fi
+
+  info "→ Desktop-Fenster startet (Port $PORT, Beenden durch Schließen des Fensters)"
+  BUNDLE_ROOT="$BUNDLE_ROOT" PORT="$PORT" python3 "$desktop"
+}
+
 info "→ Umgebung wiederherstellen (Modus: $MODUS, Projekt: $PROJEKT)"
 
 echo "1) Python"
@@ -379,6 +410,9 @@ fuehre_verify_aus
 if [ "$MODUS" = "colab" ]; then
   echo "7) App starten"
   starte_colab
+elif [ "$MODUS" = "desktop" ]; then
+  echo "7) App starten"
+  starte_desktop
 else
   echo "7) App starten"
   starte_server

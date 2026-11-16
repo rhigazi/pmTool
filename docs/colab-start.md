@@ -101,10 +101,16 @@ als Fallback, (3) **Notbehelf** iframe — dann erscheint die App in der Zelle
 |---|---|
 | `bash start.sh` | lokal: Server auf `http://localhost:5000`, `BUNDLE_ROOT=$PROJEKT/wissen` (absolut gesetzt, `PROJEKT` = Projektroot) |
 | `bash start.sh --colab` | startet nur den Server über `definitions/app/start_colab.py` **ohne** Port-Freigabe (Unterprozess) — in Colab stattdessen den Kernel-Aufruf oben verwenden |
+| `bash start.sh --desktop` | lokaler Desktop-Modus (pywebview) — **nicht** der Colab-Weg |
 | `bash start.sh --neu` | setzt `wissen/` auf die leere Vorlage zurück (mit Backup), dann Start — siehe „Neues Projekt beginnen" |
 | `bash start.sh --skip-verify` | ohne Setup-Prüfung (schneller) |
 | `bash start.sh --dry-run` | zeigt nur, was getan würde (installiert/löscht/startet nichts; `verify.sh` wird dabei still übersprungen) |
 | `bash start.sh --help` | Hilfe |
+
+> **Desktop-Modus:** `bash start.sh --desktop` (pywebview) ist **nicht** der
+> Colab-Weg — Colab hat kein Fenster-Backend. Dort bleibt der Kernel-Aufruf von
+> `definitions/app/start_colab.py` (Schritt 2) der Start; Details zum optionalen
+> Desktop-Modus stehen in der [README](../README.md#desktop-modus-optional).
 
 Läuft der Server bereits auf Port 5000, meldet das Skript das und startet keinen
 zweiten. Beenden mit **Strg+C** (kein Traceback).

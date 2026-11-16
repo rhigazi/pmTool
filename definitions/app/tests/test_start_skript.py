@@ -187,6 +187,7 @@ def baue_testprojekt(
     (projekt / "definitions" / "setup.sh").write_text("#!/usr/bin/env bash\n", encoding="utf-8")
     (app / "server.py").write_text("raise SystemExit(0)\n", encoding="utf-8")
     (app / "start_colab.py").write_text("raise SystemExit(0)\n", encoding="utf-8")
+    (app / "desktop.py").write_text("raise SystemExit(0)\n", encoding="utf-8")
 
     shutil.copy2(START, projekt / "start.sh")
     (projekt / "start.sh").chmod(0o755)
@@ -284,6 +285,16 @@ def _backups(projekt: Path) -> list[Path]:
 def _server_mit_startprotokoll(projekt: Path, protokoll: Path) -> None:
     """Dummy-Server, der jeden Start in ``protokoll`` festhält (H6)."""
     (projekt / "definitions" / "app" / "server.py").write_text(
+        "import pathlib\n"
+        f"pathlib.Path({str(protokoll)!r}).write_text('gestartet\\n', encoding='utf-8')\n"
+        "raise SystemExit(0)\n",
+        encoding="utf-8",
+    )
+
+
+def _desktop_mit_startprotokoll(projekt: Path, protokoll: Path) -> None:
+    """Dummy-Desktop, der den Fensterstart in ``protokoll`` festhält."""
+    (projekt / "definitions" / "app" / "desktop.py").write_text(
         "import pathlib\n"
         f"pathlib.Path({str(protokoll)!r}).write_text('gestartet\\n', encoding='utf-8')\n"
         "raise SystemExit(0)\n",
@@ -686,3 +697,151 @@ def test_fehlwarnung_bleibt_bei_echt_abweichendem_ziel(tmp_path):
 
     assert ergebnis.returncode == 0, ergebnis.stderr
     assert "Reset wirkt auf" in ergebnis.stdout
+
+
+# --- A21: Desktop-Modus (--desktop) ----------------------------------------
+#
+# Der Fensterstart selbst wird nie ausgeführt: Im Mini-Projekt liegt ein
+# ``desktop.py``-Stub, der nur einen Marker schreibt bzw. sofort endet.
+
+
+def test_desktop_dry_run_zeigt_den_plan(tmp_path):
+    """T12: ``--desktop --dry-run`` nennt das Skript und startet nichts."""
+    projekt = baue_testprojekt(tmp_path)
+
+    ergebnis = starte_im(projekt, "--desktop", "--dry-run")
+
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert "desktop.py" in ergebnis.stdout
+    assert "würde starten" in ergebnis.stdout
+    assert "BUNDLE_ROOT" in ergebnis.stdout
+    assert "Server startet" not in ergebnis.stdout
+    assert "Desktop-Fenster startet" not in ergebnis.stdout
+
+
+def test_desktop_startet_nur_desktop_stub(tmp_path):
+    """T13: ``--desktop --skip-verify`` startet ausschließlich ``desktop.py``."""
+    projekt = baue_testprojekt(tmp_path)
+    desktop_marker = tmp_path / "desktop-gestartet.txt"
+    server_marker = tmp_path / "server-gestartet.txt"
+    _desktop_mit_startprotokoll(projekt, desktop_marker)
+    _server_mit_startprotokoll(projekt, server_marker)
+
+    ergebnis = starte_im(projekt, "--desktop", "--skip-verify")
+
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert desktop_marker.is_file()
+    assert not server_marker.exists(), "der Browser-Server darf nicht starten"
+    assert "Server startet" not in ergebnis.stdout
+
+
+def test_desktop_und_colab_schliessen_sich_aus(tmp_path):
+    """T14: ``--desktop --colab`` ist fail-loud — vor jedem Start."""
+    projekt = baue_testprojekt(tmp_path)
+    desktop_marker = tmp_path / "desktop-gestartet.txt"
+    server_marker = tmp_path / "server-gestartet.txt"
+    _desktop_mit_startprotokoll(projekt, desktop_marker)
+    _server_mit_startprotokoll(projekt, server_marker)
+
+    ergebnis = starte_im(projekt, "--desktop", "--colab", "--skip-verify")
+
+    assert ergebnis.returncode != 0
+    assert "schließen sich aus" in ergebnis.stderr
+    assert not desktop_marker.exists()
+    assert not server_marker.exists()
+    assert "App starten" not in ergebnis.stdout
+
+
+def test_desktop_mit_neu_zeigt_reset_und_desktop_plan(tmp_path):
+    """T15a: Modus und Reset bleiben orthogonal."""
+    projekt = baue_testprojekt(tmp_path)
+
+    ergebnis = starte_im(projekt, "--desktop", "--neu", "--dry-run")
+
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert "Neues Projekt beginnen — Plan" in ergebnis.stdout
+    assert "desktop.py" in ergebnis.stdout
+    assert _backups(projekt) == []
+    assert (projekt / "wissen" / MARKER[0]).is_file()
+
+
+def test_desktop_mit_skip_verify_startet_ohne_rueckfrage(tmp_path):
+    """T15b: Frisches Mini-Projekt startet den Desktop-Stub ohne Rückfrage."""
+    projekt = baue_testprojekt(tmp_path, vorbefuellt=False)
+    desktop_marker = tmp_path / "desktop-gestartet.txt"
+    _desktop_mit_startprotokoll(projekt, desktop_marker)
+
+    ergebnis = starte_im(projekt, "--desktop", "--skip-verify")
+
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert desktop_marker.is_file()
+    assert "beginnen? [j/N]" not in ergebnis.stdout
+
+
+def test_desktop_bei_belegtem_port_startet_kein_fenster(tmp_path):
+    """T16: Der bestehende Schritt-5-Guard gilt auch für ``--desktop``."""
+    projekt = baue_testprojekt(tmp_path)
+    desktop_marker = tmp_path / "desktop-gestartet.txt"
+    _desktop_mit_startprotokoll(projekt, desktop_marker)
+    with socket.socket() as belegung:
+        belegung.bind(("127.0.0.1", 0))
+        belegung.listen(1)
+        port = belegung.getsockname()[1]
+
+        ergebnis = starte_im(projekt, "--desktop", "--skip-verify", port=port)
+
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert ergebnis.stdout.count("bereits belegt") == 1, ergebnis.stdout
+    assert ergebnis.stdout.count("Kein zweiter Start") == 1, ergebnis.stdout
+    assert not desktop_marker.exists(), "ohne Server kein Fenster"
+
+
+def test_help_nennt_desktop_und_zeigt_keine_shelloptionen():
+    """T17a: Hilfe vollständig, ``hilfe()``-Range passt zu den Kopfzeilen."""
+    ergebnis = starte("--help")
+
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert "--desktop" in ergebnis.stdout
+    assert "--colab" in ergebnis.stdout
+    assert "--neu" in ergebnis.stdout
+    assert "--dry-run" in ergebnis.stdout
+    assert "set -euo" not in ergebnis.stdout
+
+
+def test_dry_run_ohne_desktop_bleibt_beim_server():
+    """T17b: Der Browser-Weg bleibt unverändert."""
+    ergebnis = starte("--dry-run")
+
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert "server.py" in ergebnis.stdout
+    assert "desktop.py" not in ergebnis.stdout
+
+
+def test_desktop_dry_run_installiert_kein_pywebview(tmp_path):
+    """T18: pywebview bleibt aus ``PAKETE`` — kein pip-Aufruf (AK-2/AK-6)."""
+    protokoll = tmp_path / "pip-aufrufe.txt"
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    fake_python = fake_bin / "python3"
+    fake_python.write_text(
+        "#!/usr/bin/env bash\n"
+        'case "$*" in\n'
+        f'  *"-m pip install"*) printf "%s\\n" "$*" >> "{protokoll}"; exit 0 ;;\n'
+        "  *importlib.util*) exit 1 ;;\n"
+        "esac\n"
+        'exec "$ECHTES_PYTHON" "$@"\n',
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+    umgebung = {
+        **os.environ,
+        "PATH": f"{fake_bin}{os.pathsep}{os.environ.get('PATH', '')}",
+        "ECHTES_PYTHON": sys.executable,
+    }
+
+    ergebnis = starte("--desktop", "--dry-run", umgebung=umgebung)
+
+    assert ergebnis.returncode == 0, ergebnis.stderr
+    assert "würde installieren: flask pyyaml pytest" in ergebnis.stdout
+    assert "pywebview" not in ergebnis.stdout
+    assert not protokoll.exists(), protokoll.read_text(encoding="utf-8")

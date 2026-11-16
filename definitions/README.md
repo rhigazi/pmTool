@@ -12,7 +12,7 @@ Dieses Verzeichnis bündelt **alle** OpenCode-Definitionen des Projekts. Damit s
 | `wissen-vorlage/` | Gerüst der OKF-Wissensdatenbank (Index, Log, Features, Aufgaben, Phasen, …) |
 | `skills/` | Skill-Snapshots: `okf-knowledge-base`, `duckdb-docs` |
 | `tools/` | Werkzeuge der Vorlage: `telegram_send.py`, `neues_projekt.py` + Tests — wird nach `<projekt>/tools/` verteilt (Quelle; `<projekt>/tools/` ist nur die Kopie) |
-| `app/` | SPA-App: Flask-Server (`server.py`), Fachmodule, `static/` und Tests — wird nach `<projekt>/app/` verteilt |
+| `app/` | SPA-App: Flask-Server (`server.py`), Desktop-Start (`desktop.py`, optional mit pywebview), Fachmodule, `static/` und Tests — wird nach `<projekt>/app/` verteilt |
 | `setup.sh` | Installiert alles in ein Projekt / einen Container (inkl. `tools/`, `app/`, `definitions/verify.sh`, `definitions/wissen-vorlage/` und pytest) |
 | `verify.sh` | Setup-Test: prüft Vollständigkeit und Funktion (nach Container-Neustart ausführen) |
 
@@ -108,3 +108,23 @@ Bequemer ist die Startzelle `app/start_colab.py` (A16): Sie prüft bzw. installi
 ```sh
 python3 /content/pmTool/app/start_colab.py
 ```
+
+## Desktop-Modus (optional)
+
+`app/desktop.py` startet die App als eigenes Fenster (statt im Browser): Der
+Prozess hostet dieselbe Flask-App über `server.create_app` im eigenen Prozess und
+lädt die SPA von `http://127.0.0.1:<PORT>` (Default 5000). Das Bundle folgt der
+bekannten Semantik (`BUNDLE_ROOT` hat Vorrang, sonst `<projekt>/wissen`).
+
+Voraussetzung ist das **optionale** Paket `pywebview`; `setup.sh`, `start.sh` und
+`verify.sh` installieren es bewusst nicht:
+
+```sh
+python3 -m pip install pywebview
+python3 /content/pmTool/app/desktop.py     # oder: bash start.sh --desktop
+```
+
+Fehlt `pywebview` (oder unter Linux das GTK/WebKit-Fenster-Backend), bricht nur
+dieser Start mit einer deutschen Meldung ab — der Server-/Browser-Betrieb läuft
+unverändert weiter. In Colab ist der Desktop-Modus **nicht** der Weg; dort bleibt
+`start_colab.py` der Start.

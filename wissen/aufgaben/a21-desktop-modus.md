@@ -3,12 +3,12 @@ type: Task
 title: "A21: Desktop-Modus/Lokal-Betrieb"
 description: Die App läuft als Desktop-Fenster (pywebview, Option B) mit direktem Zugriff auf die lokalen Domänen-Module — als eigener Startweg neben dem Browser-Betrieb.
 freigabe: true
-task_status: offen
-phase: 2 Planung
+task_status: im Review
+phase: 5 Review
 priority: niedrig
 assigned_to: coder
 owner: ai
-aktuell: "PM: TDD-Plan fertig (P1–P4) — Start als Welle D"
+aktuell: "reviewer: A21 Review (Mutanten + Urteil)"
 ---
 
 # Ziel
@@ -274,5 +274,11 @@ Testaufbau: `baue_testprojekt` bekommt einen `desktop.py`-Stub
   (keine vorhanden), übrige UI-/Backend-Module.
 
 # Ergebnisse
+## 2026-11-16 — coder (Welle D): Desktop-Modus P1–P4 — 69 Tests grün
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle, Ergebnis, Befunde und Belege.
+- **Ergebnis:** `definitions/app/desktop.py` (neu): Lazy-Import-Guard (`DesktopFehler`, Meldung „fehlt" vs. „installiert, nicht ladbar", Exit 1 ohne Traceback/Server), `BUNDLE_ROOT`-Ableitung mit Env-Vorrang, `PORT`-Validierung über `server` (eine Regelquelle), `_starte_server` (`make_server(("127.0.0.1", port), app, threaded=True)` im Daemon-Thread, deterministischer Port-Release via `shutdown()`+`server_close()`), `_starte_fenster` (genau ein `create_window("OKF Projekt-Manager", url, width=1200, height=800)` + `start()`), `main()`-Lebenszyklus mit `finally`-Aufräumen. `start.sh --desktop`: eigener Modus, exklusiv zu `--colab` (reihenfolgeunabhängig, fail-loud), kombinierbar mit `--neu`/`--dry-run`/`--skip-verify`; `hilfe()`-Range `2,18p`; `PAKETE` ohne pywebview. Doku: README (Tabellenzeile + Abschnitt „Desktop-Modus (optional)" inkl. Linux-Backend-Hinweis), `docs/colab-start.md` („nicht der Colab-Weg"), `definitions/README.md`.
+- **Tests (TDD, alle Planfälle T1–T18):** `test_desktop.py` neu **19** (davon T8: echter In-Process-Server auf Port 0, `/` + `/api/overview`, Port danach wieder bindbar), `test_start_skript.py` **41 → 50** (additiv). Gesamtlauf beider Dateien **69 passed**; `bash -n start.sh` + `py_compile` sauber.
+- **Design-Entscheidungen 1–6 des Plans umgesetzt** (Option B In-Process-Flask, kein `js_api`/`file://`, Lazy Import, Loopback-Host, `--desktop`-Dispatch, Port 5000 fail-loud); 6 dokumentierte Klein-Abweichungen (u. a. `ValueError`-Fang in `_webview_installiert`, doppelte Socket-Freigabe für deterministischen Port-Release, `_repo_root` für beide Layouts) — Details im Bericht.
+- **Echter Fenster-Smoke offen:** kein Display/pywebview im Container; headless verifiziert (Fake-Webview + echter Server: Fenster-URL `http://127.0.0.1:<port>`, genau ein `start`, sauberes Ende, Exit 0).
+- **Offen:** Review läuft; Testzahlen README (1544/1632) → Sammellauf-Sync; Spec ohne Desktop-Abschnitt (bewusst, nicht AK-5).
+
