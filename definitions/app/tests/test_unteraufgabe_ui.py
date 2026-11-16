@@ -158,14 +158,6 @@ const kopf = () => sammle(bei("detail")).find((knoten) => knoten.classList.conta
 const unteraufgabeFormular = () =>
   sammle(bei("unteraufgabe-anlegen")).find((knoten) => knoten.marke === "form") ?? null;
 const abschnitte = () => sammle(bei("detail")).filter((knoten) => knoten.marke === "section");
-// Submit auslösen wie im Browser (mit `preventDefault`); `ausloesen` übergibt
-// nur ein Minimal-Ereignis ohne Methode.
-const abgeben = async (formular) =>
-  Promise.all(
-    (formular?.hoerer?.submit ?? []).map((hoerer) =>
-      hoerer({ preventDefault() {}, target: formular, type: "submit" })
-    )
-  );
 const ueberschriften = () =>
   sammle(bei("detail")).filter((knoten) => knoten.marke === "h3").map((knoten) => knoten.textContent);
 const zeilenPfade = (bereich) =>
@@ -476,7 +468,7 @@ const werte = {json.dumps(werte, ensure_ascii=False)};
 for (const [name, wert] of Object.entries(werte)) {{
   bei("unteraufgabe-" + name).value = wert;
 }}
-await abgeben(unteraufgabeFormular());
+await ausloesen(unteraufgabeFormular(), "submit");
 const fehlerFelder = {{}};
 for (const name of ["titel", "ziel", "akzeptanz", "prioritaet"]) {{
   const element = bei("unteraufgabe-fehler-" + name);
@@ -554,7 +546,7 @@ await ausloesen(bei("detail-unteraufgabe-anlegen"), "click");
 bei("unteraufgabe-titel").value = "Erste Unter-Aufgabe";
 bei("unteraufgabe-ziel").value = "Ziel";
 bei("unteraufgabe-akzeptanz").value = "Kriterium";
-await abgeben(unteraufgabeFormular());
+await ausloesen(unteraufgabeFormular(), "submit");
 return {
   posts: aufrufe.filter((eintrag) => eintrag.methode === "POST").length,
   dateiLadungen: aufrufe.filter((eintrag) => eintrag.endpunkt === "/api/file").length,

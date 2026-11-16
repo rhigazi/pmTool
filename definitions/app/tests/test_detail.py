@@ -310,11 +310,24 @@ def test_status_unbekannt_bleibt_offen_mit_hinweis():
 
 
 @ohne_node
-def test_owner_explizit_hat_vorrang():
+def test_owner_default_vor_rohem_frontmatter():
+    """Der Server löst `owner` bereits in `owner_default` auf (R3).
+
+    Die Werte müssen sich unterscheiden, sonst pinnt der Test keinen Vorrang:
+    bei Gleichstand liefert jede Reihenfolge dasselbe Ergebnis. Das rohe
+    `frontmatter.owner` ist nur der Altantwort-Fallback.
+    """
+    assert (
+        js(
+            "detail.ermittleOwner({ owner_default: 'ai',"
+            " frontmatter: { owner: 'mensch', task_status: 'in Umsetzung' } })"
+        )
+        == "ai"
+    )
     assert (
         js(
             "detail.ermittleOwner({ owner_default: 'mensch',"
-            " frontmatter: { owner: 'mensch', task_status: 'in Umsetzung' } })"
+            " frontmatter: { owner: 'ai', task_status: 'in Umsetzung' } })"
         )
         == "mensch"
     )

@@ -3,12 +3,12 @@ type: Task
 title: "A37: DOM-Harness-Konsolidierung (A14-6)"
 description: tests/dom_helfer.py wird zur einzigen Harness-Quelle — die vier Altkopien und die
   UI-Testdateien werden umgestellt, ohne Verhaltenswechsel.
-task_status: im Review
-phase: 5 Review
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: niedrig
 assigned_to: coder
 owner: ai
-aktuell: "reviewer: A37 Review (Harness-Mutanten + Urteil)"
+aktuell: ""
 freigabe: true
 ---
 
@@ -37,6 +37,12 @@ Noch keine Einträge — der `planner` ergänzt die Testfälle.
 Noch keine Einträge — die Planung ergänzt die betroffenen Dateien.
 
 # Ergebnisse
+## 2026-11-16 — coder (Rücklauf) + PM: W4/W5 behoben → **abgeschlossen**
+
+- **W4:** Zwei-Hash-Navigation in `test_features.py` (`SZENARIO_ROUTER_WECHSEL` + `test_t3_routenwechsel_raeumt_aria_current_beim_altlink_ab`: `#/features` → `#/projekt/konzept`, `aria-current` wandert, genau ein aktiver Link je Zustand) — Mutante M10 (`removeAttribute` als No-op) jetzt **getötet**.
+- **W5:** veralteter `abgeben`-Helfer + falscher Kommentar in `test_unteraufgabe_ui.py` entfernt (beide Submit-Stellen nutzen `ausloesen`); Bonus-Beleg: die `preventDefault`-Mutante wird nun von 6 Tests erwischt (vorher durch den lokalen Helfer verdeckt).
+- Review FREIGEGEBEN, Rücklauf erledigt — **A37 abgeschlossen** (PM, 2026-11-16).
+
 ## 2026-11-16 — reviewer (kombiniert mit A35): FREIGEGEBEN — Rücklauf W4/W5 läuft
 
 - **Urteil:** FREIGEGEBEN — 6/7 A37-Mutanten getötet (focus/ausloesen/toggle/Import/querySelectorAll/globales ausloesen); eine überlebende (M10 `removeAttribute` als No-op) = **Testlücke W4**. Funktions-/Assert-Deltas exakt aufgeklärt (nur Helfer-Asserts weg), Baseline/Endstand 368→368 bestätigt, API additiv.

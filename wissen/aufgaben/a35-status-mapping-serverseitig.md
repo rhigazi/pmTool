@@ -3,12 +3,12 @@ type: Task
 title: "A35: Status-Mapping server-seitig (A12-1)"
 description: Status.py ist die einzige Mapping-Quelle — overview.details liefert ui_status/hinweis/owner_default,
   der JS-Spiegel TASK_STATUS_UI/OWNER_DEFAULTS in detail.js entfällt.
-task_status: im Review
-phase: 5 Review
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: "reviewer: A35+A37 Review (Mapping-Mutanten + Harness + Urteil)"
+aktuell: ""
 freigabe: true
 ---
 
@@ -35,6 +35,12 @@ Noch keine Einträge — der `planner` ergänzt die Testfälle.
 Noch keine Einträge — die Planung ergänzt die betroffenen Dateien.
 
 # Ergebnisse
+## 2026-11-16 — coder (Rücklauf) + PM: W1/W2 behoben → **abgeschlossen**
+
+- **W1:** `test_t5_ohne_server_status_kein_js_mapping` um `{"status": "Geschlossen"}` und `{"frontmatter": {"status": "Geschlossen"}}` parametrisiert — Mutante M15 (JS-Fallback auf `frontmatter.status`) jetzt **getötet** (18 → 20 Tests in `test_status_mapping_ui.py`).
+- **W2:** `test_owner_explizit_hat_vorrang` → `test_owner_default_vor_rohem_frontmatter` (Werte gespreizt + bidirektionale Assertions); Präzedenz-Tausch-Mutante jetzt getötet. Begründung im Rücklauf-Bericht: der alte Name behauptete das Gegenteil des Vertrags (R3: `owner_default` ist bereits aufgelöst).
+- Review FREIGEGEBEN, Rücklauf erledigt — **A35 abgeschlossen** (PM, 2026-11-16). Verbleibend: K1 Doku (Spec/README um die drei neuen `/api/file`-Felder) → Doku-Runde.
+
 ## 2026-11-16 — reviewer (kombiniert mit A37): FREIGEGEBEN — Rücklauf W1/W2 läuft
 
 - **Urteil:** FREIGEGEBEN — 7/7 A35-Mutanten getötet (M1 `hinweis` weg, M2 `owner_default` getauscht, M3 Mapping vertauscht, M4 Spiegel zurück, M5 JS-Fallback, M6 owner-Vorrang, M14 nur-Task); eine überlebende Mutante (M15 JS-Fallback auf `frontmatter.status`) = **Testlücke W1**. Mapping-Matrix 11/11 deckungsgleich zur Spec.

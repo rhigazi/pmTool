@@ -1352,6 +1352,53 @@ def test_t3_projektroute_markiert_genau_den_unterpunkt():
     assert ergebnis["aria"] == ["projekt/konzept"]
 
 
+SZENARIO_ROUTER_WECHSEL = r"""
+// Zwei-Routen-Lauf: der aktive Menüpunkt wandert per `hashchange` weiter.
+// `markiereNavigation` muss den alten Link per `removeAttribute` freiräumen.
+const projektZiel = document.createElement("div");
+projektZiel.id = "liste-projekt";
+sicht.projekt.append(projektZiel);
+
+window.location.hash = "#/features";
+await import(__APP__);
+for (const hoerer of dokumentHoerer.DOMContentLoaded || []) await hoerer();
+await warteAuf(() => bei("liste-features").kinder.length > 0);
+
+const aktive = (pruefung) => Object.entries(navigation)
+  .filter(([, link]) => pruefung(link))
+  .map(([basis]) => basis);
+const stand = () => ({
+  aktiv: aktive((link) => link.classList.contains("aktiv")),
+  aria: aktive((link) => link.getAttribute("aria-current") === "page"),
+});
+
+const vorher = stand();
+window.location.hash = "#/projekt/konzept";
+for (const hoerer of fensterHoerer.hashchange || []) await hoerer();
+await warte();
+const nachher = stand();
+return { vorher, nachher };
+"""
+
+
+@ohne_node
+def test_t3_routenwechsel_raeumt_aria_current_beim_altlink_ab():
+    """A37/M10: `removeAttribute` im Harness wirkt — sonst bliebe der alte Link
+    zusätzlich als `aria-current="page"` markiert (zwei aktive Menüpunkte)."""
+    antworten = standard_antworten()
+    antworten["projekt/konzept.md"] = {
+        "status": 200,
+        "koerper": {"frontmatter": {}, "markdown": "# Konzept\n\nFixture.\n"},
+    }
+    ablauf = SZENARIO_ROUTER_WECHSEL.replace("__APP__", json.dumps(APP_JS.as_uri()))
+    ergebnis = app_lauf(ablauf, antworten)
+    assert ergebnis["vorher"] == {"aktiv": ["features"], "aria": ["features"]}
+    assert ergebnis["nachher"] == {
+        "aktiv": ["projekt/konzept"],
+        "aria": ["projekt/konzept"],
+    }
+
+
 # --- HTTP-Läufe gegen ein Test-Bundle unter tmp_path (T22) ----------------
 
 BUNDLE_FEATURES = (

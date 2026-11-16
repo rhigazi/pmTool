@@ -69,6 +69,11 @@ def test_t4_status_kommt_aus_ui_status():
         {},
         {"task_status": "in Umsetzung"},
         {"frontmatter": {"task_status": "abgeschlossen"}},
+        # Der alte Wellen-Zweig las `frontmatter.status` (und `status`). Beide
+        # Formen bleiben ohne Serverfeld wirkungslos — auch ein gültiger
+        # UI-Status darf nicht clientseitig gemappt werden.
+        {"status": "Geschlossen"},
+        {"frontmatter": {"status": "Geschlossen"}},
         {"ui_status": None},
     ],
 )
