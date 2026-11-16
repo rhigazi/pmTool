@@ -4,7 +4,7 @@ Browserbasierte Oberfläche für **eine Person**, die ein OKF-Projekt in Mensch-
 
 Die App ist ein **Tracker**. Die eigentliche Projektarbeit läuft im OpenCode-CLI-Chat: der Projektmanager-Agent steuert `planner`, `coder`, `reviewer`, `tester` und `documenter`; die Oberfläche macht den Stand sichtbar und erlaubt die menschlichen Eingriffe (Nachtrag, „Klarung", „Geschlossen", owner umschalten).
 
-- **Status (2026-11-16):** MVP + Feature-Strecke abgeschlossen — A1–A20 sowie A23–A34 erledigt (u. a. Suche, Wellen-Zuordnung/-Filter, Arbeitsstatus, Freigabe-Gate, Unter-Aufgaben); A26/A34 in den Abschluss-Checks. **Root-Suite 1632 grün** (App-Suite 1544 + `definitions/tools/tests` 88; Sammellauf 2026-11-16). Offen (Post-MVP, gesperrt ohne Weisung): A35–A38, A21, A22. Laufend: **A39** (gemeinsame Test-/Abstimmungsrunde — [Lückenliste](docs/lueckenliste-a39.md)).
+- **Status (2026-11-16):** MVP + Feature-Strecke abgeschlossen — A1–A38 sowie A40–A42 erledigt. Vormittag: A23–A34 + A26 (u. a. Suche, Wellen-Zuordnung/-Filter, Arbeitsstatus, Freigabe-Gate, Unter-Aufgaben). Umsetzungs-Welle „alles frei": **A21, A22, A35, A36, A37, A38, A40, A41, A42** — jeweils mit Review, Mutantenproben und Rücklauf, wo nötig. **Root-Suite 1789 Tests** (App-Suite 1690 + `definitions/tools/tests` 99; Collect 2026-11-16); zuletzt belegte Läufe: App-Suite **1670 passed** (A21-Review), Root-Suite **1632/1632** (A26-Volllauf) — beide vor den letzten Rückläufen, **finaler Sammellauf folgt**. Offen: **A39** (Test-Befunde der Projektleitung + README-Abschluss — [Lückenliste](docs/lueckenliste-a39.md)), **Fenster-Smoke A21** (Abnahme), **K-Klammern** (Restpunkte der Lückenliste).
 - **Projektstand & Historie:** [docs/uebergabeprotokoll.md](docs/uebergabeprotokoll.md), [wissen/log.md](wissen/log.md)
 - **Projektwissen:** [wissen/index.md](wissen/index.md)
 
@@ -118,12 +118,13 @@ Direkt ohne `start.sh` (z. B. in einem per `setup.sh` verteilten Projekt): `pyth
 ## Funktionen der Oberfläche
 
 - **Listenansicht (Übersicht):** Tabelle aller Punkte mit Status, `owner`, „zuletzt geändert", **Welle** (A31) und Arbeitsstatus-Zeile (A30: `aktuell` der Subagenten); Filter nach den 6 UI-Status und nach `owner` (alle/mensch/ai/ohne), Filter nach Welle (A27); **Suchfeld** (A25, mehrere Wörter = UND, umlaut-/ß-tolerant, kombinierbar mit den Filtern). „Klarung"-Zeilen sind hervorgehoben; Aufgaben ohne zugewiesene Kennung tragen die Marke **„neu"** (A28) mit Kennungs-Hinweis und Freigabe-Knopf (Menschen-Kanal `POST /api/freigabe`).
-- **Detailansicht:** Frontmatter-Kopf und gerendertes Markdown (eigener, XSS-sicherer Minimal-Renderer), Formular „Nachtrag einfügen", owner-Umschalter, ausschließlich die Status-Buttons `Klarung` und `Geschlossen`; Status und owner kommen aus den serverseitig abgeleiteten Feldern `ui_status`/`hinweis`/`owner_default` (A35); **Wellen-Zuordnung** per Dropdown (A27) und **Sperrgrund-Anzeige**, solange Aufgabe oder zugeordnete Welle nicht freigegeben sind (A29).
+- **Detailansicht:** Frontmatter-Kopf und gerendertes Markdown (eigener, XSS-sicherer Minimal-Renderer), Formular „Nachtrag einfügen", owner-Umschalter, ausschließlich die Status-Buttons `Klarung` und `Geschlossen`; Status und owner kommen aus den serverseitig abgeleiteten Feldern `ui_status`/`hinweis`/`owner_default` (A35) — **einzige Mapping-Quelle ist `status.py`, einen JS-Spiegel gibt es nicht mehr**; **Wellen-Zuordnung** per Dropdown (A27) und **Sperrgrund-Anzeige**, solange Aufgabe oder zugeordnete Welle nicht freigegeben sind (A29).
+- **Schreibschutz-Signal (A36):** Reservierte KI-Dateien (`index.md`, `log.md`, `features.md` …) tragen serverseitig `schreibgeschuetzt: true`; die Detailansicht blendet dann alle Schreibaktionen aus und zeigt den Hinweis „Schreibgeschützt — diese Datei pflegen Projektmanager und documenter (KI)." Die reservierte Namensliste kennt die UI nicht; der Server-403 bleibt als zweite Barriere.
 - **Unter-Aufgaben (A34):** Knopf „Unter-Aufgabe anlegen" in der Detailansicht einer Aufgabe (Inline-Formular, Kennung `A{xxx}.{uuu}` vergibt die App, `welle` wird geerbt); Abschnitt „Unter-Aufgaben (n)" mit Tabelle, Tiefe genau eine Ebene.
 - **Wellen:** Freigabe-Marke „freigegeben/nicht freigegeben" in der Wellen-Liste (A29), Freigabe-Knopf im Wellen-Detail (Menschen-Kanal), Ansicht „Aufgaben dieser Welle (n)".
 - **Formulare:** neue **Aufgabe** oder **Welle** anlegen — mit Erfolgsanzeige und kopierbarem Kurzkontext für die Übergabe an die KI (Wellen-Linktext zeigt den Wellen-Titel).
 - **Feature-Liste (A23):** Menüpunkt „Feature List" zeigt alle Features mit Status; Klick öffnet die zugehörigen Aufgaben (offen/in Bearbeitung/erledigt).
-- **Entscheidungen-/Projekt-Ansicht:** zeigt die Einträge aus `wissen/entscheidungen/log.md` sowie die Projekt-Unterpunkte (Konzept, Technische Spec, User Stories, Phasen, Log) — über den bestehenden Datei-Endpunkt, ohne zusätzliche API.
+- **Entscheidungen-/Projekt-Ansicht:** zeigt die Einträge aus `wissen/entscheidungen/log.md` sowie die Projekt-Unterpunkte (Konzept, Technische Spec, User Stories, Phasen, Log) — über den bestehenden Datei-Endpunkt, ohne zusätzliche API. Jeder Eintrag hat einen **Anker (A38)**: der Link öffnet den konkreten Eintrag (`#/detail/<pfad>#<anker>`), nicht den Seitenanfang; die Detailansicht scrollt dorthin.
 
 **Statuswerte (UI):** `Klarung` · `Offen` · `In Arbeit` · `Testing` · `Dokumentation` · `Geschlossen`.
 Sie sind eine Sicht auf das bestehende Workflow-Feld `task_status` (bzw. `status` bei Wellen) — es gibt kein zweites Statusmodell.
@@ -141,12 +142,13 @@ Alles liegt im OKF-Bundle **[wissen/](wissen/index.md)** — Markdown mit YAML-F
 ## Entwicklung & Tests
 
 ```bash
-python3 -m pytest definitions/app/tests -q   # App-Suite (2026-11-16: 1544 grün)
-python3 -m pytest -q                        # Root-Suite = App-Suite + definitions/tools/tests (1632 grün)
+python3 -m pytest definitions/app/tests -q   # App-Suite (2026-11-16: 1690 Tests; zuletzt belegt 1670 passed — finaler Sammellauf folgt)
+python3 -m pytest -q                        # Root-Suite = App-Suite + definitions/tools/tests (1789 Tests = 1690 + 99)
 bash definitions/verify.sh .                 # Umgebungs-Check → Exit 0 = vollständig
 ```
 
-- **UI-Tests** laufen über HTTP gegen den laufenden Server plus den Node-DOM-Harness; optional mit echtem `moli` (Browser-Szenarien, Screenshots).
+- **UI-Tests** laufen über HTTP gegen den laufenden Server plus den Node-DOM-Harness; optional mit echtem `moli` (Browser-Szenarien, Screenshots). Der DOM-Harness liegt zentral in `tests/dom_helfer.py` (A37) — die früheren Kopien in den UI-Testdateien sind abgelöst.
+- **E2E und Desktop sind Teil der App-Suite:** `test_e2e.py` (E2E-Regression, A22) und `test_desktop.py` (Desktop-Modus, A21) laufen im selben `pytest definitions/app/tests`-Lauf mit — kein separater Aufruf nötig.
 - **Testisolation:** Tests arbeiten ausschließlich auf Fixture-Kopien unter `tmp_path` bzw. `/tmp/opencode/…` — das echte Bundle `wissen/` wird nie beschrieben.
 - **Flaky-Zone:** Bei paralleler Tester-/Coder-Arbeit können App-Test-/verify-Läufe gelegentlich rot sein — serialisierte Läufe sind stabil (Empfehlung: Testläufe serialisieren).
 
@@ -163,6 +165,8 @@ bash definitions/verify.sh /pfad/zum/projekt         # Installation prüfen (Exi
 Optionen von `setup.sh`: `--wissen`, `--global` (Subagenten nach `~/.config/opencode/agents/`, Skills nach `~/.agents/skills/`, optional `moli`), `--force`. Vorhandene Dateien werden ohne `--force` nie überschrieben.
 
 > **Hinweis:** `verify.sh` prüft das **vollständige** Projekt — inklusive OKF-Wissensgerüst (`wissen/index.md`, `features.md`, `log.md` u. a.). Ein Ziel **ohne** `--wissen` hat dieses Gerüst nicht und endet bei der Verify-Prüfung mit Exit 1. Für neue Projekte daher `setup.sh --wissen` nutzen (oder das Wissensgerüst separat anlegen).
+>
+> **Teilgerüst** (nur einige der 8 Pflichtdateien vorhanden, z. B. `wissen/index.md` da, `features.md` nicht): `verify.sh` (A40) meldet die fehlenden Dateien in einer eigenen Meldung. `setup.sh --wissen` allein hilft dann **nicht** — bei vorhandenem `wissen/index.md` wird der Wissens-Abschnitt übersprungen (die fehlende Datei bleibt fehlend), fehlt `index.md`, überschreibt die Vorlage die vorhandenen Wissensdateien. Die fehlenden Dateien in diesem Fall **einzeln** aus `definitions/wissen-vorlage/` ergänzen.
 
 Die **mitverteilte Vorlagen-README** liegt in [definitions/README.md](definitions/README.md) — sie beschreibt die Installation in Zielprojekten und wird hier bewusst nicht dupliziert.
 
@@ -201,7 +205,7 @@ Details: Ohne `--ja` wird ausschließlich der Plan ausgegeben (Exit 0, Dateisyst
 
 Das Werkzeug liegt in der Quelle `definitions/tools/neues_projekt.py`; `setup.sh` verteilt es samt Tests nach `tools/` und legt im Zielprojekt zusätzlich `definitions/wissen-vorlage/` sowie `definitions/verify.sh` an (die Vorlage braucht das Werkzeug, verify.sh verweist der Erfolgstext). Im Entwicklungs-Repo ist `tools/` nur die installierte Kopie — Änderungen immer in `definitions/tools/` vornehmen.
 
-**Auffrischen im Dev-Repo:** Im Repo-Root liegt die Quelle bereits unter `definitions/`. Ein Lauf `bash definitions/setup.sh . --force` aktualisiert dort nur die vorhandenen Spiegel (`AGENTS.md`, `.opencode/agents/`, `opencode.jsonc`, `tools/`) und kopiert **nichts auf sich selbst**: `definitions/verify.sh`, `definitions/wissen-vorlage/` (Abschnitt 4b), `wissen/` (5, nur im `--wissen`-Lauf) und `app/` (10) werden übersprungen („übersprungen (Quelle = Ziel)"). So entsteht kein zweites `app/` neben `definitions/app/`, und `wissen/` bleibt unangetastet (der Plain-Lauf ohne `--wissen` führt Abschnitt 5 gar nicht aus). So entsteht kein zweites `app/` neben `definitions/app/`, und `wissen/` bleibt unangetastet. Einzige Ausnahme: Wer `setup.sh` direkt auf `definitions/` richtet, legt dort die Projektspiegel an — für die Auffrischung ist immer das Repo-Root das Ziel. Die Root-Suite (`pytest -q`) testet deshalb nur `definitions/tools/tests/` und ignoriert den Spiegel `tools/tests/` (`conftest.py`); eine Drift-Prüfung wacht darüber, dass beide Bäume inhaltsgleich bleiben.
+**Auffrischen im Dev-Repo:** Im Repo-Root liegt die Quelle bereits unter `definitions/`. Ein Lauf `bash definitions/setup.sh . --force` aktualisiert dort nur die vorhandenen Spiegel (`AGENTS.md`, `.opencode/agents/`, `opencode.jsonc`, `tools/`) und kopiert **nichts auf sich selbst**: `definitions/verify.sh`, `definitions/wissen-vorlage/` (Abschnitt 4b), `wissen/` (5, nur im `--wissen`-Lauf) und `app/` (10) werden übersprungen („übersprungen (Quelle = Ziel)"). So entsteht kein zweites `app/` neben `definitions/app/`, und `wissen/` bleibt unangetastet (der Plain-Lauf ohne `--wissen` führt Abschnitt 5 gar nicht aus). Einzige Ausnahme: Wer `setup.sh` direkt auf `definitions/` richtet, legt dort die Projektspiegel an — für die Auffrischung ist immer das Repo-Root das Ziel. Die Root-Suite (`pytest -q`) testet deshalb nur `definitions/tools/tests/` und ignoriert den Spiegel `tools/tests/` (`conftest.py`); eine Drift-Prüfung wacht darüber, dass beide Bäume inhaltsgleich bleiben.
 
 ## Telegram-Benachrichtigung
 
