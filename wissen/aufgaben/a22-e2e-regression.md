@@ -43,6 +43,10 @@ Die im A17-Abnahmelauf ad hoc gefahrene T1/T2/T7-Kette (aus den Skripten `/tmp/o
 - ggf. `definitions/app/tests/conftest.py` (Fixtures)
 
 # Ergebnisse
+## 2026-11-16 — coder (K-Sammlung): A22-K1/K2/K5/K8 behoben
+
+- **K1:** tautologische Schluss-Assertion ersetzt (Klammer `len(protokoll) == 12` + Eindeutigkeit + konkrete Fachwerte: Marker, UND-Gate-Zwischenstände, Endübersicht, SHA-Format). **K2:** Datei-Hash vor/nach Schritt 11 (403) — „kein Schreibvorgang" byte-genau belegt. **K5:** Mitternachts-Kante gelöst (Lauf-Fenster + tatsächliches Datei-Datum; T7 datumsnormalisiert; Simulationsbeleg „Protokolle identisch über Mitternacht"). **K8:** Isolations-Skip explizit (Pfad + Grund), im Dev-Repo läuft die Probe regulär. 114 → **127 Assertions**, 4 grün (dreifach stabil).
+
 
 ## 2026-11-16 — reviewer: Review FREIGEGEBEN → **abgeschlossen**
 

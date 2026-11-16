@@ -41,7 +41,10 @@ WELLE_FIXTURE = "wellen/w1.md"
 NEUE_AUFGABE = "aufgaben/a99-e2e-aufgabe.md"
 NEUE_WELLE = "wellen/welle-9-e2e-welle.md"
 
-MARKER = re.compile(r"^> \*\*Nachtrag \(Mensch, \d{4}-\d{2}-\d{2}\):\*\* .+$")
+MARKER = re.compile(
+    r"^> \*\*Nachtrag \(Mensch, (?P<datum>\d{4}-\d{2}-\d{2})\):\*\* .+$"
+)
+DATUM_PLATZHALTER = "<datum>"
 
 
 # --- Fixtures & Helfer ----------------------------------------------------
@@ -101,6 +104,53 @@ def _marker_zeilen(text: str) -> list[str]:
     return [zeile for zeile in text.splitlines() if MARKER.match(zeile)]
 
 
+def _utc_heute() -> str:
+    """Heutiges Datum in UTC — so stempelt ``nachtrag`` neue Marker."""
+    return datetime.now(timezone.utc).date().isoformat()
+
+
+def _marker_datum(zeile: str) -> str:
+    treffer = MARKER.match(zeile)
+    assert treffer is not None, f"keine Nachtrags-Markerzeile: {zeile!r}"
+    return treffer.group("datum")
+
+
+def _marker_pruefen(text: str, erwarteter_text: str, datum_fenster: set[str]) -> str:
+    """Prüft genau einen Nachtrags-Marker samt Datum aus dem Lauf-Fenster.
+
+    ``datum_fenster`` enthält das UTC-Datum vor und nach dem POST. Läuft ein
+    Test über 00:00 UTC, akzeptiert die Prüfung beide Tage (K5).
+    """
+    marker = _marker_zeilen(text)
+    assert len(marker) == 1, f"genau ein Marker erwartet: {marker!r}"
+    datum = _marker_datum(marker[0])
+    assert datum in datum_fenster, (
+        f"Datum {datum} außerhalb des Lauf-Fensters {datum_fenster}"
+    )
+    assert marker == [f"> **Nachtrag (Mensch, {datum}):** {erwarteter_text}"]
+    return datum
+
+
+def _ohne_datum(text: str) -> str:
+    """Ersetzt konkrete Nachtragsdaten durch einen Platzhalter (T7).
+
+    Ein Lauf über 00:00 UTC unterscheidet sich nur im Tagesstempel. Für den
+    reproduzierbaren Protokollvergleich wird deshalb ausschließlich das Datum
+    normalisiert; alle übrigen Bytes bleiben im Hash enthalten.
+    """
+    for zeile in _marker_zeilen(text):
+        text = text.replace(_marker_datum(zeile), DATUM_PLATZHALTER)
+    return text
+
+
+def _marker_ohne_datum(marker: list[str]) -> list[str]:
+    return [_ohne_datum(zeile) for zeile in marker]
+
+
+def _nachtraege_ohne_datum(eintraege: list[dict]) -> list[dict]:
+    return [{**eintrag, "datum": DATUM_PLATZHALTER} for eintrag in eintraege]
+
+
 def _eintrag(uebersicht: list[dict], pfad: str) -> dict:
     treffer = [eintrag for eintrag in uebersicht if eintrag["path"] == pfad]
     assert len(treffer) == 1, f"{pfad} muss genau einmal in der Übersicht stehen"
@@ -118,6 +168,11 @@ def _ohne_zeit(uebersicht: list[dict]) -> list[dict]:
 
 def _datei_hash(bundle: Path, pfad: str) -> str:
     return _sha256(_lies(bundle, pfad))
+
+
+def _datei_hash_ohne_datum(bundle: Path, pfad: str) -> str:
+    """Datei-Hash für das Protokoll; nur der Tagesstempel wird neutralisiert (T7)."""
+    return _sha256(_ohne_datum(_lies(bundle, pfad)))
 
 
 def _baum_hash(wurzel: Path) -> str:
@@ -145,7 +200,6 @@ def _fahre_kette(client, bundle: Path) -> list[dict]:
     dem Schreiben jeweils über einen frischen Lese-Request. Rückgabe sind nur
     deterministische Werte (ohne mtime), damit T7 zwei Läufe vergleichen kann.
     """
-    heute = datetime.now(timezone.utc).date().isoformat()
     protokoll: list[dict] = []
 
     def merke(schritt: str, wert: object) -> None:
@@ -177,6 +231,7 @@ def _fahre_kette(client, bundle: Path) -> list[dict]:
     assert detail_start["nachtraege"] == []
 
     # 2. T1: Nachtrag anfügen — append-only, genau ein Marker.
+    datum_vorher = _utc_heute()
     antwort = client.post(
         "/api/nachtrag",
         json={"path": AUFGABE_FIXTURE, "text": "E2E: Bitte präzisieren."},
@@ -186,20 +241,24 @@ def _fahre_kette(client, bundle: Path) -> list[dict]:
     daten = antwort.get_json()
     assert daten["path"] == AUFGABE_FIXTURE
     assert daten["frontmatter"] == frontmatter_start
-    assert daten["nachtraege"] == [
-        {"autor": "Mensch", "datum": heute, "text": "E2E: Bitte präzisieren."}
-    ]
     inhalt_nachtrag = _lies(bundle, AUFGABE_FIXTURE)
+    datum_nachher = _utc_heute()
     assert inhalt_nachtrag.startswith(inhalt_start)
-    marker = _marker_zeilen(inhalt_nachtrag)
-    assert marker == [f"> **Nachtrag (Mensch, {heute}):** E2E: Bitte präzisieren."]
+    datum_marker = _marker_pruefen(
+        inhalt_nachtrag,
+        "E2E: Bitte präzisieren.",
+        {datum_vorher, datum_nachher},
+    )
+    assert daten["nachtraege"] == [
+        {"autor": "Mensch", "datum": datum_marker, "text": "E2E: Bitte präzisieren."}
+    ]
     merke(
         "nachtrag_a1",
         {
             "frontmatter": daten["frontmatter"],
-            "nachtraege": daten["nachtraege"],
-            "marker": marker,
-            "sha256": _sha256(inhalt_nachtrag),
+            "nachtraege": _nachtraege_ohne_datum(daten["nachtraege"]),
+            "marker": _marker_ohne_datum(_marker_zeilen(inhalt_nachtrag)),
+            "sha256": _sha256(_ohne_datum(inhalt_nachtrag)),
         },
     )
 
@@ -383,13 +442,17 @@ def _fahre_kette(client, bundle: Path) -> list[dict]:
     )
 
     # 11. T1: Freigabe bleibt Menschen-Recht — KI-Pfad liefert 403, kein Schreibvorgang.
+    hash_vorher = _datei_hash(bundle, NEUE_AUFGABE)
     antwort = client.post("/api/meta", json={"path": NEUE_AUFGABE, "freigabe": False})
     assert antwort.status_code == 403
     assert antwort.get_json()["error"]
+    # K2: byte-identisch, nicht nur semantisch unverändert.
+    assert _datei_hash(bundle, NEUE_AUFGABE) == hash_vorher
     detail = client.get("/api/file", query_string={"path": NEUE_AUFGABE}).get_json()
     assert detail["frontmatter"]["freigabe"] is True
 
     # 12. T2: Nachtrag auf der neuen Aufgabe — Frontmatter unverändert, genau 1 Marker.
+    datum_vorher = _utc_heute()
     antwort = client.post(
         "/api/nachtrag",
         json={"path": NEUE_AUFGABE, "text": "E2E: Nachfrage zur Aufgabe."},
@@ -399,14 +462,19 @@ def _fahre_kette(client, bundle: Path) -> list[dict]:
     assert nachtrag_frontmatter["type"] == "Task"
     assert nachtrag_frontmatter["title"] == "A99: E2E-Aufgabe"
     assert nachtrag_frontmatter["freigabe"] is True
-    marker_neu = _marker_zeilen(_lies(bundle, NEUE_AUFGABE))
-    assert marker_neu == [f"> **Nachtrag (Mensch, {heute}):** E2E: Nachfrage zur Aufgabe."]
+    inhalt_aufgabe = _lies(bundle, NEUE_AUFGABE)
+    datum_nachher = _utc_heute()
+    _marker_pruefen(
+        inhalt_aufgabe,
+        "E2E: Nachfrage zur Aufgabe.",
+        {datum_vorher, datum_nachher},
+    )
     merke(
         "nachtrag_aufgabe",
         {
             "frontmatter": nachtrag_frontmatter,
-            "marker": marker_neu,
-            "sha256": _datei_hash(bundle, NEUE_AUFGABE),
+            "marker": _marker_ohne_datum(_marker_zeilen(inhalt_aufgabe)),
+            "sha256": _sha256(_ohne_datum(inhalt_aufgabe)),
         },
     )
 
@@ -429,7 +497,7 @@ def _fahre_kette(client, bundle: Path) -> list[dict]:
     merke(
         "dateien",
         {
-            pfad: _datei_hash(bundle, pfad)
+            pfad: _datei_hash_ohne_datum(bundle, pfad)
             for pfad in (AUFGABE_FIXTURE, NEUE_AUFGABE, NEUE_WELLE)
         },
     )
@@ -441,30 +509,41 @@ def test_t1_api_e2e_kette(e2e_bundle):
     assert e2e_bundle.is_relative_to(E2E_BASIS)
     protokoll = _fahre_kette(_client(e2e_bundle), e2e_bundle)
 
-    schritte = [eintrag["schritt"] for eintrag in protokoll]
-    assert schritte == [
-        "overview_start",
-        "nachtrag_a1",
-        "aufgabe_neu",
-        "welle_neu",
-        "meta_owner",
-        "meta_status",
-        "meta_welle",
-        "freigabe_welle",
-        "freigabe_aufgabe",
-        "nachtrag_aufgabe",
-        "overview_ende",
-        "dateien",
+    # K1: Statt der tautologischen Schrittnamen-Liste prüft der Abschluss die
+    # Anzahl (Klammer) und ausgewählte fachliche Werte aus dem Protokoll.
+    assert len(protokoll) == 12
+    nach_schritt = {eintrag["schritt"]: eintrag["wert"] for eintrag in protokoll}
+    assert len(nach_schritt) == len(protokoll), "Schrittnamen müssen eindeutig sein"
+
+    assert nach_schritt["nachtrag_a1"]["marker"] == [
+        f"> **Nachtrag (Mensch, {DATUM_PLATZHALTER}):** E2E: Bitte präzisieren."
     ]
+    assert nach_schritt["aufgabe_neu"]["frontmatter"]["task_status"] == "offen"
+    assert nach_schritt["aufgabe_neu"]["frontmatter"]["owner"] == "ai"
+    assert nach_schritt["meta_status"]["eintrag"]["status"] == "Klarung"
+    assert nach_schritt["meta_status"]["frontmatter"]["task_status"] == "in Klärung"
+    assert nach_schritt["freigabe_welle"]["wirksam_freigegeben"] is False
+    assert nach_schritt["freigabe_aufgabe"]["wirksam_freigegeben"] is True
+    assert {eintrag["path"] for eintrag in nach_schritt["overview_ende"]} == {
+        AUFGABE_FIXTURE,
+        WELLE_FIXTURE,
+        NEUE_AUFGABE,
+        NEUE_WELLE,
+    }
+
+    dateien = nach_schritt["dateien"]
+    assert set(dateien) == {AUFGABE_FIXTURE, NEUE_AUFGABE, NEUE_WELLE}
+    assert all(re.fullmatch(r"[0-9a-f]{64}", digest) for digest in dateien.values())
+    assert len(set(dateien.values())) == len(dateien)
 
 
 def test_t2_frontmatter_invarianten(e2e_bundle):
     """T2: `type`/`title` unverändert, genau ein Marker, append-only."""
     client = _client(e2e_bundle)
-    heute = datetime.now(timezone.utc).date().isoformat()
 
     vorher = client.get("/api/file", query_string={"path": AUFGABE_FIXTURE}).get_json()
     inhalt_vorher = _lies(e2e_bundle, AUFGABE_FIXTURE)
+    datum_vorher = _utc_heute()
     antwort = client.post(
         "/api/nachtrag",
         json={"path": AUFGABE_FIXTURE, "text": "T2: Nachtrag eins."},
@@ -472,14 +551,17 @@ def test_t2_frontmatter_invarianten(e2e_bundle):
     assert antwort.status_code == 200
     nachher = client.get("/api/file", query_string={"path": AUFGABE_FIXTURE}).get_json()
     inhalt_nachher = _lies(e2e_bundle, AUFGABE_FIXTURE)
+    datum_nachher = _utc_heute()
 
     assert nachher["frontmatter"] == vorher["frontmatter"]
     assert nachher["frontmatter"]["type"] == "Task"
     assert nachher["frontmatter"]["title"] == "A1: Mini-Aufgabe"
     assert inhalt_nachher.startswith(inhalt_vorher)
-    assert _marker_zeilen(inhalt_nachher) == [
-        f"> **Nachtrag (Mensch, {heute}):** T2: Nachtrag eins."
-    ]
+    _marker_pruefen(
+        inhalt_nachher,
+        "T2: Nachtrag eins.",
+        {datum_vorher, datum_nachher},
+    )
     assert len(nachher["nachtraege"]) == 1
 
     pfad = client.post(
@@ -493,17 +575,21 @@ def test_t2_frontmatter_invarianten(e2e_bundle):
     ).get_json()["path"]
     aufgabe_vorher = client.get("/api/file", query_string={"path": pfad}).get_json()
     aufgabe_inhalt_vorher = _lies(e2e_bundle, pfad)
+    datum_vorher = _utc_heute()
     client.post("/api/nachtrag", json={"path": pfad, "text": "T2: Nachtrag zwei."})
     aufgabe_nachher = client.get("/api/file", query_string={"path": pfad}).get_json()
     aufgabe_inhalt_nachher = _lies(e2e_bundle, pfad)
+    datum_nachher = _utc_heute()
 
     assert aufgabe_nachher["frontmatter"] == aufgabe_vorher["frontmatter"]
     assert aufgabe_nachher["frontmatter"]["type"] == "Task"
     assert aufgabe_nachher["frontmatter"]["title"] == "A99: E2E-Aufgabe"
     assert aufgabe_inhalt_nachher.startswith(aufgabe_inhalt_vorher)
-    assert _marker_zeilen(aufgabe_inhalt_nachher) == [
-        f"> **Nachtrag (Mensch, {heute}):** T2: Nachtrag zwei."
-    ]
+    _marker_pruefen(
+        aufgabe_inhalt_nachher,
+        "T2: Nachtrag zwei.",
+        {datum_vorher, datum_nachher},
+    )
 
 
 def test_t7_reset_reproduzierbar(e2e_bundle):
@@ -527,7 +613,12 @@ def test_t7_reset_reproduzierbar(e2e_bundle):
 def test_t3_echtes_wissen_bleibt_unberuehrt(e2e_bundle):
     """Hash-Nachweis wie A17: `/content/pmTool/wissen` vor/nach dem Lauf identisch."""
     if not WISSEN.is_dir():
-        pytest.skip("Kein Entwicklungs-Bundle unter wissen/ vorhanden")
+        pytest.skip(
+            "Isolationsprobe A22/T3 übersprungen: Entwicklungs-Bundle "
+            f"{WISSEN} fehlt. Die Probe läuft nur in einem vollständigen "
+            "Repo-Checkout mit wissen/; in Installationen ohne Projektwissen "
+            "gibt es kein echtes Bundle zu schützen."
+        )
 
     assert e2e_bundle.resolve() != WISSEN.resolve()
     assert WISSEN.resolve() not in e2e_bundle.resolve().parents
