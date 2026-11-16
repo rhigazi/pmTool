@@ -176,7 +176,7 @@ Details: Ohne `--ja` wird ausschließlich der Plan ausgegeben (Exit 0, Dateisyst
 
 Das Werkzeug liegt in der Quelle `definitions/tools/neues_projekt.py`; `setup.sh` verteilt es samt Tests nach `tools/` und legt im Zielprojekt zusätzlich `definitions/wissen-vorlage/` sowie `definitions/verify.sh` an (die Vorlage braucht das Werkzeug, verify.sh verweist der Erfolgstext). Im Entwicklungs-Repo ist `tools/` nur die installierte Kopie — Änderungen immer in `definitions/tools/` vornehmen.
 
-**Auffrischen im Dev-Repo:** Im Repo-Root liegt die Quelle bereits unter `definitions/`. Ein Lauf `bash definitions/setup.sh . --force` aktualisiert dort nur die vorhandenen Spiegel (`AGENTS.md`, `.opencode/agents/`, `opencode.jsonc`, `tools/`) und kopiert **nichts auf sich selbst**: `definitions/verify.sh`, `definitions/wissen-vorlage/` (Abschnitt 4b), `wissen/` (5) und `app/` (10) werden übersprungen („übersprungen (Quelle = Ziel)"). So entsteht kein zweites `app/` neben `definitions/app/`, und `wissen/` bleibt unangetastet. Einzige Ausnahme: Wer `setup.sh` direkt auf `definitions/` richtet, legt dort die Projektspiegel an — für die Auffrischung ist immer das Repo-Root das Ziel. Die Root-Suite (`pytest -q`) testet deshalb nur `definitions/tools/tests/` und ignoriert den Spiegel `tools/tests/` (`conftest.py`); eine Drift-Prüfung wacht darüber, dass beide Bäume inhaltsgleich bleiben.
+**Auffrischen im Dev-Repo:** Im Repo-Root liegt die Quelle bereits unter `definitions/`. Ein Lauf `bash definitions/setup.sh . --force` aktualisiert dort nur die vorhandenen Spiegel (`AGENTS.md`, `.opencode/agents/`, `opencode.jsonc`, `tools/`) und kopiert **nichts auf sich selbst**: `definitions/verify.sh`, `definitions/wissen-vorlage/` (Abschnitt 4b), `wissen/` (5, nur im `--wissen`-Lauf) und `app/` (10) werden übersprungen („übersprungen (Quelle = Ziel)"). So entsteht kein zweites `app/` neben `definitions/app/`, und `wissen/` bleibt unangetastet (der Plain-Lauf ohne `--wissen` führt Abschnitt 5 gar nicht aus). So entsteht kein zweites `app/` neben `definitions/app/`, und `wissen/` bleibt unangetastet. Einzige Ausnahme: Wer `setup.sh` direkt auf `definitions/` richtet, legt dort die Projektspiegel an — für die Auffrischung ist immer das Repo-Root das Ziel. Die Root-Suite (`pytest -q`) testet deshalb nur `definitions/tools/tests/` und ignoriert den Spiegel `tools/tests/` (`conftest.py`); eine Drift-Prüfung wacht darüber, dass beide Bäume inhaltsgleich bleiben.
 
 ## Telegram-Benachrichtigung
 
@@ -192,6 +192,7 @@ python3 tools/telegram_send.py --config config.json "Nachricht"
 
 - **[docs/prd.md](docs/prd.md)** — Produktanforderungen und Produktentscheidungen
 - **[docs/uebergabeprotokoll.md](docs/uebergabeprotokoll.md)** — Gesamtstand, Aufgabenstatus, offene Punkte
+- **[docs/lueckenliste-a39.md](docs/lueckenliste-a39.md)** — A39-Testrunde: Befunde, Lücken und Folgeaufgaben-Kandidaten
 - **[docs/colab-start.md](docs/colab-start.md)** — neue Colab-Sitzung starten
 - **[wissen/index.md](wissen/index.md)** — Einstieg ins Projektwissen (Session-Start-Regel)
 - **[wissen/projekt/phasen.md](wissen/projekt/phasen.md)** — Workflow, Phasenmodell, Aufgabenformat

@@ -34,7 +34,8 @@ Vorgabe der Projektleitung (2026-11-15): nach Abschluss der Feature-Strecke geme
 # 4. War eine Lücke, ist erledigt (2026-11-16)
 
 - Welle-3-Freigabe (formal) — von der Projektleitung über die App gesetzt, Gate-UND für A34 sauber.
-- A26-Ergebnisprotokoll fehlte komplett — angelegt und ergänzt.
+- A26-Ergebnisprotokoll fehlte komplett — **nachgetragen** (Rückwärts-Einträge aus belegten Quellen + Bestätigungs-Review; Protokolllücken für die Testphase 2026-11-15 ausgewiesen).
+- **A26 Bestätigungs-Review FREIGEGEBEN** (2026-11-16): alle 6 Prüfpunkte erfüllt, Root-Suite 1632/1632 im Volllauf, Dev-Selbstlauf hash-identisch; K-Reste (colab-start-Vermerk, README-Wortlaut Abschnitt 5) in der Abschluss-Runde bereinigt. A26 damit **abgeschlossen**.
 - Anrainer-Zahl „78+222" war uneindeutig — aufgelöst: 222 = 5 UI-Dateien ohne `test_detail`, 278 = alle 6.
 - `test_formulare` T8 (B4-Linktext-Vertrag) — im Sammellauf bestätigt.
 - Standzahlen veraltet (1011/1039/1118) — auf Root-Suite 1632 (App 1544 + Tools 88) nachgezogen.
@@ -51,7 +52,7 @@ Vorgabe der Projektleitung (2026-11-15): nach Abschluss der Feature-Strecke geme
 
 # 6. Stand der Feature-Strecke (Abschlussbild 2026-11-16)
 
-- **Abgeschlossen:** A1–A20 (MVP), A23, A24, A25, A27, A28, A29, A30, A31, A32, A33.
-- **Abschlussfähig, Abschluss-Check läuft noch:** A26 (Bestätigungs-Review läuft), A34 (Delta-Bestätigung des Sammellaufs auf dem finalen Baum läuft; Pakete 1–4 inkl. UI-Szenarien S1–S5 sind bestanden).
+- **Abgeschlossen:** A1–A20 (MVP), A23, A24, A25, A26 (Bestätigungs-Review 2026-11-16), A27, A28, A29, A30, A31, A32, A33.
+- **Abschlussfähig, Abschluss-Check läuft noch:** A34 (Delta-Bestätigung des Sammellaufs auf dem finalen Baum läuft; Pakete 1–4 inkl. UI-Szenarien S1–S5 sind bestanden).
 - **Offen (Post-MVP, gesperrt):** A35 (Status-Mapping server-seitig), A36 (`schreibgeschuetzt`-Signal), A37 (DOM-Harness-Konsolidierung), A38 (Log-Anker), A22 (E2E-Regression), A21 (Desktop-Modus).
 - **A39 selbst:** diese Test-/Abstimmungsrunde + README-Abschluss — Abschluss nach Eingang der Projektleitungs-Befunde.

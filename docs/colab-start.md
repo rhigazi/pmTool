@@ -197,8 +197,8 @@ Reihenfolge:
 
 Danach wie gewohnt starten (Schritt 2) — die App zeigt ein leeres Projekt ohne
 Aufgaben und Wellen. In einem per `setup.sh` installierten Zielprojekt liegt das
-Werkzeug derzeit **nicht** (offener Punkt A26: Spiegelung nach `definitions/tools/`);
-dort den Reset in der Quell-Instanz ausführen oder das Skript manuell übernehmen.
+Werkzeug als `tools/neues_projekt.py` vor (A26: Quelle `definitions/tools/`,
+Verteilung durch `setup.sh`) — der Reset läuft dort direkt.
 
 > **Achtung:** `--ja` löscht das gesamte Projekt-Wissen in `wissen/` — inklusive
 > versteckter Dateien, Nachträgen und Entscheidungen. Vorher entsteht automatisch

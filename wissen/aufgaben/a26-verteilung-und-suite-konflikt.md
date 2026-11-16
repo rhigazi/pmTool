@@ -2,11 +2,11 @@
 type: Task
 title: "A26: Werkzeug-Verteilung und Root-Suite-Konflikt"
 description: "`tools/neues_projekt.py` in die Definitions-Quelle spiegeln und den Collection-Konflikt der Repo-Root-Suite (doppelte Testdateinamen in `tools/` und `definitions/tools/`) dauerhaft lösen."
-task_status: in Nachbesserung
-phase: 4 Nachbesserung
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: mittel
 assigned_to: coder
-aktuell: "tester: FREIGEGEBEN (1118 ×2, E2E + Drift grün) — coder: Rücklauf W1/W2 + K3/K4 läuft"
+aktuell: ""
 feature: /features/okf-projekt-manager-spa.md
 owner: ai
 ---
@@ -65,4 +65,21 @@ Reihenfolge = Red-Green-Takt: erst Test schreiben, rot laufen lassen, dann das M
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+Je Eintrag Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege. Neueste Einträge unten.
+
+## 2026-11-15 — coder (Umsetzung + Rücklauf W1/W2 + K3/K4)
+
+- **Ergebnis:** `definitions/tools/` ist Quelle des A24-Werkzeugs (`neues_projekt.py`), `tools/` der per `setup.sh` (Abschnitt 4b) verteilte Spiegel; der Root-Suite-Collections-Konflikt (doppelte Testdatei-Basisnamen) ist über `conftest.py` mit `collect_ignore` für den Spiegel gelöst (Namensregel im Docstring = K4). Rücklauf auf das Review NACHBESSERUNG: **W1** Dev-Selbstlauf — `bash definitions/setup.sh . --force` erkennt Selbstkopien („übersprungen (Quelle = Ziel)"), Exit 0, Hash-identisch; **W2** dokumentierte Auffrischung erzeugt kein zweites `app/` (Abschnitte 4b/5/10 werden im Dev-Repo übersprungen); **K3** Testlücken T9/T10/T11/T5b gehärtet. Zeitstand Rücklauf: **1373 grün** (Commit `f504da9`).
+- **Belege:** `wissen/log.md` 2026-11-15 (A26-Einträge), [Entscheidungslog](/entscheidungen/log.md) 2026-11-15 (A26-Review). **Protokolllücke:** detaillierte Rot→Grün-Belege des Rücklaufs nicht überliefert.
+
+## 2026-11-15 — tester (Testphase)
+
+- **Ergebnis:** FREIGEGEBEN (1118 ×2, Verteilungs-E2E + Drift grün) — belegt über den damaligen Live-Arbeitsstand. **Protokolllücke:** Einzelprotokoll der Testphase nicht überliefert.
+
+## 2026-11-16 — reviewer (Bestätigungs-Review, Modell Beam): FREIGEGEBEN — Aufgabe abgeschlossen
+
+- **Urteil:** FREIGEGEBEN — alle sechs Prüfpunkte erfüllt, keine W-Befunde.
+- **W1:** `setup.sh . --force` im Dev-Repo Exit 0; Hash-Vorher/Nachher identisch (0 Zeilen Differenz), `git status` sauber; Regressionsfälle `test_verteilung.py` T9/T11 (+ T10).
+- **W2:** README-Auffrischung konsistent zum Code (`DEV_REPO=1` bei `TARGET == SRC/..`, Skip 4b/10); kein zweites `app/`, Root-Suite bleibt 1632 collected. K-Nuance: Abschnitt 5 (`wissen/`) läuft nur mit `--wissen` — README-Wortlaut in der Abschluss-Runde nachgezogen.
+- **K3:** 102 passed (`test_setup_verteilung.py` + `definitions/tools/tests/`). **K4:** Namensregel im `conftest.py`-Docstring zitiert. **Drift:** T7 grün, `diff -rq` nur Cache-Artefakte. **Zählumfang:** 1632 collected (App 1544 + Tools 88, Spiegel 0), Volllauf **1632 passed** (776 s). `bash definitions/verify.sh .` → Exit 0.
+- **Rest-K-Punkte (Abschluss-Runde erledigt):** veralteter `docs/colab-start.md`-Vermerk „Werkzeug derzeit nicht" bereinigt; README-Wortlaut Abschnitt 5 präzisiert. Vermerk: die Selbstkopie-Erkennung nutzt `-ef` (Inode-Vergleich), nicht `realpath` — funktional gleichwertig.

@@ -1,6 +1,6 @@
 # Aufgaben
 
-Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in [/projekt/phasen.md](/projekt/phasen.md) definiert. **Stand 2026-11-16: Doku-Runde abgeschlossen** — A1–A20, A23–A25, A27–A33 abgeschlossen; A26 in Review; A34 in Planung/Umsetzung (P1–P3 review-frei); A35–A39 offen/vorgemerkt; Post-MVP-Vormerkungen A21/A22.
+Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in [/projekt/phasen.md](/projekt/phasen.md) definiert. **Stand 2026-11-16: Doku-Runde abgeschlossen** — A1–A20, A23–A33 abgeschlossen (A26 zuletzt per Bestätigungs-Review); A34 abschlussfähig (S1–S5 + Sammellauf bestanden, Delta-Bestätigung läuft); A35–A39 offen/vorgemerkt; Post-MVP-Vormerkungen A21/A22.
 
 # Laufende Aufgaben
 
@@ -11,8 +11,6 @@ Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in
 * [A36: schreibgeschuetzt-Signal](a36-schreibgeschuetzt-signal.md) - API markiert reservierte Dateien, UI blendet Schreibaktionen aus; Server-403 bleibt zweite Barriere — **offen** (vorgemerkt, Umsetzung nach A35)
 * [A37: DOM-Harness-Konsolidierung](a37-dom-harness-konsolidierung.md) - `tests/dom_helfer.py` als einzige Harness-Quelle, Altkopien umstellen (A14-6) — **offen** (vorgemerkt, Umsetzung nach A29)
 * [A38: Log-Anker](a38-log-anker.md) - Anker je Log-Eintrag, Verweise öffnen den konkreten Eintrag (A14-9) — **offen** (vorgemerkt, Umsetzung nach A29)
-
-* [A26: Werkzeug-Verteilung und Root-Suite-Konflikt](a26-verteilung-und-suite-konflikt.md) - `neues_projekt.py` nach `definitions/tools/` spiegeln (Verteilung durch `setup.sh`) und den Collection-Konflikt der Root-Suite (doppelte Testdateinamen in `tools/` und `definitions/tools/`) lösen — **in Review** (Phase 5; umgesetzt 2026-11-15: `definitions/tools/` ist Quelle, `conftest`-Lösung für die Root-Suite, `setup.sh` 4b) verteilt; Root-Suite **1118** grün; Review + Verteilungs-E2E laufen)
 
 # Abgeschlossene Aufgaben
 
@@ -51,6 +49,7 @@ Alle Aufgaben liegen als eigene Dateien in diesem Verzeichnis. Das Format ist in
 * [A28: Benachrichtigung bei neuer Aufgabe](a28-benachrichtigung-neue-aufgabe.md) - Bei neuer Aufgabe wird die KI benachrichtigt; sie vergibt die Kennung in den Titel (`A<N>: Titel`) und wartet auf die Freigabe — erst danach beginnt die Umsetzung — **abgeschlossen** (2026-11-15 aus der App angelegt und angenommen; Umsetzung erst nach Freigabe der Projektleitung)
 * [A29: Wellen abarbeiten](a29-wellen-abarbeiten.md) - Aufgaben werden einer Welle zugeordnet; eine Welle ist standardmäßig nicht freigegeben — erst die Freigabe der Welle startet die Umsetzung aller Aufgaben der Welle — **abgeschlossen** (2026-11-15 aus der App angelegt und angenommen; Umsetzung nach A27 wg. Datei-Überschneidung und nach Freigabe)
 
+* [A26: Werkzeug-Verteilung und Root-Suite-Konflikt](a26-verteilung-und-suite-konflikt.md) - `neues_projekt.py` nach `definitions/tools/` spiegeln (Verteilung durch `setup.sh`) und den Collection-Konflikt der Root-Suite (doppelte Testdateinamen in `tools/` und `definitions/tools/`) lösen — **abgeschlossen** (Bestätigungs-Review FREIGEGEBEN 2026-11-16: Dev-Selbstlauf hash-identisch, kein zweites `app/`, Drift sauber, `verify.sh` Exit 0, Root-Suite **1632** grün)
 * [A27: Wellen-Zuordnung](a27-wellen-zuordnung.md) - Aufgaben nachträglich einer Welle zuordnen/entfernen (Detail-Dropdown), Listen nach Welle filtern, Aufgaben einer Welle im Wellen-Detail — **abgeschlossen** (Phase 5; Umsetzung 2026-11-15: 98 neue Tests, App-Suite **1039** grün; Review + UI-Szenarien S1–S7 laufen; die 2 A25-Klein-Befunde sind im Paket 2 mitbehoben)
 
 # Offene Aufgaben (Post-MVP)
