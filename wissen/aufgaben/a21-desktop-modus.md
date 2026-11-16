@@ -274,6 +274,12 @@ Testaufbau: `baue_testprojekt` bekommt einen `desktop.py`-Stub
   (keine vorhanden), übrige UI-/Backend-Module.
 
 # Ergebnisse
+## 2026-11-16 — reviewer: NACHBESSERUNG (klein — nur Testwächter) — Rücklauf läuft
+
+- **Urteil:** NACHBESSERUNG (klein) — Umsetzung funktional vollständig und korrekt (AK-1…AK-6 alle erfüllt, App-Suite **1670 passed**, `verify.sh` Exit 0, `bash -n`/`py_compile` sauber, keine neue Abhängigkeit, kein `innerHTML`). 18 Mutantenproben: 13/17 getötet (+1 äquivalent); 4 überlebt: **W1** `hilfe()`-Range-Wächter greift nicht (Mutant f: zu enge Range → Hilfe sichtbar kaputt, Test grün) — blockierend; **K1** Bind-Adresse nicht direkt geprüft (Literal `0.0.0.0` überlebt); **K2** `daemon=True` ungetestet; **l** Fenstergröße (bewusst offen, akzeptiert); **n** `server_close()` im Bedien-Thread = äquivalent (verifiziert). Rücklauf W1/K1/K2 läuft (nur Tests).
+- **K-Notizen:** K3 „doppelte Socket-Freigabe" ist real dreifach (idempotent/harmlos, Kommentar präzisieren); K4 lokales `_port_belegt` dupliziert `server._port_belegt` (Delegation = eine Regelquelle, später); K5 README-Zahlen → Sammellauf-Sync; K6 Bericht nannte nur 3 von 6 Abweichungen; K7 Port-Race endet mit englischer Werkzeug-Meldung (akzeptabel). Alle 6 dokumentierten Abweichungen **akzeptabel** (Bewertungen im Review-Bericht).
+- **Restvermerk (ausdrücklich offen):** echter Fenster-Smoke auf einer Maschine mit Display (inkl. Linux-Backend/macOS-Hauptthread) — bei der Abnahme nachholen, nicht still als erledigt werten.
+
 ## 2026-11-16 — coder (Welle D): Desktop-Modus P1–P4 — 69 Tests grün
 
 - **Ergebnis:** `definitions/app/desktop.py` (neu): Lazy-Import-Guard (`DesktopFehler`, Meldung „fehlt" vs. „installiert, nicht ladbar", Exit 1 ohne Traceback/Server), `BUNDLE_ROOT`-Ableitung mit Env-Vorrang, `PORT`-Validierung über `server` (eine Regelquelle), `_starte_server` (`make_server(("127.0.0.1", port), app, threaded=True)` im Daemon-Thread, deterministischer Port-Release via `shutdown()`+`server_close()`), `_starte_fenster` (genau ein `create_window("OKF Projekt-Manager", url, width=1200, height=800)` + `start()`), `main()`-Lebenszyklus mit `finally`-Aufräumen. `start.sh --desktop`: eigener Modus, exklusiv zu `--colab` (reihenfolgeunabhängig, fail-loud), kombinierbar mit `--neu`/`--dry-run`/`--skip-verify`; `hilfe()`-Range `2,18p`; `PAKETE` ohne pywebview. Doku: README (Tabellenzeile + Abschnitt „Desktop-Modus (optional)" inkl. Linux-Backend-Hinweis), `docs/colab-start.md` („nicht der Colab-Weg"), `definitions/README.md`.
