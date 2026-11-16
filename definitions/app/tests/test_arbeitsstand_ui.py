@@ -332,7 +332,10 @@ return {
     assert "In Arbeit" in mit["status"]
     # Titel-/owner-Zellen bleiben unverändert — über den Spaltenkopf zugeordnet,
     # nicht über den Index (A42/T15: eine neue Spalte verschiebt nur die Zellen).
-    assert list(mit["spalten"]) == ergebnis["kopf"]
+    # Bewusst als Literal statt gegen `ergebnis["kopf"]`: sonst prüfte die
+    # Assertion nur, dass der Helfer den Kopf gegen sich selbst hält.
+    assert list(mit["spalten"]) == ["Titel", "Welle", "Status", "owner", "zuletzt geändert"]
+    assert list(mit["spalten"].values()) == mit["zellen"]
     assert mit["spalten"]["Titel"] == "A30: Was passiert gerade"
     assert mit["spalten"]["owner"] == "ai"
     # Aufgabe ohne Angabe: keine Zusatzzeile.
@@ -340,6 +343,73 @@ return {
     assert ohne["status"] == "Offen"
     assert "img" not in ergebnis["marken"]
     assert ergebnis["aufrufe"] == ["/api/aufgaben"]
+
+
+# --- T15b: Grenzprobe „neue Spalte" --------------------------------------
+
+
+@ohne_node
+def test_t15_neue_spalte_verschiebt_zuordnung_nicht():
+    """Grenzprobe (A42/T15): eine zusätzliche Spalte verschiebt die Zellen.
+
+    Der Stab hängt nachträglich eine Spalte „Priorität" ein — im Kopf und in
+    jeder Datenzeile, wie es eine echte neue Tabellenspalte täte. ``spalten``
+    muss weiter über den Kopf zuordnen; ein fester Index (früher ``zellen[3]``
+    für owner) träfe hier stattdessen die Status-Zelle. Werte jenseits der
+    Kopfbreite verwirft ``spalten`` bewusst (dokumentierte Eigenheit des
+    Helfers).
+    """
+    ergebnis = listen_lauf(
+        r"""
+await liste.ladeAufgaben();
+const tabelle = bei("tabelle-aufgaben");
+const spalte = document.createElement("th");
+spalte.textContent = "Priorität";
+const kopfZeile = sammle(tabelle).find((knoten) => knoten.marke === "tr");
+kopfZeile.insertBefore(spalte, kopfZeile.kinder[1]);
+const datenzeilen = sammle(tabelle).filter(
+  (knoten) => knoten.marke === "tr" && knoten.dataset.path,
+);
+for (const zeile of datenzeilen) {
+  const zelle = document.createElement("td");
+  zelle.textContent = "hoch";
+  zeile.insertBefore(zelle, zeile.kinder[1]);
+}
+// Wert jenseits der Kopfzeile: dokumentiert verworfen.
+const extra = document.createElement("td");
+extra.textContent = "JENSEITS";
+datenzeilen[0].append(extra);
+return {
+  kopf: kopfzeilen("tabelle-aufgaben"),
+  zeilen: zeilen("tabelle-aufgaben"),
+};
+""",
+        listen_antwort([MIT_ARBEITSSTAND, OHNE_ARBEITSSTAND], "/api/aufgaben"),
+    )
+
+    assert ergebnis["kopf"] == [
+        "Titel",
+        "Priorität",
+        "Welle",
+        "Status",
+        "owner",
+        "zuletzt geändert",
+    ]
+    mit, ohne = ergebnis["zeilen"]
+    # Kopfzuordnung bleibt flexibel: die Werte wandern mit ihrer Spalte.
+    assert mit["spalten"]["Titel"] == "A30: Was passiert gerade"
+    assert mit["spalten"]["Priorität"] == "hoch"
+    assert "In Arbeit" in mit["spalten"]["Status"]
+    assert mit["spalten"]["owner"] == "ai"
+    assert ohne["spalten"]["Titel"] == "A30: Ohne Arbeitsstand"
+    assert ohne["spalten"]["Priorität"] == "hoch"
+    # Die Status-Zelle wird über Marken gefunden, nicht über die Spaltenlage.
+    assert mit["status"].count(ARBEITSSTAND) == 1
+    assert ohne["status"] == "Offen"
+    # Eigenheit: `spalten` ordnet nur bis zur Kopfbreite zu, Überhang fällt weg.
+    assert mit["zellen"][-1] == "JENSEITS"
+    assert len(mit["spalten"]) == len(ergebnis["kopf"])
+    assert "JENSEITS" not in mit["spalten"].values()
 
 
 # --- T16: mehrere Aufgaben in Arbeit ------------------------------------

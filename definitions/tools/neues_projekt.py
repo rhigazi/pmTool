@@ -93,9 +93,15 @@ def _pruefe_backup_ziel(root, wissen, vorlage, backup):
 
     Geprüft wird mit ``os.path.lexists``: auch ein baumelnder Symlink belegt den
     Namen und wird nie überschrieben (das Schreiben würde sonst durch den Link
-    gehen). Rest-TOCTOU (R8): zwischen ``lexists`` und dem Öffnen des Archivs kann
-    das Ziel ausgetauscht werden; ein atomares ``O_EXCL``-Öffnen ist bewusst
-    Post-MVP.
+    gehen). Die Prüfung hier ist eine Vorprüfung für eine saubere Meldung; die
+    eigentliche Absicherung leistet ``backup_erstellen``.
+
+    Rest-TOCTOU (R8) ist geschlossen: Das Archiv wird mit
+    ``O_WRONLY | O_CREAT | O_EXCL`` geöffnet. Ein zwischen ``lexists`` und dem
+    Öffnen untergeschobenes Ziel — auch ein Symlink — lässt das Öffnen mit
+    ``FileExistsError`` scheitern und wird als ``BackupFehler`` gemeldet; nichts
+    wird überschrieben. Offen bleiben nur die Interna von ``tarfile``, nicht der
+    Zielpfad.
     """
     if backup is None:
         ziel = root / _backup_name(root)
@@ -196,13 +202,18 @@ def backup_erstellen(wissen, ziel):
     Schreiben würde sonst durch den Link in ein fremdes Ziel gehen). Diese
     Barriere steht bewusst zusätzlich zur CLI-Vorprüfung.
 
-    Rest-TOCTOU (R8) ist geschlossen: Das Archiv wird mit
+    Rest-TOCTOU (R8) ist für das Schreiben geschlossen: Das Archiv wird mit
     ``O_WRONLY | O_CREAT | O_EXCL`` geöffnet. Erscheint das Ziel zwischen
     ``lexists`` und dem Öffnen, schlägt das Öffnen mit ``FileExistsError`` fehl
     und wird als ``BackupFehler`` gemeldet — nichts wird überschrieben, ein
     untergeschobener Symlink wird nicht verfolgt. Danach schreibt ``tarfile``
     nur noch in den bereits geöffneten Deskriptor; ein Pfad-Rennen gibt es dort
     nicht mehr.
+
+    Nur das Aufräumen im Fehlerfall bleibt pfadbasiert (``ziel.unlink``): Wird
+    der Pfad genau zwischen Öffnen und Aufräumen ausgetauscht, könnte der
+    ``unlink`` ein fremdes Ziel treffen. Das ist ein dokumentiert akzeptiertes
+    Rest-Risiko (R8) — kein deskriptorbasiertes Aufräumen.
     """
     # lexists-Defensive (B1-K3): baumelnder Symlink gilt als belegt,
     # damit tarfile nicht durch den Link in ein fremdes Ziel schreibt.

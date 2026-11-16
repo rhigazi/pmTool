@@ -3,12 +3,12 @@ type: Task
 title: "A42: Härtungs-Klammern (B1-K2, T15-Index, O_EXCL-Backup)"
 description: Drei gesammelte Härtungs-Punkte umsetzen (B1-K2 Negativ-Check Pflichtdateien, robuste Rest-Index-Assertion test_arbeitsstand_ui T15, O_EXCL-Öffnen im Backup-Werkzeug R8-Rest-TOCTOU).
 freigabe: true
-task_status: im Review
-phase: 5 Review
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: "reviewer: A42 Review (Mutanten + Urteil)"
+aktuell: ""
 ---
 
 # Ziel
@@ -46,6 +46,13 @@ Drei aus Reviews gesammelte Härtungs-Klammern werden umgesetzt (Lückenliste `d
 - `definitions/app/tests/test_setup_verteilung.py` (ggf. B1-K2-Test)
 
 # Ergebnisse
+## 2026-11-16 — coder (Rücklauf) + PM: K1/K2/K4 behoben → **abgeschlossen**
+
+- **K1:** `_pruefe_backup_ziel`-Docstring auf neuen Stand (R8 für das **Schreiben** geschlossen, offene tarfile-Interna benannt); „Post-MVP" in Quelle + Spiegel nicht mehr vorhanden (grep-Beleg).
+- **K2:** neuer Grenzfall `test_t15_neue_spalte_verschiebt_zuordnung_nicht` (Spalte „Priorität" an Position 1 + Überhang-`td`; dokumentiert: Überhang wird von `spalten` verworfen) + tautologische Assertion ersetzt (`list(mit["spalten"].values()) == mit["zellen"]`). Mutantenprobe: alte `zellen[3]`-Form **getötet** (trifft die Statuszelle). 25 → **26 passed**.
+- **K4:** Rest-Risiko-Wortlaut eingegrenzt (Aufräum-`unlink` pfadbasiert — dokumentiert akzeptiert).
+- Drift: `diff -rq` leer, md5 Quelle=Spiegel, T7 grün. **A42 abgeschlossen** (PM, 2026-11-16).
+
 ## 2026-11-16 — reviewer: FREIGEGEBEN — Rücklauf K1/K2/K4 läuft
 
 - **Urteil:** FREIGEGEBEN (keine W-Befunde). Mutanten: 6/8 getötet (O_EXCL-Weg, Pflichtdatei-Check, Post-Copy-Block, FileExistsError-Schlucken, fremdes Ziel löschen, Reihenfolge-vor-Tausch); Mutante d (T15 zurück auf `zellen[3]`) überlebt nur, weil die Grenzprobe nicht in der Suite liegt → **K2**; Mutante g (lexists-Vorprüfung) benign (Redundanz zu O_EXCL). Spiegel byte-identisch, Sicherheitslogik geprüft (Altstand/Backup erhalten auf allen Fehlerpfaden).
