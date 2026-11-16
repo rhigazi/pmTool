@@ -17,14 +17,12 @@ status: aktuell
 
 **OKF Projekt-Manager (SPA)** — browserbasierte Ein-Personen-Oberfläche zur Verwaltung eines OKF-Projekts in Mensch-KI-Zusammenarbeit. Tracker über dem OKF-Bundle `wissen/` (keine Zweitdatenbank); die eigentliche Arbeit läuft über den OpenCode-CLI-Chat (PM + Subagenten). Regeln: `AGENTS.md` (+ `definitions/AGENTS.md` = Single Source of Truth). Workflow: PM + `planner`/`coder`/`reviewer`/`tester`/`documenter`, TDD, Commits je Takt, Sofort-Push bei angenommenen Aufgaben.
 
-# Aktueller Stand (2026-11-15, Abend)
+# Aktueller Stand (2026-11-16, Abend) — Welle abgeschlossen
 
-- **Abgeschlossen:** A1–A20 (MVP), A23/A24/A25. **Heute komplett geworden: A28** (Welle A+B, Reviews frei), **A29-Rücklauf** (Review frei, deckt Bestätigungs-Review), **A32-Nachträge** (H1/H2/H3/H6), **A33** (alle Batches B1–B9 + Nachträge).
-- **Review-frei + testbestanden, reif für Abschluss (nur Doku-Runde):** A27, A30, A31, A32.
-- **WIP:** A34-P3 (UI) — umgesetzt + Tests grün (78 + 222 Anrainer), **Review abgebrochen (Mutantenproben + Urteil offen)**, WIP-Commit `4e98f42`.
-- **Offen:** A34-P4 (Doku + PM-Umnummerierung A34→A35–A38), Doku-Runde (K-Sammlung, Standzahlen, Ergebnisprotokolle), kombinierter Testlauf (App+Root-Suite, `verify.sh`, Verteilungs-Probe), A26-Bestätigungs-Review.
-- **A39 läuft:** Projektleitung testet (Klon `/content/pmTool-test` existierte zuletzt **nicht** — Test-Befunde sind bisher **keine eingegangen**). Danach README final.
-- **Post-MVP (gesperrt ohne Weisung):** A35–A38, A22, A21.
+- **Komplett abgeschlossen: A1–A38, A40–A42.** Am 2026-11-16 wurden erledigt: Vormittag A26 (Bestätigungs-Review) + A34 (Sammellauf+Delta, Spiegel-Drift gefixt); Abend-Welle „alles frei" (Freigabe der Projektleitung): **A21** (Desktop-Modus, 70 Tests), **A22** (E2E-Regression, 127 Assertions), **A35** (Status-Mapping server-seitig, 37 Tests, JS-Spiegel weg), **A36** (`schreibgeschuetzt`, inkl. A28-K3-Rest `createTextNode`), **A37** (DOM-Harness konsolidiert, 5 Altkopien weg), **A38** (Log-Anker, 32 Tests), **A40** (Verify-Hinweis, ehrliche Teilgerüst-Remediation), **A41** (H-Definitionen geklärt: nicht rekonstruierbar), **A42** (Härtungs-Klammern, O_EXCL schließt Rest-TOCTOU). Jedes Paket mit Review + Mutantenproben + Rücklauf wo nötig; alle Urteile in den Ergebnisprotokollen.
+- **Finaler Sammellauf BESTANDEN (Snapshot `bbb36c6`):** App-Suite **1690/1690 grün**, Root-Suite **1789/1789 grün** (0 failed, 0 skipped), `verify.sh` Exit 0, Verteilungs-Probe sauber (A40-Hinweis live bestätigt), UI S1–S5 + Kurzchecks ohne Konsolenfehler. README (Endzahlen) + Lückenliste (`docs/lueckenliste-a39.md`) final.
+- **Offen:** **A39** (Test-Befunde der Projektleitung fehlen weiterhin — Klon `/content/pmTool-test` nicht vorhanden), Abnahme-Restvermerk **Fenster-Smoke A21** (braucht Display-Maschine), K-Klammern (Lückenliste Abschnitt 3), A11y-Vermerk (Unter-Aufgaben-Zeilen nur per Mausklick).
+- **Subagent-Modell:** `deepseek-v4.1-flash` (Weisung 2026-11-16); PM `mimo-v2.6-pro`.
 
 # Takte der Parallelwelle 2026-11-15 (alle gepusht, Arbeitsbaum = HEAD)
 
@@ -40,18 +38,13 @@ status: aktuell
 | 7 | `cecd2e3` | B4-Nachtrag: `test_formulare` T8 an Linktext-Vertrag angeglichen (83 grün, Mutantenprobe) | Kurz-Check morgen |
 | WIP | `4e98f42` | A34-P3 UI + A29-K1–K3 (36+42 grün, Anrainer 222 grün) | **offen** |
 
-# WIP für morgen — Rest-Umfang im Detail
+# Tagesbilanz 2026-11-16 (kein WIP offen)
 
-1. **A34-P3 (WIP `4e98f42`):** Umsetzung laut Coder-Bericht vollständig: `static/js/unteraufgaben.js` (neu: `unteraufgabenVon`, `sortiereUnteraufgaben`, `erstelleUnteraufgabenSicht`, `erstelleAnlegeSicht`, `erstellePayload` — nur `textContent`/`createElement`/`classList`), `detail.js` (Knopf `#detail-unteraufgabe-anlegen`, Formular-/Abschnittslogik, `/api/aufgaben` auch für Tasks, **A29-K1** Sperrgrund über `hatWelle`, **A29-K2** JSDoc gefixt), `tests/test_unteraufgabe_ui.py` (neu, 36 grün), `tests/test_freigabe_ui.py` (42 grün; T33/T19 auf **3 Requests**; **A29-K3** Top-5-Assertion) + je 1 Request-Budget-Zeile in `test_welle_spalte`/`test_arbeitsstand_ui`/`test_welle_zuordnung`. 6 Mutanten (coder) getötet. **Der Review wurde per STOPP abgebrochen:** Diff-Sichtung + unabhängige Testläufe waren bereits fertig (78 + 222 grün, keine Befunde), **Mutantenproben und Urteil fehlen**. Bewusste Abweichungen des Coders im Review bewerten: (1) drei Fremddateien Request-Budget (Vertragswechsel durch den dritten Request — notwendig?), (2) Save-Knopf `type="button"` + Klick-Handler (wegen `test_detail.py` A12-2: erster `type==="submit"`), (3) Fehlerkopf „Unter-Aufgaben" ohne Zähler bei Ladefehler, (4) Fokus-Assertion über lokalen `Knoten.prototype.focus`-Stub.
-2. **test_formulare T8 (Takt 7 `cecd2e3`):** fertig (Assertion `- Welle: [Welle 1: Fixture](wellen/w1.md)`, 83 grün, Mutantenprobe `_wellen_titel`→Dateistamm = rot). Nur im Sammellauf verifizieren; Kurz-Review kann mit A34-P3 laufen. Hintergrund: der B4-Linktext (Titel statt Dateistamm) war in Takt 2 mit einer rot gebliebenen Anrainer-Assertion ausgeliefert worden.
-3. **A34-P4 (Doku):** Ergebnisprotokoll vervollständigen; **A33-Liste A34→A35–A38 umnummerieren (PM-Aufgabe!)**.
+Keine laufenden Stränge, Arbeitsbaum sauber bei HEAD. Takt-Folge des Tages (Auswahl): Takt 8 (A34-P3-Review FREIGEGEBEN) → Takt 9 (A34-P4 Doku) → Takt 10 (Doku-Runde, A27–A33 abgeschlossen) → A26/A34-Abschlüsse → Umsetzungs-Welle „alles frei" (A21/A22/A35–A38/A40–A42, je Commit + Review-Vermerk) → Rückläufe (A35/A37 W1/W2/W4/W5, A36 W1/W2/K1/K3, A42 K1/K2/K4, A38/A40 W1s+Ks, A21 W1/K1/K2, A22-K-Klammern) → finaler Sammellauf. Prozess-Lektionen: (1) Testanpassungen immer mit der Produktänderung committen (W6); (2) Anrainer-Zahlen immer mit benanntem Datei-Satz belegen.
 
 # Teststände (Zählumfang „Gesamtsuite" = Root-Suite = App-Suite + `definitions/tools/tests`)
 
-- App-Suite zuletzt **voll attestiert: 1444 grün** (vor der Parallelwelle). Arbeitsbaum inkl. WIP: **1541 passed / 3 failed / 64 skipped** (B1-Review-Gegenprobe; die 3 roten = `test_formulare`-T8-Umfeld, mit Takt 7 behoben — **Sammellauf steht aus**).
-- Tools-Suite: **86 passed / 2 failed** (`test_verteilung` T4/T10 — verifizieren die App-Suite, nach Takt 7 grün zu erwarten; unverifiziert).
-- `verify.sh`, Verteilungs-Probe, Root-Suite-Gesamtzahl: **offen** — auf ruhigem Baum nachholen. **A31-K3-Regel: Verteilungs-Prüfungen nur aus committeten Snapshots!**
-
+- **Final attestiert (2026-11-16, Sammellauf `bbb36c6`):** App-Suite **1690 passed / 0 failed / 0 skipped**, Root-Suite **1789 passed / 0 failed / 0 skipped** (1690 + 99 Tools; Spiegel `tools/tests` per `collect_ignore` übersprungen). `verify.sh` Dev-Repo **Exit 0**. Verteilungs-Probe: Ziel ohne `--wissen` → Exit 1 **mit** erwartetem A40-Gerüst-Hinweis (8/8), Tools im Ziel 86 passed + 13 erwartete Skips, Quelle↔Spiegel byte-identisch.
 # K-Sammlung (für die Doku-Runde — gesammelt aus den Reviews)
 
 a28-Ergebniszeile „Fixtures setzen `neu: false`" (durch K1 veraltet); skipif-Reason-Wortlaut (`definitions/setup.sh` präzisieren); W1-Kommentar zur Mutanten-Schärfe („scharf ist die Variante ohne Titel-Kennung"); B1-K1 (T6-Zielpfad-Assertion `str(wissen)` schärfen), B1-K2 (entfallener Negativ-Check „Pflichtdateien vollständig" — Klammer für später), B1-K3 (Vermerk `lexists`-Defensive); **A31-K1** (Testzahl **1156** in Aufgaben-/Log-Texten nachziehen), **A31-K2** (AK-8-Wortlaut T15/T16), **A31-H2** (`merkeWellenTitel`-Cache-Verhalten nach Wellen-Löschen dokumentieren); Rest-Index-Assertion `test_arbeitsstand_ui` T15 (`zellen[3]`) — Härtungs-Kandidat; **A6-1:** H-Definitionen fehlen im Bundle (2026-11-16 per A41 geklärt: nicht rekonstruierbar, bewusste Dokumentationslücke); `wissen/features.md:60` A16-1-Abgleich; `a7-server.md`/`a16-start-colab.md` historische „Ausweichport"-Vermerke; **Ergebnisprotokolle vervollständigen — A26-Protokoll fehlt ganz!**; A29-Historie „Freigabe:"-Formulierungen (bewusst als Protokoll stehen).
@@ -64,12 +57,10 @@ a28-Ergebniszeile „Fixtures setzen `neu: false`" (durch K1 veraltet); skipif-R
 
 # Weiterführung — nächste Schritte (in dieser Reihenfolge)
 
-1. **A39 hat Vorrang:** Test-Befunde der Projektleitung entgegennehmen (Hauptbaum oder Klon) → als Lückenliste „was fehlt für sauberes Zusammenarbeiten" dokumentieren → Folgeaufgaben ableiten (ID + Titel im Moment der Annahme + Sofort-Push). Danach README final aktualisieren. Keine neuen Feature-Takte ohne Weisung.
-2. **WIP abschließen:** A34-P3-Review nachholen (Mutantenproben + Urteil; Diff-Sichtung/78+222 grün sind bereits bestätigt) → Takt 8; `test_formulare` T8 im Sammellauf verifizieren.
-3. **A34-P4** (Doku; Umnummerierung A34→A35–A38 = PM-Aufgabe).
-4. **Doku-Runde (`documenter`):** A27/A30/A31/A32/A28/A29/A33 abschließen; K-Sammlung abarbeiten; Standzahlen nachziehen; Ergebnisprotokolle vervollständigen (A26 fehlt!).
-5. **Kombinierter Testlauf:** App-Suite + Root-Suite + `bash definitions/verify.sh .` + Verteilungs-Probe (aus committetem Snapshot) + A26-Bestätigungs-Review; danach Sicherungs-Push.
-6. **Danach (Post-MVP):** A35–A38, A22, A21 — nur mit Weisung/Freigabe der Projektleitung.
+1. **A39 abschließen:** Test-Befunde der Projektleitung entgegennehmen (Hauptbaum oder Klon `/content/pmTool-test`) → in `docs/lueckenliste-a39.md` ergänzen → Folgeaufgaben ableiten (ID + Titel im Moment der Annahme + Sofort-Push). **Danach ist das Projekt auf aktuellem Stand fertig.**
+2. **Abnahme Projektleitung:** u. a. Fenster-Smoke A21 (Desktop-Modus auf Display-Maschine, pywebview + Linux-Backend-Hinweise in README).
+3. **K-Klammern (optional):** Lückenliste Abschnitt 3 (u. a. A11y Unter-Aufgaben-Zeilen, `.anker-ziel`-CSS, `WISSEN_DATEIEN`-Zentralisierung, `_port_belegt`-Delegation).
+4. **Keine neuen Feature-Takte ohne Weisung.**
 
 # Umgebungs-Wiederherstellung (neue Colab-Sitzung)
 
@@ -83,3 +74,4 @@ a28-Ergebniszeile „Fixtures setzen `neu: false`" (durch K1 veraltet); skipif-R
 
 1.–6.: siehe frühere Protokollstände (Projektstart, MVP A1–A20, Post-MVP A23–A25, Groß-Takt 2026-11-15 mit A27/A28/A29/A30/A31/A32/A33/A34 + STOPP/WIP `f00e81a`).
 7. Parallelwelle 2026-11-15 (Abend, diese Session): 5 parallele Coder-Stränge + Reviews; Takte 1–7 gepusht; A28/A29/A32/A33 komplett; A34-P3 als WIP (`4e98f42`) mit offenem Review; Gate-Interpretation + Welle-2-Freigabe dokumentiert; Abbruch per STOPP auf Anweisung der Projektleitung (Übergabe für morgen).
+8. Parallelwelle 2026-11-16: Abend-Pause beendet; Vormittag A26/A34 abgeschlossen; Abend-Welle „alles frei" (A21/A22/A35–A38/A40–A42) komplett umgesetzt, reviewed und per finalem Sammellauf (1690/1789 grün) bestätigt; README + Lückenliste final; A39 wartet auf Test-Befunde der Projektleitung.
