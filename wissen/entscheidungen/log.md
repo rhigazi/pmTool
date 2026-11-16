@@ -2,6 +2,14 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-16: Welle 3 freigegeben (Menschen-Kanal über die App)
+
+**Entscheidung:** Die Projektleitung hat **Welle 3 freigegeben** („W3 ist freigegeben", 2026-11-16, Menschen-Kanal). Die Freigabe wurde **von der Projektleitung selbst über die App gesetzt** (Änderung an `wellen/w3.md`: `freigabe: true`, gesetzt über `POST /api/freigabe` — Menschen-Kanal, im Arbeitsbaum als uncommittete Änderung vorgefunden und vom PM als Nutzer-Arbeit erkannt und gepusht). Damit ist der Gate-Zustand formal sauber: **A34** (einzige Aufgabe mit `welle: wellen/w3.md`) erfüllt das UND-Gate ausdrücklich (Aufgabe `freigabe: true` **und** Welle `freigabe: true`) — die Pakete A34-P3/P4 laufen nicht mehr nur auf Basis der Arbeitsanweisung. `wellen/w3.md` hat keine eigenen Aufgaben-Verweise im Body; weitere Aufgaben sind nicht betroffen (A35–A38/A22/A21 bleiben gesperrt ohne Weisung).
+
+**Begründung:** Die Telegram-Erinnerung von heute Morgen („Welle 3 in der App freigeben") wurde umgehend umgesetzt; der Menschen-Kanal `POST /api/freigabe` ist der vorgesehene Weg (KI-Weg bleibt 403). Diesmal setzte die Projektleitung die Freigabe selbst in der App — der Regelfall (Präzedenz K6 war der stellvertretende Datei-Edit; künftig/App-Weg ist jetzt Realität).
+
+**Auswirkung:** Freigabe-Gate für A34 vollständig erfüllt; A34-P3-Review (läuft) und A34-P4 sind formal gedeckt. Freigabe-`w3.md` wird mit diesem Eintrag gepusht (Sofort-Push). Status der App-Freigabe erstmals live durch die Projektleitung genutzt — A39-Test-Befunde bleiben weiterhin offen.
+
 ## 2026-11-16: Subagenten laufen mit Modell Beam; Session-Fortsetzung nach der Abend-Pause
 
 **Entscheidung:** Auf Anweisung der Projektleitung (2026-11-16, Menschen-Kanal) laufen **alle Subagenten** (`planner`/`coder`/`reviewer`/`tester`/`documenter`) mit dem Modell **Beam** (`opencode-go/beam-free`) statt `deepseek-v4.1-flash`; der Projektmanager bleibt `mimo-v2.6-pro`. Die Arbeitsreihenfolge knüpft am Übergabeprotokoll 2026-11-15 an (kein Neustart): A39 mit Vorrang (wartet auf Test-Befunde der Projektleitung), dann WIP A34-P3 abschließen (nur Mutantenproben + Urteil, Diff-Sichtung/78+222 grün sind bestätigt) → Takt 8, A34-P4 + Doku-Runde, kombinierter Testlauf, README final. Nebenbefund der Session-Start-Prüfung: die in A34-P4 als PM-Aufgabe vermerkte Umnummerierung der A33-Vorschlagsliste (A34→A35–A38) ist **bereits erledigt** (A33 führt durchgängig A35–A38; Alt-Verweise nur als historische Notiz in a34/a28) — A34-P4 reduziert sich auf Doku/Ergebnisprotokoll. Zusätzlich wurde der Skill `okf-knowledge-base` (Repo `inkeep/open-knowledge-skills`) auf Anweisung der Projektleitung nachinstalliert (`npx skills add …`, identisch zur `--global`-Sektion von `definitions/setup.sh`; Security-Check Gen Safe / Socket 0 / Snyk Low Risk; Ablage `~/.agents/skills/`, kein Repo-Eingriff).
