@@ -4,13 +4,13 @@ title: "A34: Unter-Aufgaben erstellen"
 description: Als Mensch muss ich in der Lage sein unter Aufgaben so eine Aufgabe zu
   erstellen
 freigabe: true
-task_status: in Umsetzung
-phase: 3 Umsetzung
+task_status: im Review
+phase: 5 Review
 priority: mittel
 assigned_to: coder
 welle: wellen/w3.md
 owner: ai
-aktuell: "PM: PAUSE 2026-11-15 — Paket 3 umgesetzt (WIP 4e98f42), Review offen (Mutanten + Urteil)"
+aktuell: "reviewer: A34-P3 Mutantenproben + Urteil nachgeholt (Beam)"
 ---
 
 # Ziel
