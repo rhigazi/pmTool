@@ -4,13 +4,13 @@ title: "A34: Unter-Aufgaben erstellen"
 description: Als Mensch muss ich in der Lage sein unter Aufgaben so eine Aufgabe zu
   erstellen
 freigabe: true
-task_status: im Review
-phase: 5 Review
+task_status: in Doku
+phase: 7 Dokumentation
 priority: mittel
 assigned_to: coder
 welle: wellen/w3.md
 owner: ai
-aktuell: "reviewer: A34-P3 Mutantenproben + Urteil nachgeholt (Beam)"
+aktuell: "PM: P3-Review FREIGEGEBEN (Takt 8) — A34-P4 Doku folgt (documenter)"
 ---
 
 # Ziel
@@ -654,4 +654,11 @@ fehl (`ohne_node`-Skip wie A11/A27).
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+## 2026-11-16 — reviewer (Beam): A34-P3-Review nachgeholt → **FREIGEGEBEN** (Takt 8)
+
+- **Urteil:** FREIGEGEBEN — keine überlebende Mutante, keine W-Befunde; Diff-Sichtung + unabhängige Testläufe waren bereits vor dem STOPP (2026-11-15) bestätigt, nachgeholt wurden Mutantenproben + Urteil.
+- **Mutantenproben (13/13 getötet, Restore per SHA-256 belegt):** M1 Sortierung `reverse()` (4 rot), M2 Fremd-Eltern-Filter aufgeweicht (2 rot), M3 Zähler ohne Zahl (5 rot), M4 Ladefehler still → `null` (2 rot), M5 Payload ohne `parent` (2 rot), M6 Request beim Formular-Öffnen (1 rot), M7 Doppelklick-Guard entfernt (1 rot), M8 Knopf für alle Aufgaben (4 rot), M9 `textContent`→`innerHTML` (6 rot), M10 Fokus-Stub entfernt (4 rot), M11 Abschnitt vor Inhalt (1 rot), M12 `parent` nicht letztes Feld (2 rot), M13 `welle` in Payload (2 rot). Keine Testlücke.
+- **Bewusste Abweichungen 1–4: alle akzeptabel** — (1) Request-Budget 2→3 in `test_welle_spalte`/`test_arbeitsstand_ui`/`test_welle_zuordnung`: notwendig (T43 fixiert 3 Requests), nur Budget-Zeilen mit `# A34/T43`-Kommentar, keine Assertion geschwächt; (2) Save-Knopf `type="button"` + Klick-Handler (+ `submit`-Listener für Enter): kein Vertragsbruch, vermeidet A12-2-Konflikt (erster `type="submit"` bleibt der Nachtragsknopf) → **K**: in Code-Kommentar/AGENTS vermerken; (3) Fehlerkopf „Unter-Aufgaben" ohne Zähler bei Ladefehler: konsistent zu AK-7 (Zähler erst bei erfolgreicher Liste); (4) Fokus-Assertion über lokalen `Knoten.prototype.focus`-Stub: **K** — Test-Überbrückung bis A37 (Harness-Konsolidierung), kein Produktivcode-Weg.
+- **Baselines (reviewer, Kopie `/tmp/opencode/a34p3-review`):** 78 grün reproduziert (`test_unteraufgabe_ui` 36 + `test_freigabe_ui` 42); Anrainer-Satz (6 UI-Dateien: `test_detail`, `test_liste`, `test_welle_spalte`, `test_arbeitsstand_ui`, `test_welle_zuordnung`, `test_suche`) = **278 grün** — Abweichung zur Übergabe-Zahl 222 (engerer Satz) ehrlich dokumentiert, im Sammellauf final klären.
+- **Kurz-Check Takt 7 (`cecd2e3`):** bestätigt — 83 grün, Assertion `- Welle: [Welle 1: Fixture](wellen/w1.md)` plausibel zum Vertrag.
+- **Offene Punkte → Doku-Runde:** K2/K4-Vermerke (s. o.), Request-Budget „3 Requests" in A27/A29-Doku nachziehen, Fehlerkopf-Muster dokumentieren, Anrainer-Zahl klären. Vollständiges Mutantenprotokoll im Review-Bericht (PM-Übergabe an den `documenter`).
