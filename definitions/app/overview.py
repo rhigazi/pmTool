@@ -66,8 +66,10 @@ def details(pfad: str) -> dict:
     top-level aus :mod:`status` abgeleitet (A35) — die einzige Mapping-Quelle;
     die Detailansicht spiegelt die Tabelle nicht mehr. ``owner_default`` ist die
     wirksame Anzeige-Zuständigkeit (explizites ``owner`` vor Status-Default).
-    Aufgaben (``type: Task``) erhalten zusätzlich die abgeleiteten
-    Arbeitsstatus-Felder; ``frontmatter`` bleibt roh.
+    ``schreibgeschuetzt`` (A36) markiert reservierte KI-Dateien; die Liste der
+    reservierten Namen lebt ausschließlich in :mod:`okf_bundle`. Aufgaben
+    (``type: Task``) erhalten zusätzlich die abgeleiteten Arbeitsstatus-Felder;
+    ``frontmatter`` bleibt roh.
 
     Wirft :class:`okf_bundle.BundlePfadFehler` bei Pfadausbruch oder nicht
     zulässiger Endung, :class:`FileNotFoundError`, wenn die Datei fehlt, und
@@ -89,6 +91,9 @@ def details(pfad: str) -> dict:
         "ui_status": ui_status_wert,
         "hinweis": hinweis,
         "owner_default": status.owner_default(frontmatter),
+        # A36: Schreib-UI-Grenze; auch ein Symlink auf eine reservierte Datei.
+        "schreibgeschuetzt": okf_bundle.ist_reserviert(pfad)
+        or okf_bundle.ist_reserviert(ziel),
     }
     if _text(frontmatter.get("type")) == TYP_AUFGABE:
         titel = _text(frontmatter.get("title"))

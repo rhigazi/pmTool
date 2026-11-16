@@ -599,6 +599,57 @@ def app_server(bundle):
         thread.join(timeout=5)
 
 
+# --- A28-K3-Rest: Trenner zwischen Zustand und Knopf sind Textknoten -----
+
+
+@ohne_node
+def test_a28_k3_trenner_aufgaben_freigabe_ist_textknoten():
+    ergebnis = ui_lauf_ohne_server(
+        {
+            "markdown": "# Ziel\n",
+            "frontmatter": {"title": "A1", "type": "Task"},
+            "freigabe": False,
+        },
+        "await detail.ladeDetail({ unterpunkt: 'aufgaben/a1.md' });\n"
+        "const dd = document.getElementById('detail-freigabe').parentElement;\n"
+        "return {\n"
+        "  kinder: dd.kinder.map((k) => ({ marke: k.marke, text: k.textContent })),\n"
+        "  gesamt: dd.textContent,\n"
+        "};",
+    )
+    # Der Abstand ist ein echter Textknoten — kein leeres span-Element mehr.
+    assert ergebnis["kinder"] == [
+        {"marke": "span", "text": "Nicht freigegeben"},
+        {"marke": "#text", "text": " "},
+        {"marke": "button", "text": "Freigeben"},
+    ]
+    assert ergebnis["gesamt"] == "Nicht freigegeben Freigeben"
+
+
+@ohne_node
+def test_a28_k3_trenner_wellen_freigabe_sind_textknoten():
+    ergebnis = ui_lauf_ohne_server(
+        {
+            "markdown": "# Ziel\n",
+            "frontmatter": {"title": "Welle 1", "type": "Welle"},
+            "freigabe": False,
+        },
+        "await detail.ladeDetail({ unterpunkt: 'wellen/w1.md' });\n"
+        "const dd = document.getElementById('detail-welle-freigabe').parentElement;\n"
+        "return {\n"
+        "  kinder: dd.kinder.map((k) => ({ marke: k.marke, text: k.textContent })),\n"
+        "  gesamt: dd.textContent,\n"
+        "};",
+    )
+    assert ergebnis["kinder"] == [
+        {"marke": "#text", "text": " "},
+        {"marke": "span", "text": "nicht freigegeben (Standard)"},
+        {"marke": "#text", "text": " "},
+        {"marke": "button", "text": "Welle freigeben"},
+    ]
+    assert ergebnis["gesamt"] == " nicht freigegeben (Standard) Welle freigeben"
+
+
 # --- T10: 403-Pfad (verbotener Status) -----------------------------------
 
 

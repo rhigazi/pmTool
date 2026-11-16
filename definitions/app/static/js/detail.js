@@ -71,6 +71,11 @@ const WELLE_NICHT_FREIGEGEBEN = "nicht freigegeben (Standard)";
 const AUFGABEN_ORDNER = "aufgaben/";
 const WELLEN_ORDNER = "wellen/";
 
+// A36: Schreib-UI-Grenze — nur der Server entscheidet über `schreibgeschuetzt`.
+const SCHREIBGESCHUETZT_HINWEIS_ID = "detail-schreibgeschuetzt-hinweis";
+const SCHREIBGESCHUETZT_HINWEIS =
+  "Schreibgeschützt — diese Datei pflegen Projektmanager und documenter (KI).";
+
 // R1: Nur diese beiden Status sind über die UI setzbar; Pipeline-Status nicht.
 export const STATUS_KNOEPFE = ["Klarung", "Geschlossen"];
 const OWNER_WERTE = ["mensch", "ai"];
@@ -328,6 +333,13 @@ function erstelleStatusAnzeige(status, hinweis) {
   return anzeige;
 }
 
+/** Lese-Anzeige des owner ohne Bedienung (schreibgeschützte Dateien, A36). */
+function erstelleOwnerAnzeige(owner) {
+  const anzeige = document.createElement("span");
+  anzeige.textContent = owner ?? KEINE_ANGABE;
+  return anzeige;
+}
+
 function erstelleOwnerAuswahl(pfad, owner) {
   const auswahl = document.createElement("select");
   auswahl.id = OWNER_AUSWAHL_ID;
@@ -477,25 +489,27 @@ function erstelleStatusKnopf(status, aktiv) {
   return knopf;
 }
 
-function erstelleAktionen(pfad, status, anlegeKnopf = null) {
+function erstelleAktionen(pfad, status, anlegeKnopf = null, gesperrt = false) {
   const aktionen = document.createElement("div");
   aktionen.className = "detail-aktionen";
 
   const statusKnoepfe = [];
-  for (const wert of STATUS_KNOEPFE) {
-    const knopf = erstelleStatusKnopf(wert, wert === status);
-    knopf.addEventListener("click", async () => {
-      // Parallelklicks sperren: genau eine Schreibaktion je Auslöser (A12-2).
-      if (statusKnoepfe.some((kandidat) => kandidat.disabled)) return;
-      for (const kandidat of statusKnoepfe) kandidat.disabled = true;
-      try {
-        await speichereMeta(pfad, { status: wert }, STATUS_ERFOLG);
-      } finally {
-        for (const kandidat of statusKnoepfe) kandidat.disabled = false;
-      }
-    });
-    statusKnoepfe.push(knopf);
-    aktionen.append(knopf);
+  if (!gesperrt) {
+    for (const wert of STATUS_KNOEPFE) {
+      const knopf = erstelleStatusKnopf(wert, wert === status);
+      knopf.addEventListener("click", async () => {
+        // Parallelklicks sperren: genau eine Schreibaktion je Auslöser (A12-2).
+        if (statusKnoepfe.some((kandidat) => kandidat.disabled)) return;
+        for (const kandidat of statusKnoepfe) kandidat.disabled = true;
+        try {
+          await speichereMeta(pfad, { status: wert }, STATUS_ERFOLG);
+        } finally {
+          for (const kandidat of statusKnoepfe) kandidat.disabled = false;
+        }
+      });
+      statusKnoepfe.push(knopf);
+      aktionen.append(knopf);
+    }
   }
 
   if (anlegeKnopf) aktionen.append(anlegeKnopf);
@@ -514,6 +528,14 @@ function istFreigegeben(daten) {
   return daten?.freigabe === true;
 }
 
+/**
+ * A36: Nur ein echtes ``schreibgeschuetzt: true`` sperrt die Schreib-UI.
+ * Die reservierte Namensliste kennt die UI nicht — sie folgt dem Server.
+ */
+export function istSchreibgeschuetzt(daten) {
+  return daten?.schreibgeschuetzt === true;
+}
+
 /** Hinweis für Aufgaben ohne Kennung, inkl. nächster freier Kennung (wenn geliefert). */
 function erstelleNeuHinweis(daten) {
   const hinweis = document.createElement("p");
@@ -528,13 +550,16 @@ function erstelleNeuHinweis(daten) {
 }
 
 /** Zustand + Knopf der Freigabe; schreibt über den Menschen-Kanal der App. */
-function erstelleFreigabeAnzeige(pfad, daten) {
+function erstelleFreigabeAnzeige(pfad, daten, gesperrt = false) {
   const freigegeben = istFreigegeben(daten);
 
   const bereich = document.createDocumentFragment();
   const anzeige = document.createElement("span");
   anzeige.id = FREIGABE_STATUS_ID;
   anzeige.textContent = freigegeben ? FREIGABE_TEXT : NICHT_FREIGEGEBEN_TEXT;
+  bereich.append(anzeige);
+  // A36: Schreibgeschützte Datei zeigt den Zustand, aber keine Bedienung.
+  if (gesperrt) return bereich;
 
   const knopf = document.createElement("button");
   knopf.type = "button";
@@ -552,10 +577,8 @@ function erstelleFreigabeAnzeige(pfad, daten) {
     }
   });
 
-  // Abstand zwischen Zustand und Knopf als eigenes Element (kein style.css-Eingriff).
-  const trenner = document.createElement("span");
-  trenner.textContent = " ";
-  bereich.append(anzeige, trenner, knopf);
+  // Abstand zwischen Zustand und Knopf als Textknoten (kein style.css-Eingriff).
+  bereich.append(document.createTextNode(" "), knopf);
   return bereich;
 }
 
@@ -589,15 +612,20 @@ function erstelleFreigabeHinweis(daten) {
  * Wellen-Freigabe im Wellen-Detail: Anzeige „Freigabe …" plus ein Knopf über
  * den Menschen-Kanal (``POST /api/freigabe``), Muster wie der Aufgaben-Knopf.
  */
-function erstelleWellenFreigabeAnzeige(pfad, daten) {
+function erstelleWellenFreigabeAnzeige(pfad, daten, gesperrt = false) {
   const freigegeben = istFreigegeben(daten);
 
   const bereich = document.createDocumentFragment();
-  const trenner = document.createElement("span");
-  trenner.textContent = " ";
   const anzeige = document.createElement("span");
   anzeige.id = WELLE_FREIGABE_STATUS_ID;
   anzeige.textContent = freigegeben ? WELLE_FREIGEGEBEN : WELLE_NICHT_FREIGEGEBEN;
+  // A36: Nur lesend — Zustand bleibt, Knopf entfällt.
+  if (gesperrt) {
+    bereich.append(anzeige);
+    const hinweis = erstelleFreigabeHinweis(daten);
+    if (hinweis) bereich.append(hinweis);
+    return bereich;
+  }
 
   const knopf = document.createElement("button");
   knopf.type = "button";
@@ -614,9 +642,13 @@ function erstelleWellenFreigabeAnzeige(pfad, daten) {
     }
   });
 
-  const trennerKnopf = document.createElement("span");
-  trennerKnopf.textContent = " ";
-  bereich.append(trenner, anzeige, trennerKnopf, knopf);
+  // Abstände als Textknoten (A28-K3-Rest): kein leeres span-Element.
+  bereich.append(
+    document.createTextNode(" "),
+    anzeige,
+    document.createTextNode(" "),
+    knopf,
+  );
 
   const hinweis = erstelleFreigabeHinweis(daten);
   if (hinweis) bereich.append(hinweis);
@@ -664,10 +696,21 @@ function erstelleSperrHinweis(daten) {
   return hinweis;
 }
 
+/** Hinweis auf einer schreibgeschützten Datei (A36): warum fehlen die Aktionen. */
+function erstelleSchreibgeschuetztHinweis() {
+  const hinweis = document.createElement("p");
+  hinweis.id = SCHREIBGESCHUETZT_HINWEIS_ID;
+  hinweis.classList.add("hinweis");
+  hinweis.setAttribute("role", "status");
+  hinweis.textContent = SCHREIBGESCHUETZT_HINWEIS;
+  return hinweis;
+}
+
 function erstelleKopf(pfad, daten, wellen, anlegeKnopf = null) {
   const frontmatter =
     daten.frontmatter && typeof daten.frontmatter === "object" ? daten.frontmatter : {};
   const { status, hinweis } = ermittleStatus(daten);
+  const gesperrt = istSchreibgeschuetzt(daten);
 
   const kopf = document.createElement("div");
   kopf.className = "detail-kopf";
@@ -683,25 +726,36 @@ function erstelleKopf(pfad, daten, wellen, anlegeKnopf = null) {
   // Arbeitsstatus (A30): abgeleitet aus `aktuell`, nur wenn vorhanden.
   const arbeitsstand = formatiereArbeitsstand(daten);
   if (arbeitsstand) anhaengenFeld(angaben, "Arbeitsstatus", arbeitsstand);
-  anhaengenFeld(angaben, "owner", erstelleOwnerAuswahl(pfad, ermittleOwner(daten)));
+  const owner = ermittleOwner(daten);
+  anhaengenFeld(
+    angaben,
+    "owner",
+    gesperrt ? erstelleOwnerAnzeige(owner) : erstelleOwnerAuswahl(pfad, owner),
+  );
   if (istAufgabe(pfad, frontmatter)) {
+    const welle = feld(frontmatter, "welle");
     anhaengenFeld(
       angaben,
       "Welle",
-      erstelleWellenAuswahl(pfad, feld(frontmatter, "welle"), wellen),
+      gesperrt ? welle ?? KEINE_ANGABE : erstelleWellenAuswahl(pfad, welle, wellen),
     );
-    anhaengenFeld(angaben, "Freigabe", erstelleFreigabeAnzeige(pfad, daten));
+    anhaengenFeld(angaben, "Freigabe", erstelleFreigabeAnzeige(pfad, daten, gesperrt));
   } else if (pfad.startsWith(WELLEN_ORDNER)) {
-    anhaengenFeld(angaben, "Freigabe", erstelleWellenFreigabeAnzeige(pfad, daten));
+    anhaengenFeld(
+      angaben,
+      "Freigabe",
+      erstelleWellenFreigabeAnzeige(pfad, daten, gesperrt),
+    );
   }
   kopf.append(angaben);
+  if (gesperrt) kopf.append(erstelleSchreibgeschuetztHinweis());
   if (istAufgabe(pfad, frontmatter) && daten?.neu === true) {
     kopf.append(erstelleNeuHinweis(daten));
   }
   if (istAufgabe(pfad, frontmatter) && daten?.wirksam_freigegeben === false) {
     kopf.append(erstelleSperrHinweis(daten));
   }
-  kopf.append(erstelleAktionen(pfad, status, anlegeKnopf));
+  kopf.append(erstelleAktionen(pfad, status, anlegeKnopf, gesperrt));
 
   return kopf;
 }
@@ -832,10 +886,11 @@ function zeichne(ziel, pfad, daten, zusatz) {
   const frontmatter =
     daten.frontmatter && typeof daten.frontmatter === "object" ? daten.frontmatter : {};
   const aufgabe = istAufgabe(pfad, frontmatter);
+  const gesperrt = istSchreibgeschuetzt(daten);
   // Unter-Aufgaben (Tiefe 1) bekommen weder Anlegen-Knopf noch Abschnitt.
   const istUnteraufgabe = Boolean(feld(frontmatter, "parent"));
   const anlege =
-    aufgabe && !istUnteraufgabe && ermittleStatus(daten).status !== GESCHLOSSEN
+    aufgabe && !istUnteraufgabe && !gesperrt && ermittleStatus(daten).status !== GESCHLOSSEN
       ? erstelleAnlegeSicht(pfad, () => ladeDetail({ unterpunkt: pfad }))
       : null;
 
@@ -851,7 +906,8 @@ function zeichne(ziel, pfad, daten, zusatz) {
   const aufgabenSicht = erstelleAufgabenSicht(pfad, zusatz.aufgaben);
   if (aufgabenSicht) teile.push(aufgabenSicht);
 
-  teile.push(erstelleNachtragFormular(pfad));
+  // A36: Schreibgeschützte Dateien bekommen kein Nachtragsformular.
+  if (!gesperrt) teile.push(erstelleNachtragFormular(pfad));
   ziel.replaceChildren(...teile);
 }
 
@@ -911,7 +967,10 @@ export async function ladeDetail({ unterpunkt } = {}) {
 
   const frontmatter =
     daten.frontmatter && typeof daten.frontmatter === "object" ? daten.frontmatter : {};
-  const wellen = await ladeWellenListe(istAufgabe(pfad, frontmatter));
+  // A36: Schreibgeschützte Dateien brauchen keine Wellenliste (keine Auswahl).
+  const wellen = await ladeWellenListe(
+    istAufgabe(pfad, frontmatter) && !istSchreibgeschuetzt(daten),
+  );
   // A34: Unter-Aufgaben kommen aus `GET /api/aufgaben`; Aufgaben brauchen die
   // Liste auch dann, wenn sie als Unter-Aufgabe keinen Abschnitt zeigen (T43).
   const wellenSicht = pfad.startsWith(WELLEN_ORDNER);

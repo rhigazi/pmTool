@@ -3,11 +3,12 @@ type: Task
 title: "A36: schreibgeschuetzt-Signal (A12-Schreib-UI-Grenze)"
 description: Die API markiert reservierte Dateien als schreibgeschützt, die UI blendet Schreibaktionen
   aus — der Server-403 bleibt zweite Barriere.
-task_status: offen
-phase: 2 Planung
+task_status: im Review
+phase: 5 Review
 priority: mittel
 assigned_to: coder
 owner: ai
+aktuell: "reviewer: A36 Review (Mutanten + Urteil)"
 freigabe: true
 ---
 
@@ -35,4 +36,11 @@ Noch keine Einträge — die Planung ergänzt die betroffenen Dateien.
 
 # Ergebnisse
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.
+## 2026-11-16 — coder (Welle B): `schreibgeschuetzt`-Signal — 25 neue Tests grün
+
+- **Ergebnis:** `overview.details()` liefert top-level `schreibgeschuetzt` (`okf_bundle.ist_reserviert(pfad) or ist_reserviert(aufgeloest)` — Symlink auf `log.md` gilt als gesperrt; keine eigene Namensliste). `detail.js`: neuer Export `istSchreibgeschuetzt(daten)` (**nur exakt `true`** sperrt, analog `freigabe`-Muster); bei gesperrten Dateien entfallen Nachtragsformular, owner-Umschalter (Wert als Text), Statusknöpfe, Welle-Auswahl, Freigabe-/Wellen-Freigabe-Knopf, Anlegen-Knopf; Freigabe-Zustand bleibt lesbar; erklärender Hinweis `detail-schreibgeschuetzt-hinweis`; `/api/wellen` wird für gesperrte Dateien nicht geladen. Server-403 unverändert (zweite Barriere).
+- **Bewusst kein Listen-Feld:** `okf_bundle.scan()` filtert reservierte Dateien aus — in den Listen kann `schreibgeschuetzt: true` nie auftreten (als Test T5 festgehalten).
+- **A28-K3-Rest gelöst:** Trenner zwischen Zustand und Knopf jetzt `document.createTextNode(" ")` (Aufgaben- und Wellen-Freigabe, beide Trenner); in `test_detail.py` zwei **scharfe** Trenner-Assertions ergänzt (es existierte vorher kein Trenner-Test) — `test_detail.py` 56 → **58**.
+- **Tests:** neu `test_schreibschuetzt_server.py` (16: reservierte Wurzel-/Nested-Dateien, Symlink-Fall, normale Dateien `false`, Listen ohne reservierte Einträge, 403-Bestandsschutz, Signal-Quelle `ist_reserviert`) + `test_schreibschuetzt_ui.py` (9: keine Schreibaktionen + Hinweis, Wellen-/Aufgaben-Variante, kein exaktes `true` → volle UI, keine Dateinamen im JS). TDD: 15 failed/68 passed → alles grün. `test_arbeitsstand.py` T12 um `schreibgeschuetzt` ergänzt. Anrainer **691** grün.
+- **Bewusste Abweichungen:** AK/Testfelder der Aufgaben-Datei waren leer (Grundlage: A33-Befund A12-Schreib-UI + Schreibrechte-Matrix der Spec + A37-Nachtrag); kein Listen-Feld (s. o.).
+- **Offen:** Review läuft; Doku (`schreibgeschuetzt` im Read-Modell der Spec, A37-Rest als erledigt) → Doku-Runde.

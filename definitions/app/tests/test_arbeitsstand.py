@@ -261,10 +261,11 @@ def test_t12_api_file_liefert_felder_top_level(client, bundle):
     # A33-K2: exakte Schlüsselmenge statt „enthalten / enthalten nicht". Der
     # Vertrag von ``/api/file`` für ``type: Task`` umfasst A8 (Basis), A28
     # (``neu``/``kennung``/``naechste_kennung``/``freigabe``), A29
-    # (``welle_freigabe``/``wirksam_freigegeben``), A30 (Arbeitsstatus) und
+    # (``welle_freigabe``/``wirksam_freigegeben``), A30 (Arbeitsstatus),
     # A35 (``ui_status``/``hinweis``/``owner_default`` — Status-Mapping
-    # server-seitig). ``freigabe_hinweis`` fehlt hier, weil der Rohwert
-    # fehlt/gültig ist — den Ungültig-Fall prüft ``test_freigabe.py``.
+    # server-seitig) und A36 (``schreibgeschuetzt`` — Schreib-UI-Grenze).
+    # ``freigabe_hinweis`` fehlt hier, weil der Rohwert fehlt/gültig ist —
+    # den Ungültig-Fall prüft ``test_freigabe.py``.
     assert set(daten) == {
         "frontmatter",
         "markdown",
@@ -280,6 +281,7 @@ def test_t12_api_file_liefert_felder_top_level(client, bundle):
         "wirksam_freigegeben",
         "ui_status",
         "hinweis",
+        "schreibgeschuetzt",
         "owner_default",
     }
     assert daten["arbeitsrolle"] == "coder"
