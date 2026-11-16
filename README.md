@@ -118,7 +118,7 @@ Direkt ohne `start.sh` (z. B. in einem per `setup.sh` verteilten Projekt): `pyth
 ## Funktionen der Oberfläche
 
 - **Listenansicht (Übersicht):** Tabelle aller Punkte mit Status, `owner`, „zuletzt geändert", **Welle** (A31) und Arbeitsstatus-Zeile (A30: `aktuell` der Subagenten); Filter nach den 6 UI-Status und nach `owner` (alle/mensch/ai/ohne), Filter nach Welle (A27); **Suchfeld** (A25, mehrere Wörter = UND, umlaut-/ß-tolerant, kombinierbar mit den Filtern). „Klarung"-Zeilen sind hervorgehoben; Aufgaben ohne zugewiesene Kennung tragen die Marke **„neu"** (A28) mit Kennungs-Hinweis und Freigabe-Knopf (Menschen-Kanal `POST /api/freigabe`).
-- **Detailansicht:** Frontmatter-Kopf und gerendertes Markdown (eigener, XSS-sicherer Minimal-Renderer), Formular „Nachtrag einfügen", owner-Umschalter, ausschließlich die Status-Buttons `Klarung` und `Geschlossen`; **Wellen-Zuordnung** per Dropdown (A27) und **Sperrgrund-Anzeige**, solange Aufgabe oder zugeordnete Welle nicht freigegeben sind (A29).
+- **Detailansicht:** Frontmatter-Kopf und gerendertes Markdown (eigener, XSS-sicherer Minimal-Renderer), Formular „Nachtrag einfügen", owner-Umschalter, ausschließlich die Status-Buttons `Klarung` und `Geschlossen`; Status und owner kommen aus den serverseitig abgeleiteten Feldern `ui_status`/`hinweis`/`owner_default` (A35); **Wellen-Zuordnung** per Dropdown (A27) und **Sperrgrund-Anzeige**, solange Aufgabe oder zugeordnete Welle nicht freigegeben sind (A29).
 - **Unter-Aufgaben (A34):** Knopf „Unter-Aufgabe anlegen" in der Detailansicht einer Aufgabe (Inline-Formular, Kennung `A{xxx}.{uuu}` vergibt die App, `welle` wird geerbt); Abschnitt „Unter-Aufgaben (n)" mit Tabelle, Tiefe genau eine Ebene.
 - **Wellen:** Freigabe-Marke „freigegeben/nicht freigegeben" in der Wellen-Liste (A29), Freigabe-Knopf im Wellen-Detail (Menschen-Kanal), Ansicht „Aufgaben dieser Welle (n)".
 - **Formulare:** neue **Aufgabe** oder **Welle** anlegen — mit Erfolgsanzeige und kopierbarem Kurzkontext für die Übergabe an die KI (Wellen-Linktext zeigt den Wellen-Titel).
@@ -135,6 +135,7 @@ Alles liegt im OKF-Bundle **[wissen/](wissen/index.md)** — Markdown mit YAML-F
 
 - **Nachträge** der Projektleitung stehen als sichtbarer Block direkt in der jeweiligen Datei: `> **Nachtrag (Mensch, YYYY-MM-DD):** …`
 - **Reservierte Dateien** wie `index.md`, `log.md`, `features.md` pflegt ausschließlich die KI (Projektmanager/`documenter`); die App lehnt Schreibzugriffe darauf mit **403** ab. Schreibbar sind über die App: Nachtrag anfügen, Aufgabe/Welle anlegen, `owner` ändern sowie `task_status` auf `Klarung` oder `Geschlossen` setzen.
+- Die Lese-API leitet `ui_status`, `hinweis` und `owner_default` serverseitig aus `status.py` ab (einzige Mapping-Quelle) und markiert reservierte Dateien top-level mit `schreibgeschuetzt: true` (A35/A36). Bei `true` blendet die Detailansicht alle Schreibaktionen aus und zeigt einen Hinweis; der Server-403 bleibt als zweite Barriere bestehen.
 - Schreibzugriffe erfolgen atomar; es gibt im MVP kein Locking (gleichzeitige Schreibzugriffe von KI und App sind ein bekanntes Risiko).
 
 ## Entwicklung & Tests

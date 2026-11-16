@@ -18,11 +18,18 @@ Die Schreib-UI bietet auf reservierten Dateien (index.md/features.md/log.md) Akt
 
 # Akzeptanzkriterien
 
-Noch keine Einträge — der `planner` ergänzt/schärft sie. Server-403 bleibt als zweite Barriere unverändert bestehen.
+- **AK-1 (Signal):** `GET /api/file` liefert **top-level** `schreibgeschuetzt` für jede Datei, immer vorhanden (`true`/`false`). Berechnet aus `okf_bundle.ist_reserviert(pfad) or ist_reserviert(ziel)` — keine eigene Namensliste in `overview.py` oder im JavaScript.
+- **AK-2 (Reservierte Dateien):** `index.md`, `log.md`, `features.md` und verschachtelte `aufgaben/index.md` sind `true`; normale Aufgaben/Wellen `false`. Ein Symlink auf eine reservierte Datei gilt ebenfalls als gesperrt. Lesen bleibt vollständig (Frontmatter, Markdown, Nachtrag-Liste).
+- **AK-3 (UI-Ausblendung):** Nur ein exaktes `schreibgeschuetzt === true` sperrt. Dann entfallen Nachtragsformular, owner-Umschalter (Wert bleibt als Text), Statusknöpfe, Wellen-Auswahl, Freigabe-/Wellen-Freigabe-Knopf und Anlegen-Knopf; ein erklärender Hinweis (`detail-schreibgeschuetzt-hinweis`) erscheint; `/api/wellen` wird nicht geladen.
+- **AK-4 (Fail-open nur ohne Signal):** Fehlt das Feld oder ist es nicht exakt `true` (`false`, `null`, `"true"`, `1`), bleibt die volle Schreib-UI bedienbar und es gibt **keinen** Sperrhinweis.
+- **AK-5 (Zweite Barriere):** Der Server-403 für Schreibzugriffe auf reservierte Dateien (`/api/nachtrag`, `/api/meta`, `/api/freigabe`) bleibt unverändert bestehen.
+- **AK-6 (Listen):** `/api/overview`, `/api/aufgaben`, `/api/wellen` führen keine reservierten Dateien und kein Schreibschutz-Feld (dort keine Schreibaktionen); eine Symlink-Kante kann in Listen erscheinen und ist dokumentiert.
 
 # Testfälle (TDD)
 
-Noch keine Einträge — der `planner` ergänzt die Testfälle.
+- `definitions/app/tests/test_schreibschuetzt_server.py` (**16**): T1 reservierte Details `true` (parametrisiert), T2 normale Dateien `false`, T3 Inhalt bleibt lesbar, T4 Symlink auf `log.md` ist gesperrt, T5 Listen ohne reservierte Einträge/ohne Markierung, T6 Schreibzugriffe bleiben 403 (parametrisiert), T7 Signalquelle ist `okf_bundle.ist_reserviert` (Monkeypatch).
+- `definitions/app/tests/test_schreibschuetzt_ui.py` (**9**): T1 reservierte Datei ohne Schreibaktionen + Sperrhinweis, T2 reservierte Welle (Zustand lesbar, kein Knopf), T3 reservierte Aufgabe (Werte statt Bedienung, kein Anlegen, keine Wellenliste), T4 ohne exaktes Signal volle UI inkl. Negativfall „kein Hinweis" (parametrisiert), T5 keine reservierte Namensliste in `detail.js`.
+- **Regression:** `test_detail.py` (+2 scharfe `createTextNode`-Trenner-Assertions, 56→58), `test_arbeitsstand.py` T12 (+`schreibgeschuetzt`); A37-Harness-Überbrückung entfällt (Fokus über echten DOM).
 
 # Kontext
 
@@ -38,6 +45,10 @@ Noch keine Einträge — der `planner` ergänzt die Testfälle.
 - `definitions/app/tests/test_detail.py` (+2 Trenner-Assertions), `test_arbeitsstand.py` (T12 +`schreibgeschuetzt`)
 
 # Ergebnisse
+## 2026-11-16 — documenter: AK-/Testfall-Blöcke nachgezogen (Review A36-K2)
+
+- Aus den Ergebnis-Einträgen und dem Code-Stand belegt: AK-1–AK-6 (Signal, reservierte Dateien/Symlink, UI-Ausblendung nur bei exakt `true`, Fail-open ohne Signal, Server-403, Listen) und die Testzuordnung (16 Server + 9 UI + Regression). K5 (Kosmetik) bleibt als Klammer offen.
+
 ## 2026-11-16 — coder (Rücklauf) + PM: W1/W2/K1/K3 behoben → **abgeschlossen**
 
 - **W1:** `schreibAktionen()` prüft jetzt auch `anlegen` (`#unteraufgabe-anlegen`); T1/T3 `anlegen is False`, T4-Kontrollprobe `is True` — Mutante M8 (Anlegen-Guard entfernt) **getötet**.

@@ -18,11 +18,19 @@ Der Status-Mapping-Spiegel in `detail.js` (`TASK_STATUS_UI`/`OWNER_DEFAULTS`) du
 
 # Akzeptanzkriterien
 
-Noch keine Einträge — der `planner` ergänzt/schärft sie (Grundlage: Mapping-Matrix über die API + UI-Regression).
+- **AK-1 (Server-Felder):** `GET /api/file` liefert **top-level** `ui_status`, `hinweis` und `owner_default` für alle Dateitypen (Aufgaben, Wellen, Projektdateien); die Werte stammen ausschließlich aus `status.py`. Das rohe `frontmatter` bleibt unverändert (kein Schreibpfad, keine Umbenennung).
+- **AK-2 (Mapping-Matrix):** Alle 11 `task_status`-Werte bilden auf den Spec-Status ab (`offen`→Offen, `in Klärung`→Klarung, `in Planung`/`geplant`→Offen, `in Umsetzung`→In Arbeit, `im Review`/`im Test`→Testing, `in Doku`→Dokumentation, `zur Abnahme`→Klarung, `abgeschlossen`→Geschlossen, `pausiert`→Offen mit Hinweis `pausiert`); `owner_default` folgt derselben Tabelle (u. a. `in Klärung`/`zur Abnahme`→`mensch`, die übrigen aktiven Status→`ai`, `abgeschlossen`/`pausiert`→`null`).
+- **AK-3 (owner-Präzedenz):** Ein explizites `owner` im Frontmatter hat Vorrang vor dem Status-Default; `owner_default` ist damit die wirksame Anzeige-Zuständigkeit.
+- **AK-4 (Wellen/Unbekanntes):** Wellen ohne `task_status` nutzen ihr `status`-Feld. Ein unbekannter Wert ergibt `ui_status: "Offen"` mit dem Rohwert als `hinweis`; fehlen beide Statusfelder, steht `hinweis: "ohne Status"`.
+- **AK-5 (`hinweis`-Format):** `hinweis` ist **immer** vorhanden — `null`, wenn es keinen gibt (stabileres Antwortformat statt Weglassen).
+- **AK-6 (UI ohne Spiegel):** `detail.js` nutzt nur die Serverfelder; `TASK_STATUS_UI`/`OWNER_DEFAULTS`/`UI_STATUS_WERTE` sind entfernt. Ohne Serverfeld wird nichts abgeleitet (Fallback „Offen", bewusst keine zweite Mapping-Quelle); der owner-Fallback liest nur das rohe `frontmatter.owner`. Keine HTML-Senken (`innerHTML` u. a.), Hinweise bleiben Text (`textContent`).
+- **AK-7 (Bestand):** Die Übersicht (`/api/overview`) bleibt unverändert; `overview.details()` (Direktaufruf) und `/api/file` liefern dieselben abgeleiteten Werte.
 
 # Testfälle (TDD)
 
-Noch keine Einträge — der `planner` ergänzt die Testfälle.
+- `definitions/app/tests/test_status_mapping_server.py` (**19**): T1 Mapping-Matrix über die API (parametrisiert, alle 11 `task_status`), T2 explizites `owner` vor Status-Default, T3 unbekannter `task_status` → Offen + Hinweis, T4 Wellen-`status`-Feld, T5 unbekannter Wellen-Status, T6 fehlende Statusfelder → „ohne Status", T7 `hinweis` immer vorhanden, T8 `overview.details()` ↔ API gleich, T9 Übersicht unverändert.
+- `definitions/app/tests/test_status_mapping_ui.py` (**18**, nach W1-Rücklauf **20**): T1 JS-Spiegel entfernt, T2 Serverfelder im JS genutzt, T3 keine HTML-Senken, T4 Status aus `ui_status`, T5 ohne Serverfeld kein JS-Mapping (parametrisiert inkl. `frontmatter.status`), T6 owner aus `owner_default`, T7 owner-Fallback auf rohes Frontmatter, T8–T11 DOM-Regression (Status/Hinweis/owner aus Server, `task_status` ignoriert, XSS bleibt Text).
+- **Regression (bestehende Dateien):** `test_detail.py` (7 Spiegeltests auf den Server-Vertrag umgestellt), `test_arbeitsstand.py` T12 (exakte Schlüsselmenge +3), `test_unteraufgabe_ui.py` (2 Stubs `ui_status="Geschlossen"`).
 
 # Kontext
 
@@ -32,9 +40,17 @@ Noch keine Einträge — der `planner` ergänzt die Testfälle.
 
 # Betroffene Dateien
 
-Noch keine Einträge — die Planung ergänzt die betroffenen Dateien.
+- `definitions/app/overview.py` — `details()` top-level `ui_status`/`hinweis`/`owner_default` aus `status.py`
+- `definitions/app/status.py` — unverändert die einzige Mapping-Quelle (`TASK_STATUS_MAPPING`, `ui_status()`, `owner_default()`)
+- `definitions/app/static/js/detail.js` — JS-Spiegel entfernt, `ermittleStatus()`/`ermittleOwner()` konsumieren die Serverfelder
+- `definitions/app/tests/test_status_mapping_server.py` (neu, 19), `test_status_mapping_ui.py` (neu, 18/20)
+- `definitions/app/tests/test_detail.py` (7 Spiegeltests), `test_arbeitsstand.py` (T12), `test_unteraufgabe_ui.py` (2 Stubs)
 
 # Ergebnisse
+## 2026-11-16 — documenter: AK-/Testfall-/Datei-Blöcke nachgezogen (Review A36-K2)
+
+- Aus den Ergebnis-Einträgen und dem tatsächlichen Code-Stand belegt: AK-1–AK-7 (Serverfelder, Mapping-Matrix, owner-Präzedenz, Wellen/Unbekanntes, `hinweis`-Format, UI ohne Spiegel, Bestand) und die Testzuordnung (19 Server + 18/20 UI + Regression). Keine neue Quelle, keine erfundenen Fälle.
+
 ## 2026-11-16 — coder (Rücklauf) + PM: W1/W2 behoben → **abgeschlossen**
 
 - **W1:** `test_t5_ohne_server_status_kein_js_mapping` um `{"status": "Geschlossen"}` und `{"frontmatter": {"status": "Geschlossen"}}` parametrisiert — Mutante M15 (JS-Fallback auf `frontmatter.status`) jetzt **getötet** (18 → 20 Tests in `test_status_mapping_ui.py`).

@@ -28,7 +28,16 @@ Vorgabe der Projektleitung (2026-11-15): nach Abschluss der Feature-Strecke geme
 
 - **A33-B5/B6/B8 — Detail-Protokolle fehlen:** Umsetzung ist code-belegt (Commit `ef68598`; `server.py` ohne Pfad-Leak, Body-Hash-Assertions, `istDateiAntwort` konsolidiert), die einzelnen Ergebnis-Einträge sind nicht rekonstruierbar (Protokolllücke, ehrlich ausgewiesen).
 - **Protokolllücken A32/A33:** Uhrzeiten/Coder-Identität bei rekonstruierten Rückwärts-Einträgen nicht belegbar — jeweils als Protokolllücke gekennzeichnet.
-- **Härtungs-Klammer (gesammelt, Post-MVP-Kandidaten):** B1-K2 Negativ-Check „Pflichtdateien vollständig"; Rest-Index-Assertion `test_arbeitsstand_ui` T15 (`zellen[3]`); A24-R8 Rest-TOCTOU (`O_EXCL`-Öffnen); Fehlerkopf „Unter-Aufgaben" ohne Zähler ist dokumentiertes Muster (keine Aktion).
+- **Härtungs-Klammer (gesammelt, Stand 2026-11-16):** Die bisherigen drei Punkte sind mit [A42](../wissen/aufgaben/a42-haertungs-klammern.md) umgesetzt (B1-K2 Negativ-Check „Pflichtdateien vollständig", T15-Index-Assertion `test_arbeitsstand_ui`, `O_EXCL`-Öffnen gegen den A24-R8-Rest-TOCTOU). Neu aus den heutigen Reviews:
+  - **A22-Rest — erledigt:** A22 ist review-frei abgeschlossen (keine W-Befunde); die Beobachtungen K1/K2/K5/K8 sind **zwischenzeitig ebenfalls erledigt** (2026-11-16, Commit `27f3d12`: Tautologie ersetzt, 403 byte-genau per Hash, Mitternachts-Kante simuliert gelöst, Skip sichtbar — 127 Assertions), kein offener Feature-Rest.
+  - **A36-K5 — Kosmetik:** offen (nur Text-/Formatierungsdetail), keine Verhaltenswirkung.
+  - **A38-K3 — CSS-Hervorhebung `.anker-ziel`:** Klasse + Fokusring sind gesetzt; das eigentliche Styling gehört in einen späteren CSS-Takt.
+  - **A38-K6 — keine UI-Liste für Log-Eintragslinks:** A14-9-Kernfall „Entscheidungen" ist erfüllt; bewusst keine weitere Liste (keine Aktion).
+  - **A40-K1 — `-e` statt `-f`:** offen (geerbte Prüf-/Meldungskante in `verify.sh`).
+  - **A40-K4 — `WISSEN_DATEIEN` doppelt gepflegt:** offen, Drift-Risiko zwischen `setup.sh` und `verify.sh` (eine gemeinsame Quelle wäre der saubere Schnitt).
+  - **A22-M6/M10/M11 — Schichtungs-Notiz:** bereits belegt (Meta-Guard redundant zum Server-Guard; `bool(raw)`/Whitelist in `test_freigabe.py`/`test_meta.py` scharf geprüft) — keine Aktion.
+  - **Fehlerkopf „Unter-Aufgaben" ohne Zähler:** dokumentiertes Muster, keine Aktion.
+- **Prozess-Lektionen:** Testanpassungen immer **mit** der Produktänderung committen (W6: Einzel-Commit `e2ef34f` war allein rot); Anrainer-Zahlen immer mit **benanntem Datei-Satz** belegen (sonst sind „78+222"-Zahlen nicht prüfbar).
 
 # 4. War eine Lücke, ist erledigt (2026-11-16)
 
@@ -42,12 +51,16 @@ Vorgabe der Projektleitung (2026-11-15): nach Abschluss der Feature-Strecke geme
 - K-Sammlung der Reviews (15 Punkte) — vollständig abgearbeitet.
 - A27/A28/A29/A30/A31/A32/A33 — abgeschlossen (Doku-Runde).
 
-# 5. Folgeaufgaben — aus der Freigabe 2026-11-16 in Umsetzung
+# 5. Folgeaufgaben — Stand 2026-11-16 (Abend)
 
-Die Projektleitung hat am 2026-11-16 „alles frei" gegeben. Daraus sind angelegt/freigegeben: **A40** (Verify-Hinweis, aus V1 — in Umsetzung), **A41** (A6-1 — **abgeschlossen**, s. Abschnitt 4), **A42** (Härtungs-Klammern — in Umsetzung, T15 nach A37) sowie **A35–A38, A22, A21** (Post-MVP-Strecke, freigegeben; Wellen-Plan A–D siehe Entscheidungslog 2026-11-16).
+Die Projektleitung hat am 2026-11-16 „alles frei" gegeben. Daraus sind angelegt/freigegeben: **A40** (Verify-Hinweis, aus V1), **A41** (A6-1), **A42** (Härtungs-Klammern) sowie **A35–A38, A22, A21** (Post-MVP-Strecke, Wellen-Plan A–D siehe Entscheidungslog 2026-11-16).
+
+- **Abgeschlossen:** A35 (Status-Mapping server-seitig), A36 (`schreibgeschuetzt`-Signal), A37 (DOM-Harness-Konsolidierung), A41 (A6-1-H-Definitionen), A42 (Härtungs-Klammern), A22 (E2E-Regression — Review FREIGEGEBEN).
+- **In Review/Rücklauf:** A38 (Log-Anker — Review FREIGEGEBEN, W1-Testlücke im Rücklauf), A40 (Verify-Hinweis — NACHBESSERUNG, W1-Remediation läuft), A21 (Desktop-Modus — Review läuft).
+- **A39 selbst:** diese Test-/Abstimmungsrunde + README-Abschluss — Abschluss nach Eingang der Projektleitungs-Befunde.
 
 # 6. Stand der Feature-Strecke (Abschlussbild 2026-11-16)
 
-- **Abgeschlossen:** A1–A20 (MVP), A23–A34, A26 (Bestätigungs-Review), A41 (H-Definitionen geklärt).
-- **In Umsetzung (Freigabe „alles frei"):** A35 (Status-Mapping server-seitig), A37 (DOM-Harness), A22 (E2E-Regression), A40 (Verify-Hinweis), A42 (Härtungs-Klammern) — Welle A; danach A36/A42 (Welle B), A38 (Welle C), A21 (Welle D).
+- **Abgeschlossen:** A1–A20 (MVP), A23–A34, A26 (Bestätigungs-Review), A41 (H-Definitionen geklärt), A22 (E2E-Regression), A35 (Status-Mapping), A36 (Schreibschutz-Signal), A37 (DOM-Harness), A42 (Härtungs-Klammern).
+- **In Review/Rücklauf:** A38 (Log-Anker), A40 (Verify-Hinweis), A21 (Desktop-Modus).
 - **A39 selbst:** diese Test-/Abstimmungsrunde + README-Abschluss — Abschluss nach Eingang der Projektleitungs-Befunde.
