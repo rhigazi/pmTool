@@ -74,6 +74,7 @@ UI-Szenarien: `moli` gegen `http://localhost:5000` (siehe `tester`-Aufgaben).
 | `task_status` / `phase` | wie Phasenmodell | Aufgaben | ausschließlich KI (Projektmanager/documenter) |
 | `freigabe` | `true` \| `false`; fehlend oder ≠ `true` = **nicht freigegeben** (fail-closed) | Aufgaben und Wellen | ausschließlich Mensch (App, `POST /api/freigabe`); KI ❌ **403** |
 | `welle` | Pfad `wellen/<x>.md` (optional) | Aufgaben | beim Anlegen (`POST /api/task`, KI/App) und über `POST /api/meta`; das Read-Modell liefert es als `welle` (`GET /api/overview`, `frontmatter` von `GET /api/file`) |
+| `parent` | Pfad `aufgaben/<id>.md` (optional, A34) | Aufgaben (nur Tasks) | beim Anlegen (`POST /api/task` mit `parent?`); genau ein Elternteil, maximal eine Ebene; das Read-Modell liefert es als `parent` (`GET /api/aufgaben`, `GET /api/overview`, `frontmatter` von `GET /api/file`) |
 
 ## Mapping: `task_status` → UI-Status (6 Werte)
 
@@ -97,7 +98,7 @@ Es gibt **kein zweites Statusmodell in den Dateien**: Die sechs UI-Status sind e
 
 ## Struktur neuer Punkte
 
-- Aufgaben: `wissen/aufgaben/<id>.md` — Format exakt nach Phasenmodell, ergänzt um `owner: ai`; optional `welle: wellen/<x>.md` (Pfad der zugeordneten Welle, siehe API-Tabelle).
+- Aufgaben: `wissen/aufgaben/<id>.md` — Format exakt nach Phasenmodell, ergänzt um `owner: ai`; optional `welle: wellen/<x>.md` (Pfad der zugeordneten Welle, siehe API-Tabelle) und optional `parent: aufgaben/<id>.md` (Unter-Aufgabe, A34 — genau ein Elternteil, maximal eine Ebene).
 - Wellen: `wissen/wellen/<kuerzel>.md` mit `type: Welle`, `title`, `status`, `owner`, Ziel-Abschnitt und OKF-Links auf zugehörige Aufgaben (Ordner wird bei Erstanlage angelegt).
 - Nachträge: Abschnitt `# Nachträge` am Dateiende jeder bearbeitbaren Datei; Einträge als
   `> **Nachtrag (Mensch, YYYY-MM-DD):** <Text>` (Blockquote-Format, mehrfach möglich, immer anfügend).
@@ -123,10 +124,10 @@ Als **reserviert** gelten `index.md`, `log.md` und `features.md` (KI-Dateien lau
 
 | Methode & Pfad | Zweck | Payload / Rückgabe |
 |---|---|---|
-| `GET /api/overview` | Alle Punkte für Listenansicht | Liste: `path, typ, titel, status(6), owner, zuletzt_geaendert, welle?, hinweis?, arbeitsrolle?, arbeitsrolle_label?, arbeitsstatus?, freigabe?, freigabe_hinweis?, neu?` |
+| `GET /api/overview` | Alle Punkte für Listenansicht | Liste: `path, typ, titel, status(6), owner, zuletzt_geaendert, welle?, parent?, hinweis?, arbeitsrolle?, arbeitsrolle_label?, arbeitsstatus?, freigabe?, freigabe_hinweis?, neu?` |
 | `GET /api/file?path=` | Dateiinhalt + Frontmatter (Detailansicht) | `{frontmatter, markdown, nachtraege[], arbeitsrolle?, arbeitsrolle_label?, arbeitsstatus?, freigabe?, freigabe_hinweis?, neu?, kennung?, naechste_kennung?, welle_freigabe?, wirksam_freigegeben?}` |
 | `POST /api/nachtrag` | Nachtrag anfügen | `{path, text}` → aktualisierte Datei |
-| `POST /api/task` | Neue Aufgabe anlegen | `{titel, ziel, akzeptanz[], prioritaet, welle?}` → Pfad der neuen Datei |
+| `POST /api/task` | Neue Aufgabe anlegen | `{titel, ziel, akzeptanz[], prioritaet, welle?, parent?}` → Pfad der neuen Datei |
 | `POST /api/welle` | Neue Welle anlegen | `{titel, ziel, status, owner}` → Pfad |
 | `POST /api/meta` | `owner`/erlaubte Status/`welle` setzen | `{path, owner?, status?, welle?}` → neue Metadaten (`welle: null`/leer entfernt die Zuordnung) |
 | `POST /api/freigabe` | Freigabe setzen/entziehen (**Menschen-Kanal**) | `{path, wert: true\|false}` → `{path, freigabe, frontmatter}` |
@@ -134,7 +135,7 @@ Als **reserviert** gelten `index.md`, `log.md` und `features.md` (KI-Dateien lau
 
 - **Freigabe (Menschen-Recht):** Das boolesche Frontmatter-Feld `freigabe` liefert die Lese-API top-level für `typ in ("Task", "Welle")`; nur ein exaktes `true` gilt als freigegeben (fail-closed). Ein vorhandener, aber ungültiger Rohwert (z. B. `"true"`, `1`) ergibt `freigabe: false` plus `freigabe_hinweis`. Geschrieben wird ausschließlich über `POST /api/freigabe` (Projektleitung); `POST /api/meta` und `meta.setzen` verweigern `freigabe` mit **403** ohne Schreibvorgang — auch bei `false`.
 - **Wellen-Gate (abgeleitet, nur lesend):** Für Aufgaben liefert `GET /api/file` `welle_freigabe` (`true`/`false`/`null`, immer vorhanden) und `wirksam_freigegeben` (bool, immer vorhanden). Regel: `wirksam_freigegeben = Aufgabe freigegeben AND (keine Welle zugeordnet OR Welle freigegeben)`; eine fehlende, unbekannte oder nicht freigegebene Welle setzt `welle_freigabe` auf `false`/`null` und sperrt (fail-closed). Der Status steht in der Wellenliste als Marke in der Titel-Zelle (nur in der Wellen-Ansicht, nicht in Übersicht/Aufgabenliste) und im Wellen-Detail als Feld samt Knopf; der Freigabe-Pfad (`POST /api/freigabe`) schreibt in die Wellen-Datei ausschließlich `freigabe` (`# Aufgaben` bleibt unverändert), während der A11/A27-Schreibpfad (`POST /api/meta`) weiterhin `owner`/`status`/`welle` schreiben darf. Kein neuer Endpunkt — `POST /api/freigabe` aus A28 wird wiederverwendet.
-- **Kennungs-Signale (abgeleitet, nur lesend):** `neu` (Aufgaben ohne gültige Kennung — Titel `^A<N>:` und Dateiname `a<N>-…` müssen übereinstimmen, Unterkennungen wie `A34.001` eingeschlossen), `kennung` (aus dem Titel, z. B. `A28`) und `naechste_kennung` (Hinweis, Maximum aus Titeln und Dateinamen + 1, keine Reservierung) liefert nur `GET /api/file` bzw. `GET /api/overview`/`GET /api/aufgaben` für `typ: Task`. Nicht-Tasks tragen keines dieser Felder; dafür gibt es **keinen neuen Endpunkt**.
+- **Kennungs-Signale (abgeleitet, nur lesend):** `neu` (Aufgaben ohne gültige Kennung — Titel `^A<N>:` bzw. `^A{xxx}.{uuu}:` und Dateiname `a<N>-…` bzw. `a{xxx}.{uuu}-…` müssen übereinstimmen, Unterkennungen wie `A34.001` eingeschlossen), `kennung` (aus dem Titel, z. B. `A28` oder `A34.001`) und `naechste_kennung` (Hinweis, Maximum aus Top-Level-Titeln und Dateinamen + 1, keine Reservierung) liefert nur `GET /api/file` bzw. `GET /api/overview`/`GET /api/aufgaben` für `typ: Task`. Grammatik der Unter-Kennung (A34): `A{xxx}.{uuu}` mit `xxx` = Nummer der Eltern-Aufgabe (`[1-9][0-9]*`, keine führende Null) und `uuu` = genau drei Ziffern `001`–`999`; maximal eine Ebene (keine Unter-Unter-Aufgaben). `naechste_kennung` bleibt **top-level-only**: Unter-Nummern beeinflussen sie nicht, es gibt kein Feld `naechste_unterkennung`. Nicht-Tasks tragen keines dieser Felder; dafür gibt es **keinen neuen Endpunkt**.
 - **Arbeitsstatus (abgeleitet, nur lesend):** `arbeitsrolle`, `arbeitsrolle_label` und `arbeitsstatus` werden beim Lesen aus dem Frontmatter-Feld `aktuell` abgeleitet (`<Rolle>: <Text>`) und **top-level** ausgeliefert — nur für Einträge mit `typ: Task`; Nicht-Tasks und Aufgaben ohne belegbares `aktuell` tragen keines der Felder (fehlend = keine Anzeige). Aufgaben mit UI-Status „Geschlossen" liefern keine Arbeitsstatus-Felder. `frontmatter.aktuell` bleibt unverändert roh erhalten; es gibt **keinen neuen Endpunkt** und keinen Schreibpfad (Single Source of Truth: `aktuell`).
 
 - Alle `path`-Parameter werden gegen Ausbruch aus `BUNDLE_ROOT` geprüft (normalisiert, Präfix-Check) — **reject** bei Verstößen.

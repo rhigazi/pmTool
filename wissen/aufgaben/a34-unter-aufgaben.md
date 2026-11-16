@@ -161,6 +161,9 @@ eigener Filter/Spalte „Unter-Aufgaben", Freigabe per Eltern-Aufgabe.
   „`naechste_kennung` bleibt top-level-only". **Zusätzlich (PM-Aufgabe, nicht
   A34-Code):** A33 schlägt „eigene Aufgabe A34 (Status-Mapping)" vor — diese Nummer
   ist durch A34 belegt; A33s Vorschlagsliste ist auf A35–A38 umzunummerieren.
+  **Status (erledigt, PM-Check 2026-11-16):** A33 führt durchgängig A35–A38
+  (A35 Status-Mapping server-seitig, A36 schreibgeschuetzt-Signal, A37
+  DOM-Harness-Konsolidierung, A38 Log-Anker); keine Änderung an A33 erforderlich.
 - **AK-10 (Grenzen/Regression, alle):** Keine neuen Abhängigkeiten, kein externer
   Dienst, kein neuer Endpunkt, keine neue Route, kein neues `index.html`-Markup,
   keine `style.css`-Änderung. `static/index.html`, `static/style.css`, `static/js/app.js`,
@@ -662,3 +665,19 @@ fehl (`ohne_node`-Skip wie A11/A27).
 - **Baselines (reviewer, Kopie `/tmp/opencode/a34p3-review`):** 78 grün reproduziert (`test_unteraufgabe_ui` 36 + `test_freigabe_ui` 42); Anrainer-Satz (6 UI-Dateien: `test_detail`, `test_liste`, `test_welle_spalte`, `test_arbeitsstand_ui`, `test_welle_zuordnung`, `test_suche`) = **278 grün** — Abweichung zur Übergabe-Zahl 222 (engerer Satz) ehrlich dokumentiert, im Sammellauf final klären.
 - **Kurz-Check Takt 7 (`cecd2e3`):** bestätigt — 83 grün, Assertion `- Welle: [Welle 1: Fixture](wellen/w1.md)` plausibel zum Vertrag.
 - **Offene Punkte → Doku-Runde:** K2/K4-Vermerke (s. o.), Request-Budget „3 Requests" in A27/A29-Doku nachziehen, Fehlerkopf-Muster dokumentieren, Anrainer-Zahl klären. Vollständiges Mutantenprotokoll im Review-Bericht (PM-Übergabe an den `documenter`).
+
+## 2026-11-16 — PM: A33-Umnummerierung A34→A35–A38 geprüft
+
+- **Vermerk:** A33 schlug „eigene Aufgabe A34 (Status-Mapping)" vor; diese Nummer ist durch A34 belegt. Die A33-Vorschlagsliste wurde auf A35–A38 umnummeriert (A35 Status-Mapping server-seitig, A36 schreibgeschuetzt-Signal, A37 DOM-Harness-Konsolidierung, A38 Log-Anker) — vom PM geprüft und als bereits erledigt bestätigt (A33 führt durchgängig A35–A38). Beleg: `wissen/log.md` 2026-11-15 (Creation A35–A38) und 2026-11-16 (PM-Check im Session-Fortsetzungs-Eintrag). Keine Änderung an A33 erforderlich.
+
+## 2026-11-15 — coder: A34-Paket 1 (Kennungsgrammatik + Read-Modell) umgesetzt
+
+- **Umgesetzt:** `definitions/app/kennung.py` (neu) mit `zerlege_titel`, `zerlege_dateiname`, `kennung_aus_*`, `eltern_kennung`, `ist_zugewiesen`, `naechste_kennung` (top-level-only), `naechste_unterkennung`; A28-Muster in `overview.py` auf Importe umgestellt, `parent` in `_eintrag` (nur Tasks, nur nicht-leerer String). Tests T1–T12, T28–T31 (laut Aufgabenplanung).
+- **Belege:** WIP-Commit `f00e81a` (2026-11-15, „laufende Subagenten-Arbeit abgebrochen — … A34-P1+2 … NICHT als grün attestiert") und Übergabe-Commit `9cf8782` (2026-11-15, „A34-Paket 1+2 fertig (kennung.py + parent-Anlage, 1444 gruen inkl. Parallelstaende)"). Gesamt-Teststand 1444 grün (inkl. Parallelstände anderer Aufgaben) am 2026-11-15 (Commits `ef68598`/`ce8a13f`).
+- **Protokolllücke, nicht rekonstruierbar:** A34-eigene Testzahl für Paket 1 (die 78/278-Baselines gehören zu Paket 3/UI, nicht zu P1); genaue Coder-Identität/Rollenkennung für den P1-Lauf; ob P1 und P2 als getrennte Coder-Läufe oder ein gemeinsamer Lauf umgesetzt wurden (Commit-Historie zeigt nur den gemeinsamen WIP-Stand). Keine separate Commit-Nachricht für P1 allein.
+
+## 2026-11-15 — coder: A34-Paket 2 (Anlage mit `parent`) umgesetzt
+
+- **Umgesetzt:** `definitions/app/neu_aufgabe.py` — optionales `parent` in `_pruefe`/`_eltern` (Existenz, `aufgaben/`, nicht reserviert, `type: Task`, keine Tiefe 2, nicht `abgeschlossen`, gültige Top-Level-Kennung), Kennungsvergabe (`A{Elternnummer}.{uuu}`), Slug aus bereinigtem Titel, `welle`-Vererbung, `parent` in `_inhalt` in fester Position. Tests T13–T27 (laut Aufgabenplanung).
+- **Belege:** wie Paket 1 — WIP-Commit `f00e81a` / Übergabe `9cf8782` (2026-11-15). Gesamt-Teststand 1444 grün (inkl. Parallelstände).
+- **Protokolllücke, nicht rekonstruierbar:** A34-eigene Testzahl für Paket 2; genaue Coder-Identität; ob `freigabe: true` für A34 zu diesem Zeitpunkt bereits gesetzt war (die Aufgaben-Datei trägt heute `freigabe: true`, der Zeitpunkt der Freigabe ist aus den Commits nicht belegbar — A28-Paket 0 lieferte das Freigabe-Feld).
