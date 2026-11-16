@@ -32,9 +32,16 @@ Noch keine Einträge — der `planner` ergänzt die Testfälle.
 
 # Betroffene Dateien
 
-Noch keine Einträge — die Planung ergänzt die betroffenen Dateien.
+- `definitions/app/overview.py` — `details()` top-level `schreibgeschuetzt` (symlink-sicher)
+- `definitions/app/static/js/detail.js` — `istSchreibgeschuetzt`, Ausblendung aller Schreibaktionen, Hinweis, `createTextNode`-Trenner
+- `definitions/app/tests/test_schreibschuetzt_server.py` (neu, 16), `test_schreibschuetzt_ui.py` (neu, 9)
+- `definitions/app/tests/test_detail.py` (+2 Trenner-Assertions), `test_arbeitsstand.py` (T12 +`schreibgeschuetzt`)
 
 # Ergebnisse
+## 2026-11-16 — reviewer: NACHBESSERUNG (W1/W2/W3 + K1–K5) — Rücklauf läuft
+
+- **Urteil:** NACHBESSERUNG — Implementierung/Server-Signal korrekt und symlink-sicher (M1/M2/M3 getötet); 10/13 Mutanten tot. **W1** Anlegen-UI-Ausblendung ungepinnt (M8 überlebt), **W2** `/api/wellen`-Guard: `aufrufe` gesammelt, nie ausgewertet (M9 überlebt), **W3** Doku (Spec-Read-Modell, A37-Rest, Betroffene-Dateien — inzwischen vom PM nachgezogen). **K1** Hinweis-Negativfall fehlt (M12), **K2** AK-/Testfall-Blöcke leer (Prozess), **K3** „kein Listen-Feld" zu absolut (Symlink-Kante in Listen möglich), **K4** UX-Kante Welle-Feld zeigt rohen Pfad, **K5** Kosmetik. Rücklauf W1/W2/K1/K3 läuft; K4/K5 → Klammer.
+
 
 ## 2026-11-16 — coder (Welle B): `schreibgeschuetzt`-Signal — 25 neue Tests grün
 

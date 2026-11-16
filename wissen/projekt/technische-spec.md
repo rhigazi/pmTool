@@ -117,6 +117,8 @@ Es gibt **kein zweites Statusmodell in den Dateien**: Die sechs UI-Status sind e
 | Pipeline-Statuswechsel (`task_status`/`phase`) | ❌ | ✅ (Projektmanager, documenter) |
 | `index.md` / `features.md` / `log.md` pflegen | ❌ | ✅ (Projektmanager, documenter) |
 
+**Status-Mapping und Schreibschutz (abgeleitet, nur lesend; A35/A36):** `ui_status`, `hinweis` und `owner_default` werden serverseitig aus `status.py` abgeleitet (einzige Mapping-Quelle — der JS-Spiegel `TASK_STATUS_UI`/`OWNER_DEFAULTS` in `detail.js` ist entfernt), `schreibgeschuetzt: true` markiert reservierte Dateien (symlink-sicher über `okf_bundle.ist_reserviert(pfad) or ist_reserviert(ziel)`). Alle vier Felder stehen **top-level** in der `/api/file`-Antwort, für alle Dateitypen (`hinweis` ist immer vorhanden, `null` wenn keiner). Listen (`/api/overview`, `/api/aufgaben`, `/api/wellen`) tragen `schreibgeschuetzt` nicht (dort keine Schreibaktionen); UI-Konsequenz: bei `schreibgeschuetzt === true` blendet `detail.js` alle Schreibaktionen aus (Server-403 bleibt zweite Barriere).
+
 Als **reserviert** gelten `index.md`, `log.md` und `features.md` (KI-Dateien laut Schreibrechte-Matrix): Die App darf sie weder ersetzen noch in der Übersicht führen — auch `features.md` ist für die App schreibgeschützt (Entscheidung 2026-11-14). Der Schutz greift **generell für alle App-Schreibzugriffe, auch als Ziel von Nachträgen** (Guard in `okf_bundle`, `ReservierteDateiFehler` → HTTP 403).
 | Löschen von Dateien/Wellen | ❌ (MVP) | ❌ ohne PM-Entscheidung |
 
@@ -125,7 +127,7 @@ Als **reserviert** gelten `index.md`, `log.md` und `features.md` (KI-Dateien lau
 | Methode & Pfad | Zweck | Payload / Rückgabe |
 |---|---|---|
 | `GET /api/overview` | Alle Punkte für Listenansicht | Liste: `path, typ, titel, status(6), owner, zuletzt_geaendert, welle?, parent?, hinweis?, arbeitsrolle?, arbeitsrolle_label?, arbeitsstatus?, freigabe?, freigabe_hinweis?, neu?` |
-| `GET /api/file?path=` | Dateiinhalt + Frontmatter (Detailansicht) | `{frontmatter, markdown, nachtraege[], arbeitsrolle?, arbeitsrolle_label?, arbeitsstatus?, freigabe?, freigabe_hinweis?, neu?, kennung?, naechste_kennung?, welle_freigabe?, wirksam_freigegeben?}` |
+| `GET /api/file?path=` | Dateiinhalt + Frontmatter (Detailansicht) | `{frontmatter, markdown, nachtraege[], arbeitsrolle?, arbeitsrolle_label?, arbeitsstatus?, ui_status?, hinweis?, owner_default?, schreibgeschuetzt?, freigabe?, freigabe_hinweis?, neu?, kennung?, naechste_kennung?, welle_freigabe?, wirksam_freigegeben?}` |
 | `POST /api/nachtrag` | Nachtrag anfügen | `{path, text}` → aktualisierte Datei |
 | `POST /api/task` | Neue Aufgabe anlegen | `{titel, ziel, akzeptanz[], prioritaet, welle?, parent?}` → Pfad der neuen Datei |
 | `POST /api/welle` | Neue Welle anlegen | `{titel, ziel, status, owner}` → Pfad |
