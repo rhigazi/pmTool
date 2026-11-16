@@ -5,23 +5,23 @@ werden ``detail.js``/``liste.js`` ohne Browser geprüft. Die reine Filter-/
 Payload-Logik läuft über Node (keine neue Abhängigkeit), Montage und Verdrahtung
 über einen Mini-DOM-Harness mit Fetch-Stab.
 
-Der Harness ist eine Kopie aus ``test_suche.py`` (vierte Kopie, siehe
-A27-Planung [A14-6]) und um ``isConnected``/``remove``/``select``-Optionen
-erweitert. Alle Läufe arbeiten gegen Fetch-Antworten aus dem Stab — nie gegen
+Der Harness (Mini-DOM, Node-Runner und Auswerte-Helfer) liegt in
+``dom_helfer.py``; diese Datei bringt nur das Seiten-/Fetch-Gerüst und die
+Prüfungen. Alle Läufe arbeiten gegen Fetch-Antworten aus dem Stab — nie gegen
 ``wissen/``.
 """
 
 import hashlib
 import json
 import re
-import shutil
-import subprocess
 import sys
 import threading
 from pathlib import Path
 
 import pytest
 from werkzeug.serving import make_server
+
+from dom_helfer import MINI_DOM, js_detail, js_liste, lies, node_ausfuehren, ohne_node
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -37,9 +37,6 @@ APP_JS = STATIC_DIR / "js" / "app.js"
 API_JS = STATIC_DIR / "js" / "api.js"
 FORMULARE_JS = STATIC_DIR / "js" / "formulare.js"
 SERVER_PY = Path(__file__).resolve().parents[1] / "server.py"
-NODE = shutil.which("node")
-
-ohne_node = pytest.mark.skipif(NODE is None, reason="node nicht verfügbar")
 
 AUFGABE = "aufgaben/a1.md"
 WELLE_1 = "wellen/w1.md"
@@ -57,44 +54,6 @@ KEINE_TREFFER = "Keine Treffer."
 
 HTML_PAYLOAD = "<img src=x onerror=alert(1)>"
 SCRIPT_PAYLOAD = "<script>alert(1)</script>"
-
-
-def lies(pfad: Path) -> str:
-    assert pfad.is_file(), f"{pfad} fehlt"
-    return pfad.read_text(encoding="utf-8")
-
-
-def node_ausfuehren(skript: str) -> dict:
-    """Führt ein Node-Skript aus und liest das JSON-Ergebnis aus stdout."""
-    assert NODE is not None
-    ergebnis = subprocess.run(
-        [NODE, "--input-type=module", "-e", skript],
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    assert ergebnis.returncode == 0, ergebnis.stderr
-    return json.loads(ergebnis.stdout)
-
-
-def js_liste(ausdruck: str, daten=None):
-    """Wertet einen Ausdruck im Kontext von ``liste.js`` über Node aus."""
-    skript = (
-        f"import * as liste from {json.dumps(LISTE_JS.as_uri())};\n"
-        f"const daten = {json.dumps(daten, ensure_ascii=False)};\n"
-        f"console.log(JSON.stringify({ausdruck}));"
-    )
-    return node_ausfuehren(skript)
-
-
-def js_detail(ausdruck: str, daten=None):
-    """Wertet einen Ausdruck im Kontext von ``detail.js`` über Node aus."""
-    skript = (
-        f"import * as detail from {json.dumps(DETAIL_JS.as_uri())};\n"
-        f"const daten = {json.dumps(daten, ensure_ascii=False)};\n"
-        f"console.log(JSON.stringify({ausdruck}));"
-    )
-    return node_ausfuehren(skript)
 
 
 # --- Fixtures -------------------------------------------------------------
@@ -206,193 +165,6 @@ LISTEN_EINTRAEGE = [
     WELLEN_LISTE[0],
     WELLEN_LISTE[1],
 ]
-
-# --- Mini-DOM-Harness (aus test_suche.py übernommen und erweitert) --------
-
-MINI_DOM = r"""
-const REGISTRIERT = new Map();
-
-class Knoten {
-  constructor(marke, art) {
-    this.marke = marke;
-    this.art = art;
-    this.kinder = [];
-    this.attribute = {};
-    this.dataset = {};
-    this.hoerer = {};
-    this.hidden = false;
-    this.disabled = false;
-    this.value = "";
-    this.type = "";
-    this.scope = "";
-    this.href = "";
-    this.htmlFor = "";
-    this.title = "";
-    this._text = "";
-    this._eltern = null;
-    this._imDokument = false;
-    const knoten = this;
-    this.classList = {
-      add: (...namen) => {
-        const vorhanden = new Set(knoten.klassen());
-        for (const name of namen) vorhanden.add(name);
-        knoten.attribute.class = [...vorhanden].join(" ");
-      },
-      remove: (...namen) => {
-        const weg = new Set(namen);
-        knoten.attribute.class = knoten.klassen().filter((name) => !weg.has(name)).join(" ");
-      },
-      contains: (name) => knoten.klassen().includes(name),
-    };
-  }
-
-  klassen() {
-    return (this.attribute.class || "").split(/\s+/).filter(Boolean);
-  }
-
-  get className() {
-    return this.attribute.class || "";
-  }
-
-  set className(wert) {
-    this.attribute.class = String(wert);
-  }
-
-  get textContent() {
-    if (this.kinder.length === 0) return this._text;
-    return this.kinder.map((kind) => kind.textContent).join("");
-  }
-
-  set textContent(wert) {
-    this._text = String(wert);
-    this.kinder = [];
-  }
-
-  get id() {
-    return this.attribute.id || "";
-  }
-
-  set id(wert) {
-    this.attribute.id = wert;
-    REGISTRIERT.set(wert, this);
-  }
-
-  get parentElement() {
-    return this._eltern;
-  }
-
-  get options() {
-    return this.kinder.filter((kind) => kind.marke === "option");
-  }
-
-  get isConnected() {
-    let knoten = this;
-    while (knoten._eltern) knoten = knoten._eltern;
-    return knoten._imDokument === true;
-  }
-
-  setAttribute(name, wert) {
-    this.attribute[name] = wert;
-  }
-
-  getAttribute(name) {
-    return this.attribute[name] ?? null;
-  }
-
-  addEventListener(art, hoerer) {
-    if (!this.hoerer[art]) this.hoerer[art] = [];
-    this.hoerer[art].push(hoerer);
-  }
-
-  append(...kinder) {
-    for (const kind of kinder) {
-      if (kind.art === "fragment") {
-        for (const teil of kind.kinder) this.append(teil);
-      } else {
-        kind._eltern = this;
-        this.kinder.push(kind);
-      }
-    }
-  }
-
-  insertBefore(neu, bezug) {
-    neu._eltern = this;
-    const index = this.kinder.indexOf(bezug);
-    if (index === -1) this.kinder.push(neu);
-    else this.kinder.splice(index, 0, neu);
-    return neu;
-  }
-
-  replaceChildren(...kinder) {
-    this.kinder = [];
-    this._text = "";
-    this.append(...kinder);
-  }
-
-  remove() {
-    if (!this._eltern) return;
-    this._eltern.kinder = this._eltern.kinder.filter((kind) => kind !== this);
-    this._eltern = null;
-  }
-
-  createTHead() {
-    const kopf = document.createElement("thead");
-    this.append(kopf);
-    return kopf;
-  }
-
-  createTBody() {
-    const koerper = document.createElement("tbody");
-    this.append(koerper);
-    return koerper;
-  }
-
-  insertRow() {
-    const zeile = document.createElement("tr");
-    this.append(zeile);
-    return zeile;
-  }
-
-  focus() {}
-
-  alleKnoten() {
-    const liste = [this];
-    for (const kind of this.kinder) liste.push(...kind.alleKnoten());
-    return liste;
-  }
-}
-
-globalThis.document = {
-  createElement: (marke) => new Knoten(marke, "element"),
-  createTextNode: (text) => {
-    const knoten = new Knoten("#text", "text");
-    knoten._text = String(text);
-    return knoten;
-  },
-  createDocumentFragment: () => new Knoten("#fragment", "fragment"),
-  getElementById: (id) => REGISTRIERT.get(id) || null,
-};
-
-const sammle = (el) => [el, ...(el?.kinder ?? []).flatMap(sammle)];
-const bei = (id) => document.getElementById(id);
-const ausloesen = async (knoten, art) => {
-  const ergebnisse = (knoten.hoerer[art] || []).map((hoerer) => hoerer({ target: knoten, type: art }));
-  await Promise.all(ergebnisse);
-};
-const optionen = (el) => (el ? el.kinder.filter((kind) => kind.marke === "option") : []);
-const optionstexte = (el) => optionen(el).map((kind) => kind.textContent);
-const optionenwerte = (el) => optionen(el).map((kind) => kind.value);
-const marken = (el) => sammle(el).map((knoten) => knoten.marke);
-const pfade = (id) =>
-  sammle(bei(id))
-    .filter((knoten) => knoten.marke === "tr" && knoten.dataset.path)
-    .map((knoten) => knoten.dataset.path);
-const kopfzeilen = (id) =>
-  sammle(bei(id))
-    .filter((knoten) => knoten.marke === "th")
-    .map((knoten) => knoten.textContent);
-const anzahl = (id, element_id) => sammle(bei(id)).filter((knoten) => knoten.id === element_id).length;
-"""
 
 
 # --- Detail-Umgebung: Stab mit veränderlicher Datei -----------------------

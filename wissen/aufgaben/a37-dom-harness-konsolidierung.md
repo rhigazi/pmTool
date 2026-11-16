@@ -3,11 +3,12 @@ type: Task
 title: "A37: DOM-Harness-Konsolidierung (A14-6)"
 description: tests/dom_helfer.py wird zur einzigen Harness-Quelle — die vier Altkopien und die
   UI-Testdateien werden umgestellt, ohne Verhaltenswechsel.
-task_status: offen
-phase: 2 Planung
+task_status: im Review
+phase: 5 Review
 priority: niedrig
 assigned_to: coder
 owner: ai
+aktuell: "reviewer: A37 Review (Harness-Mutanten + Urteil)"
 freigabe: true
 ---
 
@@ -36,5 +37,14 @@ Noch keine Einträge — der `planner` ergänzt die Testfälle.
 Noch keine Einträge — die Planung ergänzt die betroffenen Dateien.
 
 # Ergebnisse
+# Ergebnisse
+
+## 2026-11-16 — coder (Welle A): DOM-Harness konsolidiert — 368→368 identisch
+
+- **Ergebnis:** `dom_helfer.py` ist die einzige Harness-Quelle; **fünf** Altkopien entfernt (`test_detail`, `test_suche`, `test_features`, `test_welle_zuordnung`, `test_projekt` — fünfte Kopie, in der Aufgabe nur vier genannt), alle migrierten Dateien importieren den Harness. API **additiv** erweitert: `classList.toggle`, `removeAttribute`, `Knoten.ausloesen(art, ereignis)` (mit `target`/`preventDefault`), `focus()` setzt `document.activeElement`, `document.querySelectorAll`/`addEventListener`/`readyState`/`activeElement`, Helfer `sichtbar`/`links`/`knotenMitKlasse`. Bestehende API unverändert.
+- **Testzahlen vorher/nachher exakt identisch:** 56 + 72 + 98 + 43 + 63 + 36 = **368**; alle übrigen Harness-Nutzer zusammen **551 passed**.
+- **A34-K-Punkt gelöst:** lokaler `Knoten.prototype.focus`-Stub in `test_unteraufgabe_ui.py` entfällt (Harness-Fokus).
+- **Fremd-Koordination A35:** `detail.js` wurde parallel auf `ui_status` umgestellt — der Fetch-Stub in `test_features.py` liefert nun `"ui_status": "In Arbeit"` (Assertions unverändert); gegen `git show HEAD:…/detail.js` nachgewiesen: 98/98 auch ohne Fremdänderung.
+- **Offen (Folge an A36):** Produktivcode-Weg `detail.js:595-598` (leeres `span`-Trennzeichen) konnte nicht zurückgebaut werden (A37-Rahmen: kein `static/`) — Harness kann `createTextNode`; Folgeauftrag: Trenner auf `document.createTextNode(" ")` umstellen + Assertion schärfen (A28-K3-Rest).
 
 Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle (coder/reviewer/tester), Ergebnis, Befunde, offene Punkte und Belege.

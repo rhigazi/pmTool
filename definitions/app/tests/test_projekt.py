@@ -6,12 +6,12 @@ der Log-Einträge läuft über Node (keine neue Abhängigkeit); die Ansichten
 laufen im Node-DOM-Harness — einmal mit Antworten aus dem Fetch-Stab und
 einmal per HTTP gegen ein Test-Bundle unter ``tmp_path`` (nie gegen das echte
 Projekt-Bundle). Genutzt wird ausschließlich ``GET /api/file``.
+Der Mini-DOM-Harness liegt in ``dom_helfer.py``; hier bleiben Seiten- und
+Fetch-Gerüst.
 """
 
 import json
 import re
-import shutil
-import subprocess
 import sys
 import threading
 from pathlib import Path
@@ -19,6 +19,8 @@ from urllib.parse import unquote
 
 import pytest
 from werkzeug.serving import make_server
+
+from dom_helfer import MINI_DOM, lies, node_ausfuehren, ohne_node
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -30,9 +32,6 @@ PROJEKT_JS = STATIC_DIR / "js" / "projekt.js"
 APP_JS = STATIC_DIR / "js" / "app.js"
 API_JS = STATIC_DIR / "js" / "api.js"
 DETAIL_JS = STATIC_DIR / "js" / "detail.js"
-NODE = shutil.which("node")
-
-ohne_node = pytest.mark.skipif(NODE is None, reason="node nicht verfügbar")
 
 ENTSCHEIDUNGEN_PFAD = "entscheidungen/log.md"
 DETAIL_VORSCHLAG = "#/detail/"
@@ -91,24 +90,6 @@ BUNDLE_LOG = (
     "\n"
     "**Entscheidung:** Text zwei.\n"
 )
-
-
-def lies(pfad: Path) -> str:
-    assert pfad.is_file(), f"{pfad} fehlt"
-    return pfad.read_text(encoding="utf-8")
-
-
-def node_ausfuehren(skript: str) -> dict:
-    """Führt ein Node-Skript aus und liest das JSON-Ergebnis aus stdout."""
-    assert NODE is not None
-    ergebnis = subprocess.run(
-        [NODE, "--input-type=module", "-e", skript],
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    assert ergebnis.returncode == 0, ergebnis.stderr
-    return json.loads(ergebnis.stdout)
 
 
 def js(ausdruck: str, daten=None):
@@ -280,108 +261,14 @@ def test_projekt_punkt_unbekannt_ist_null():
 
 # --- UI-Läufe im DOM-Stab (Fetch-Antworten simuliert) ----------------------
 
-MINI_DOM = r"""
-// Mini-DOM für Node: nur so viel, wie projekt.js, detail.js und api.js benutzen.
-const REGISTRIERT = new Map();
-
-class Knoten {
-  constructor(marke, art) {
-    this.marke = marke;
-    this.art = art;
-    this.kinder = [];
-    this.attribute = {};
-    this.dataset = {};
-    this.hoerer = {};
-    this.hidden = false;
-    this.disabled = false;
-    this.value = "";
-    this._text = "";
-    const knoten = this;
-    this.classList = {
-      add: (...namen) => {
-        const vorhanden = new Set(knoten.klassen());
-        for (const name of namen) vorhanden.add(name);
-        knoten.attribute.class = [...vorhanden].join(" ");
-      },
-      contains: (name) => knoten.klassen().includes(name),
-    };
-  }
-
-  klassen() {
-    return (this.attribute.class || "").split(/\s+/).filter(Boolean);
-  }
-
-  get textContent() {
-    if (this.kinder.length === 0) return this._text;
-    return this.kinder.map((kind) => kind.textContent).join("");
-  }
-
-  set textContent(wert) {
-    this._text = String(wert);
-    this.kinder = [];
-  }
-
-  get id() {
-    return this.attribute.id || "";
-  }
-
-  set id(wert) {
-    this.attribute.id = wert;
-    REGISTRIERT.set(wert, this);
-  }
-
-  setAttribute(name, wert) {
-    this.attribute[name] = wert;
-  }
-
-  getAttribute(name) {
-    return this.attribute[name] ?? null;
-  }
-
-  addEventListener(art, hoerer) {
-    if (!this.hoerer[art]) this.hoerer[art] = [];
-    this.hoerer[art].push(hoerer);
-  }
-
-  append(...kinder) {
-    for (const kind of kinder) {
-      if (kind.art === "fragment") this.kinder.push(...kind.kinder);
-      else this.kinder.push(kind);
-    }
-  }
-
-  replaceChildren(...kinder) {
-    this.kinder = [];
-    this._text = "";
-    this.append(...kinder);
-  }
-
-  focus() {}
-
-  alleKnoten() {
-    const liste = [this];
-    for (const kind of this.kinder) liste.push(...kind.alleKnoten());
-    return liste;
-  }
-}
-
-globalThis.document = {
-  createElement: (marke) => new Knoten(marke, "element"),
-  createDocumentFragment: () => new Knoten("#fragment", "fragment"),
-  getElementById: (id) => REGISTRIERT.get(id) || null,
-};
-
+SEITEN_DOM = r"""
 // Fehler-/Erfolgsbereich und Ansichtscontainer wie in index.html (A10).
 for (const id of ["fehler", "meldung", "liste-entscheidungen", "liste-projekt"]) {
   const bereich = document.createElement("div");
   bereich.id = id;
   if (id === "fehler" || id === "meldung") bereich.hidden = true;
+  bereich._imDokument = true;
 }
-
-const sammle = (el) => [el, ...(el.kinder ?? []).flatMap(sammle)];
-const bei = (id) => document.getElementById(id);
-const sichtbar = (id) => document.getElementById(id)?.hidden === false;
-const links = (id) => sammle(bei(id)).filter((k) => k.marke === "a").map((k) => ({ text: k.textContent, href: k.href }));
 """
 
 FETCH_STAB = r"""
@@ -418,6 +305,7 @@ globalThis.fetch = async (pfad, optionen = {}) => {
 def _harness(ablauf: str, fetch_skript: str) -> dict:
     skript = (
         MINI_DOM
+        + SEITEN_DOM
         + fetch_skript
         + f"\nimport * as projekt from {json.dumps(PROJEKT_JS.as_uri())};\n"
         + "const ergebnis = await (async () => {\n"
@@ -444,6 +332,7 @@ def ui_lauf(basis: str, ablauf: str) -> dict:
 
 APP_UMGEBUNG = (
     MINI_DOM
+    + SEITEN_DOM
     + r"""
 // Router-Umgebung (A14-Befund 4): Fenster-Hash, DOM-Ereignisse, Detail-Bereich.
 const dokumentHoerer = {};

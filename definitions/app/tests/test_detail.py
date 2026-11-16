@@ -4,20 +4,21 @@ Die UI-Szenarien T1–T10 spielt der ``tester`` mit dem Moli-Browser durch; hier
 werden ``detail.js`` und seine Verdrahtung ohne Browser geprüft. Die reine
 Markdown-/Metadaten-Logik läuft über Node (keine neue Abhängigkeit). T10
 (403-Pfad) ist zusätzlich hier direkt belegt: Mini-DOM in Node, der
-``fetch``-Proxy erzwingt die 403 am echten Server.
+``fetch``-Proxy erzwingt die 403 am echten Server. Der Mini-DOM-Harness liegt
+in ``dom_helfer.py``; hier bleiben Seiten-/Fetch-Gerüst und Prüfungen.
 """
 
 import hashlib
 import json
 import re
-import shutil
-import subprocess
 import sys
 import threading
 from pathlib import Path
 
 import pytest
 from werkzeug.serving import make_server
+
+from dom_helfer import MINI_DOM, js_detail as js, lies, node_ausfuehren, ohne_node
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -27,9 +28,6 @@ STATIC_DIR = Path(__file__).resolve().parents[1] / "static"
 DETAIL_JS = STATIC_DIR / "js" / "detail.js"
 APP_JS = STATIC_DIR / "js" / "app.js"
 API_JS = STATIC_DIR / "js" / "api.js"
-NODE = shutil.which("node")
-
-ohne_node = pytest.mark.skipif(NODE is None, reason="node nicht verfügbar")
 
 # Nur diese beiden UI-Status darf die App setzen (R1); Pipeline-Status fehlen.
 ERLAUBTE_STATUS_KNOEPFE = ["Klarung", "Geschlossen"]
@@ -37,34 +35,6 @@ ERLAUBTE_STATUS_KNOEPFE = ["Klarung", "Geschlossen"]
 # T10: Die UI zeigt "In Arbeit" an, darf ihn aber nie setzen (R1).
 T10_DATEI = "aufgaben/a1.md"
 T10_VERBOTENER_STATUS = "In Arbeit"
-
-
-def lies(pfad: Path) -> str:
-    assert pfad.is_file(), f"{pfad} fehlt"
-    return pfad.read_text(encoding="utf-8")
-
-
-def node_ausfuehren(skript: str) -> dict:
-    """Führt ein Node-Skript aus und liest das JSON-Ergebnis aus stdout."""
-    assert NODE is not None
-    ergebnis = subprocess.run(
-        [NODE, "--input-type=module", "-e", skript],
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    assert ergebnis.returncode == 0, ergebnis.stderr
-    return json.loads(ergebnis.stdout)
-
-
-def js(ausdruck: str, daten=None):
-    """Wertet einen Ausdruck im Kontext von ``detail.js`` über Node aus."""
-    skript = (
-        f"import * as detail from {json.dumps(DETAIL_JS.as_uri())};\n"
-        f"const daten = {json.dumps(daten, ensure_ascii=False)};\n"
-        f"console.log(JSON.stringify({ausdruck}));"
-    )
-    return node_ausfuehren(skript)
 
 
 # --- Statische Prüfungen ---------------------------------------------------
@@ -303,23 +273,29 @@ def test_nachtrag_payload_trimmt():
 
 
 @ohne_node
-def test_status_aus_task_status():
-    assert js("detail.ermittleStatus({ task_status: 'in Umsetzung' })") == {
+def test_status_kommt_aus_ui_status():
+    # A35: Der JS-Spiegel ist entfernt; der Server liefert den UI-Status.
+    assert js("detail.ermittleStatus({ ui_status: 'In Arbeit', hinweis: null })") == {
         "status": "In Arbeit",
         "hinweis": None,
     }
-    assert js("detail.ermittleStatus({ task_status: 'in Klärung' })")["status"] == "Klarung"
-    assert js("detail.ermittleStatus({ task_status: 'abgeschlossen' })")["status"] == "Geschlossen"
+    assert js("detail.ermittleStatus({ ui_status: 'Klarung' })")["status"] == "Klarung"
+    assert js("detail.ermittleStatus({ ui_status: 'Geschlossen' })")["status"] == "Geschlossen"
 
 
 @ohne_node
-def test_status_ohne_feld():
-    assert js("detail.ermittleStatus({})") == {"status": "Offen", "hinweis": "ohne Status"}
+def test_status_ohne_server_feld_ist_offen():
+    assert js("detail.ermittleStatus({})") == {"status": "Offen", "hinweis": None}
+    # ``task_status`` wird ohne Server-Ableitung nicht mehr interpretiert.
+    assert js("detail.ermittleStatus({ task_status: 'in Umsetzung' })") == {
+        "status": "Offen",
+        "hinweis": None,
+    }
 
 
 @ohne_node
-def test_status_nimmt_status_feld():
-    assert js("detail.ermittleStatus({ status: 'Geschlossen' })") == {
+def test_status_nimmt_ui_status_feld():
+    assert js("detail.ermittleStatus({ ui_status: 'Geschlossen' })") == {
         "status": "Geschlossen",
         "hinweis": None,
     }
@@ -327,7 +303,7 @@ def test_status_nimmt_status_feld():
 
 @ohne_node
 def test_status_unbekannt_bleibt_offen_mit_hinweis():
-    assert js("detail.ermittleStatus({ status: 'kaputt' })") == {
+    assert js("detail.ermittleStatus({ ui_status: 'Offen', hinweis: 'kaputt' })") == {
         "status": "Offen",
         "hinweis": "kaputt",
     }
@@ -335,14 +311,20 @@ def test_status_unbekannt_bleibt_offen_mit_hinweis():
 
 @ohne_node
 def test_owner_explizit_hat_vorrang():
-    assert js("detail.ermittleOwner({ owner: 'mensch', task_status: 'in Umsetzung' })") == "mensch"
+    assert (
+        js(
+            "detail.ermittleOwner({ owner_default: 'mensch',"
+            " frontmatter: { owner: 'mensch', task_status: 'in Umsetzung' } })"
+        )
+        == "mensch"
+    )
 
 
 @ohne_node
-def test_owner_default_aus_status():
-    assert js("detail.ermittleOwner({ task_status: 'in Klärung' })") == "mensch"
-    assert js("detail.ermittleOwner({ status: 'Offen' })") == "ai"
-    assert js("detail.ermittleOwner({ status: 'Geschlossen' })") is None
+def test_owner_default_aus_server():
+    assert js("detail.ermittleOwner({ owner_default: 'mensch' })") == "mensch"
+    assert js("detail.ermittleOwner({ owner_default: 'ai' })") == "ai"
+    assert js("detail.ermittleOwner({ owner_default: null })") is None
 
 
 @ohne_node
@@ -351,100 +333,6 @@ def test_owner_ohne_angabe_ist_null():
 
 
 # --- UI-Läufe in Node (Mini-DOM + fetch-Proxy) ----------------------------
-
-MINI_DOM = r"""
-// Mini-DOM für Node: nur so viel, wie detail.js und api.js benutzen.
-const REGISTRIERT = new Map();
-
-class Knoten {
-  constructor(marke, art) {
-    this.marke = marke;
-    this.art = art;
-    this.kinder = [];
-    this.attribute = {};
-    this.dataset = {};
-    this.hoerer = {};
-    this.textContent = "";
-    this.hidden = false;
-    this.disabled = false;
-    this.value = "";
-    const knoten = this;
-    this.classList = {
-      add: (...namen) => {
-        const vorhanden = new Set(knoten.klassen());
-        for (const name of namen) vorhanden.add(name);
-        knoten.attribute.class = [...vorhanden].join(" ");
-      },
-      contains: (name) => knoten.klassen().includes(name),
-    };
-  }
-
-  klassen() {
-    return (this.attribute.class || "").split(/\s+/).filter(Boolean);
-  }
-
-  get className() {
-    return this.attribute.class || "";
-  }
-
-  set className(wert) {
-    this.attribute.class = wert;
-  }
-
-  get id() {
-    return this.attribute.id || "";
-  }
-
-  set id(wert) {
-    this.attribute.id = wert;
-    REGISTRIERT.set(wert, this);
-  }
-
-  setAttribute(name, wert) {
-    this.attribute[name] = wert;
-  }
-
-  getAttribute(name) {
-    return this.attribute[name] ?? null;
-  }
-
-  addEventListener(art, hoerer) {
-    if (!this.hoerer[art]) this.hoerer[art] = [];
-    this.hoerer[art].push(hoerer);
-  }
-
-  async ausloesen(art, ereignis = { preventDefault() {} }) {
-    const rueckgaben = (this.hoerer[art] || []).map((hoerer) => hoerer(ereignis));
-    await Promise.all(rueckgaben);
-  }
-
-  append(...kinder) {
-    for (const kind of kinder) {
-      if (kind.art === "fragment") this.kinder.push(...kind.kinder);
-      else this.kinder.push(kind);
-    }
-  }
-
-  replaceChildren(...kinder) {
-    this.kinder = [];
-    this.append(...kinder);
-  }
-
-  focus() {}
-
-  alleKnoten() {
-    const liste = [this];
-    for (const kind of this.kinder) liste.push(...kind.alleKnoten());
-    return liste;
-  }
-}
-
-globalThis.document = {
-  createElement: (marke) => new Knoten(marke, "element"),
-  createDocumentFragment: () => new Knoten("#fragment", "fragment"),
-  getElementById: (id) => REGISTRIERT.get(id) || null,
-};
-"""
 
 UI_UMGEBUNG = r"""
 // Fehler-/Erfolgsbereich und Detail-Container wie in index.html.

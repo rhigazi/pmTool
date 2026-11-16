@@ -5,9 +5,9 @@ Auswerte-Helfer für ``liste.js``/``detail.js``. Seiten- und Fetch-Gerüste
 bleiben in den jeweiligen Testdateien.
 
 Dies ist die **konsolidierte Quelle** (extrahiert aus ``test_welle_zuordnung.py``,
-vierte Kopie; Konsolidierung der älteren Kopien bleibt [A14-6]). Neue
-UI-Testdateien nutzen ausschließlich diesen Harness und legen keine weitere
-Kopie an; A37 stellt die älteren Kopien hierauf um.
+vierte Kopie; [A14-6]). Alle UI-Testdateien nutzen ausschließlich diesen Harness
+und legen keine weitere Kopie an; seiten- und fetch-spezifische Gerüste bleiben
+in den jeweiligen Testdateien.
 """
 
 import json
@@ -68,6 +68,7 @@ def js_detail(ausdruck: str, daten=None):
 
 MINI_DOM = r"""
 const REGISTRIERT = new Map();
+const ALLE = [];
 
 class Knoten {
   constructor(marke, art) {
@@ -100,7 +101,16 @@ class Knoten {
         knoten.attribute.class = knoten.klassen().filter((name) => !weg.has(name)).join(" ");
       },
       contains: (name) => knoten.klassen().includes(name),
+      toggle: (name, an) => {
+        const soll = an === undefined ? !knoten.classList.contains(name) : Boolean(an);
+        if (soll) {
+          knoten.classList.add(name);
+        } else {
+          knoten.attribute.class = knoten.klassen().filter((wert) => wert !== name).join(" ");
+        }
+      },
     };
+    ALLE.push(this);
   }
 
   klassen() {
@@ -156,9 +166,20 @@ class Knoten {
     return this.attribute[name] ?? null;
   }
 
+  removeAttribute(name) {
+    delete this.attribute[name];
+  }
+
   addEventListener(art, hoerer) {
     if (!this.hoerer[art]) this.hoerer[art] = [];
     this.hoerer[art].push(hoerer);
+  }
+
+  /** Löst ``art`` wie im Browser aus; ``target``/``type``/``preventDefault`` sind gesetzt. */
+  async ausloesen(art, ereignis = {}) {
+    const ausgeloest = { target: this, type: art, preventDefault() {}, ...ereignis };
+    const rueckgaben = (this.hoerer[art] || []).map((hoerer) => hoerer(ausgeloest));
+    await Promise.all(rueckgaben);
   }
 
   append(...kinder) {
@@ -210,7 +231,9 @@ class Knoten {
     return zeile;
   }
 
-  focus() {}
+  focus() {
+    globalThis.document.activeElement = this;
+  }
 
   alleKnoten() {
     const liste = [this];
@@ -228,14 +251,18 @@ globalThis.document = {
   },
   createDocumentFragment: () => new Knoten("#fragment", "fragment"),
   getElementById: (id) => REGISTRIERT.get(id) || null,
+  querySelectorAll: (auswahl) => {
+    const name = auswahl.replace(/^\./, "");
+    return ALLE.filter((knoten) => knoten.classList.contains(name));
+  },
+  addEventListener: () => {},
+  readyState: "complete",
+  activeElement: null,
 };
 
 const sammle = (el) => [el, ...(el?.kinder ?? []).flatMap(sammle)];
 const bei = (id) => document.getElementById(id);
-const ausloesen = async (knoten, art) => {
-  const ergebnisse = (knoten.hoerer[art] || []).map((hoerer) => hoerer({ target: knoten, type: art }));
-  await Promise.all(ergebnisse);
-};
+const ausloesen = async (knoten, art) => knoten.ausloesen(art);
 const optionen = (el) => (el ? el.kinder.filter((kind) => kind.marke === "option") : []);
 const optionstexte = (el) => optionen(el).map((kind) => kind.textContent);
 const optionenwerte = (el) => optionen(el).map((kind) => kind.value);
@@ -249,4 +276,11 @@ const kopfzeilen = (id) =>
     .filter((knoten) => knoten.marke === "th")
     .map((knoten) => knoten.textContent);
 const anzahl = (id, element_id) => sammle(bei(id)).filter((knoten) => knoten.id === element_id).length;
+const sichtbar = (id) => document.getElementById(id)?.hidden === false;
+const links = (id) =>
+  sammle(bei(id))
+    .filter((knoten) => knoten.marke === "a")
+    .map((knoten) => ({ text: knoten.textContent, href: knoten.href }));
+const knotenMitKlasse = (id, klasse) =>
+  sammle(bei(id)).filter((knoten) => knoten.classList.contains(klasse));
 """

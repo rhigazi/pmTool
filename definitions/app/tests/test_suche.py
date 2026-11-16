@@ -3,30 +3,24 @@
 Die UI-Szenarien S1–S6 spielt der ``tester`` mit dem Moli-Browser durch; hier
 werden ``liste.js`` und seine Verdrahtung ohne Browser geprüft. Die reine
 Such-/Filter-/Anzeigelogik läuft über Node (keine neue Abhängigkeit), die
-Montage des Suchfelds und der Live-Filter über einen Mini-DOM-Harness.
-
-Der Harness ist eine Kopie aus ``test_projekt.py`` (dritte Kopie, siehe
-A25-Planung [A14-6]) und um ``parentElement``/``insertBefore``/``insertRow``
-erweitert, weil ``liste.js`` Tabellen und das Suchfeld dynamisch einhängt.
+Montage des Suchfelds und der Live-Filter über den gemeinsamen Mini-DOM-Harness
+aus ``dom_helfer.py``; hier bleibt nur das Seiten-/Fetch-Gerüst.
 Alle Läufe arbeiten gegen Fetch-Antworten aus dem Stab — nie gegen ``wissen/``.
 """
 
 import json
 import re
-import shutil
-import subprocess
 from pathlib import Path
 
 import pytest
+
+from dom_helfer import MINI_DOM, js_liste as js, lies, node_ausfuehren, ohne_node
 
 STATIC_DIR = Path(__file__).resolve().parents[1] / "static"
 LISTE_JS = STATIC_DIR / "js" / "liste.js"
 INDEX_HTML = STATIC_DIR / "index.html"
 STYLE_CSS = STATIC_DIR / "style.css"
 SERVER_PY = Path(__file__).resolve().parents[1] / "server.py"
-NODE = shutil.which("node")
-
-ohne_node = pytest.mark.skipif(NODE is None, reason="node nicht verfügbar")
 
 KEINE_TREFFER = "Keine Treffer."
 KEINE_EINTRAEGE = "Keine Einträge."
@@ -38,34 +32,6 @@ SUCHE_IDS = {
     "wellen": "suche-wellen",
     "aufgaben": "suche-aufgaben",
 }
-
-
-def lies(pfad: Path) -> str:
-    assert pfad.is_file(), f"{pfad} fehlt"
-    return pfad.read_text(encoding="utf-8")
-
-
-def node_ausfuehren(skript: str) -> dict:
-    """Führt ein Node-Skript aus und liest das JSON-Ergebnis aus stdout."""
-    assert NODE is not None
-    ergebnis = subprocess.run(
-        [NODE, "--input-type=module", "-e", skript],
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    assert ergebnis.returncode == 0, ergebnis.stderr
-    return json.loads(ergebnis.stdout)
-
-
-def js(ausdruck: str, daten=None):
-    """Wertet einen Ausdruck im Kontext von ``liste.js`` über Node aus."""
-    skript = (
-        f"import * as liste from {json.dumps(LISTE_JS.as_uri())};\n"
-        f"const daten = {json.dumps(daten, ensure_ascii=False)};\n"
-        f"console.log(JSON.stringify({ausdruck}));"
-    )
-    return node_ausfuehren(skript)
 
 
 # --- Fixtures -------------------------------------------------------------
@@ -169,152 +135,9 @@ DOM_EINTRAEGE = [
 
 HTML_PAYLOAD = "<img src=x onerror=alert(1)>"
 
-# --- Mini-DOM-Harness (aus test_projekt.py übernommen und erweitert) ------
+# --- Seiten-Gerüst (Mini-DOM aus dom_helfer.py) --------------------------
 
-MINI_DOM = r"""
-const REGISTRIERT = new Map();
-
-class Knoten {
-  constructor(marke, art) {
-    this.marke = marke;
-    this.art = art;
-    this.kinder = [];
-    this.attribute = {};
-    this.dataset = {};
-    this.hoerer = {};
-    this.hidden = false;
-    this.disabled = false;
-    this.value = "";
-    this.type = "";
-    this.scope = "";
-    this.href = "";
-    this.htmlFor = "";
-    this._text = "";
-    this._eltern = null;
-    const knoten = this;
-    this.classList = {
-      add: (...namen) => {
-        const vorhanden = new Set(knoten.klassen());
-        for (const name of namen) vorhanden.add(name);
-        knoten.attribute.class = [...vorhanden].join(" ");
-      },
-      remove: (...namen) => {
-        const weg = new Set(namen);
-        knoten.attribute.class = knoten.klassen().filter((name) => !weg.has(name)).join(" ");
-      },
-      contains: (name) => knoten.klassen().includes(name),
-    };
-  }
-
-  klassen() {
-    return (this.attribute.class || "").split(/\s+/).filter(Boolean);
-  }
-
-  get textContent() {
-    if (this.kinder.length === 0) return this._text;
-    return this.kinder.map((kind) => kind.textContent).join("");
-  }
-
-  set textContent(wert) {
-    this._text = String(wert);
-    this.kinder = [];
-  }
-
-  get id() {
-    return this.attribute.id || "";
-  }
-
-  set id(wert) {
-    this.attribute.id = wert;
-    REGISTRIERT.set(wert, this);
-  }
-
-  get parentElement() {
-    return this._eltern;
-  }
-
-  setAttribute(name, wert) {
-    this.attribute[name] = wert;
-  }
-
-  getAttribute(name) {
-    return this.attribute[name] ?? null;
-  }
-
-  addEventListener(art, hoerer) {
-    if (!this.hoerer[art]) this.hoerer[art] = [];
-    this.hoerer[art].push(hoerer);
-  }
-
-  append(...kinder) {
-    for (const kind of kinder) {
-      if (kind.art === "fragment") {
-        for (const teil of kind.kinder) this.append(teil);
-      } else {
-        kind._eltern = this;
-        this.kinder.push(kind);
-      }
-    }
-  }
-
-  insertBefore(neu, bezug) {
-    neu._eltern = this;
-    const index = this.kinder.indexOf(bezug);
-    if (index === -1) this.kinder.push(neu);
-    else this.kinder.splice(index, 0, neu);
-    return neu;
-  }
-
-  replaceChildren(...kinder) {
-    this.kinder = [];
-    this._text = "";
-    this.append(...kinder);
-  }
-
-  remove() {
-    if (!this._eltern) return;
-    this._eltern.kinder = this._eltern.kinder.filter((kind) => kind !== this);
-    this._eltern = null;
-  }
-
-  createTHead() {
-    const kopf = document.createElement("thead");
-    this.append(kopf);
-    return kopf;
-  }
-
-  createTBody() {
-    const koerper = document.createElement("tbody");
-    this.append(koerper);
-    return koerper;
-  }
-
-  insertRow() {
-    const zeile = document.createElement("tr");
-    this.append(zeile);
-    return zeile;
-  }
-
-  focus() {}
-
-  alleKnoten() {
-    const liste = [this];
-    for (const kind of this.kinder) liste.push(...kind.alleKnoten());
-    return liste;
-  }
-}
-
-globalThis.document = {
-  createElement: (marke) => new Knoten(marke, "element"),
-  createTextNode: (text) => {
-    const knoten = new Knoten("#text", "text");
-    knoten._text = String(text);
-    return knoten;
-  },
-  createDocumentFragment: () => new Knoten("#fragment", "fragment"),
-  getElementById: (id) => REGISTRIERT.get(id) || null,
-};
-
+SEITEN_DOM = r"""
 // Ansichtsgerüst wie in index.html (A10/A11): Formular, Tabellencontainer,
 // Zusatzblöcke der Übersicht.
 const ANSICHTEN_DOM = [
@@ -351,6 +174,7 @@ const ANSICHTEN_DOM = [
 for (const eintrag of ANSICHTEN_DOM) {
   const bereich = document.createElement("section");
   bereich.id = eintrag.ansicht;
+  bereich._imDokument = true;
   const titel = document.createElement("h2");
   titel.textContent = eintrag.titel;
   const formular = document.createElement("form");
@@ -380,23 +204,8 @@ for (const id of ["fehler", "meldung"]) {
   const bereich = document.createElement("div");
   bereich.id = id;
   bereich.hidden = true;
+  bereich._imDokument = true;
 }
-
-const sammle = (el) => [el, ...(el?.kinder ?? []).flatMap(sammle)];
-const bei = (id) => document.getElementById(id);
-const ausloesen = async (knoten, art) => {
-  for (const hoerer of knoten.hoerer[art] || []) await hoerer({ target: knoten, type: art });
-};
-const pfade = (id) =>
-  sammle(bei(id))
-    .filter((knoten) => knoten.marke === "tr" && knoten.dataset.path)
-    .map((knoten) => knoten.dataset.path);
-const kopfzeilen = (id) =>
-  sammle(bei(id))
-    .filter((knoten) => knoten.marke === "th")
-    .map((knoten) => knoten.textContent);
-const anzahl = (id, element_id) =>
-  sammle(bei(id)).filter((knoten) => knoten.id === element_id).length;
 """
 
 FETCH_STAB = r"""
@@ -421,6 +230,7 @@ def dom(ablauf: str, antworten: dict | None = None) -> dict:
     """Führt einen Ablauf im DOM-Harness aus; Antworten kommen aus dem Stab."""
     skript = (
         MINI_DOM
+        + SEITEN_DOM
         + FETCH_STAB.replace("__ANTWORTEN__", json.dumps(antworten or {}, ensure_ascii=False))
         + f"\nimport * as liste from {json.dumps(LISTE_JS.as_uri())};\n"
         + "const ergebnis = await (async () => {\n"

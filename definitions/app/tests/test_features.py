@@ -6,12 +6,12 @@ läuft über Node (keine neue Abhängigkeit), die Ansichten im Node-DOM-Harness 
 einmal mit Antworten aus dem Fetch-Stab und einmal per HTTP gegen ein
 Test-Bundle unter ``tmp_path`` (nie gegen das echte Projekt-Bundle). Genutzt
 werden ausschließlich ``GET /api/file`` und ``GET /api/aufgaben``.
+Der Mini-DOM-Harness liegt in ``dom_helfer.py``; hier bleiben Seiten- und
+Fetch-Gerüst.
 """
 
 import json
 import re
-import shutil
-import subprocess
 import sys
 import threading
 from pathlib import Path
@@ -19,6 +19,8 @@ from urllib.parse import unquote
 
 import pytest
 from werkzeug.serving import make_server
+
+from dom_helfer import MINI_DOM, lies, node_ausfuehren, ohne_node
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -29,9 +31,6 @@ INDEX_HTML = STATIC_DIR / "index.html"
 FEATURES_JS = STATIC_DIR / "js" / "features.js"
 APP_JS = STATIC_DIR / "js" / "app.js"
 SERVER_PY = Path(__file__).resolve().parents[1] / "server.py"
-NODE = shutil.which("node")
-
-ohne_node = pytest.mark.skipif(NODE is None, reason="node nicht verfügbar")
 
 FEATURES_PFAD = "features.md"
 AUFGABEN_ENDPUNKT = "/api/aufgaben"
@@ -101,24 +100,6 @@ FEATURES_ERWARTET = [
 ]
 
 LEERER_ABSCHNITT_MD = "# Offene Features\n\n# Umgesetzte Features\n\n*Noch keine.*\n"
-
-
-def lies(pfad: Path) -> str:
-    assert pfad.is_file(), f"{pfad} fehlt"
-    return pfad.read_text(encoding="utf-8")
-
-
-def node_ausfuehren(skript: str) -> dict:
-    """Führt ein Node-Skript aus und liest das JSON-Ergebnis aus stdout."""
-    assert NODE is not None
-    ergebnis = subprocess.run(
-        [NODE, "--input-type=module", "-e", skript],
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    assert ergebnis.returncode == 0, ergebnis.stderr
-    return json.loads(ergebnis.stdout)
 
 
 def js(ausdruck: str, daten=None):
@@ -728,134 +709,14 @@ def test_t15_ohne_luecken_ist_die_liste_leer():
 
 # --- DOM-Harness (T16–T21) -------------------------------------------------
 
-MINI_DOM = r"""
-// Mini-DOM für Node: nur so viel, wie features.js, detail.js und api.js benutzen.
-const REGISTRIERT = new Map();
-const ALLE = [];
-
-class Knoten {
-  constructor(marke, art) {
-    this.marke = marke;
-    this.art = art;
-    this.kinder = [];
-    this.attribute = {};
-    this.dataset = {};
-    this.hoerer = {};
-    this.hidden = false;
-    this.disabled = false;
-    this.value = "";
-    this._text = "";
-    const knoten = this;
-    this.classList = {
-      add: (...namen) => {
-        const vorhanden = new Set(knoten.klassen());
-        for (const name of namen) vorhanden.add(name);
-        knoten.attribute.class = [...vorhanden].join(" ");
-      },
-      contains: (name) => knoten.klassen().includes(name),
-      toggle: (name, an) => {
-        const soll = an === undefined ? !knoten.classList.contains(name) : Boolean(an);
-        if (soll) {
-          knoten.classList.add(name);
-        } else {
-          knoten.attribute.class = knoten.klassen().filter((wert) => wert !== name).join(" ");
-        }
-      },
-    };
-    ALLE.push(this);
-  }
-
-  klassen() {
-    return (this.attribute.class || "").split(/\s+/).filter(Boolean);
-  }
-
-  get textContent() {
-    if (this.kinder.length === 0) return this._text;
-    return this.kinder.map((kind) => kind.textContent).join("");
-  }
-
-  set textContent(wert) {
-    this._text = String(wert);
-    this.kinder = [];
-  }
-
-  get id() {
-    return this.attribute.id || "";
-  }
-
-  set id(wert) {
-    this.attribute.id = wert;
-    REGISTRIERT.set(wert, this);
-  }
-
-  setAttribute(name, wert) {
-    this.attribute[name] = wert;
-  }
-
-  getAttribute(name) {
-    return this.attribute[name] ?? null;
-  }
-
-  removeAttribute(name) {
-    delete this.attribute[name];
-  }
-
-  addEventListener(art, hoerer) {
-    if (!this.hoerer[art]) this.hoerer[art] = [];
-    this.hoerer[art].push(hoerer);
-  }
-
-  append(...kinder) {
-    for (const kind of kinder) {
-      if (kind.art === "fragment") this.kinder.push(...kind.kinder);
-      else this.kinder.push(kind);
-    }
-  }
-
-  replaceChildren(...kinder) {
-    this.kinder = [];
-    this._text = "";
-    this.append(...kinder);
-  }
-
-  focus() {}
-
-  alleKnoten() {
-    const liste = [this];
-    for (const kind of this.kinder) liste.push(...kind.alleKnoten());
-    return liste;
-  }
-}
-
-globalThis.document = {
-  createElement: (marke) => new Knoten(marke, "element"),
-  createDocumentFragment: () => new Knoten("#fragment", "fragment"),
-  createTextNode: (text) => {
-    const knoten = new Knoten("#text", "text");
-    knoten.textContent = text;
-    return knoten;
-  },
-  getElementById: (id) => REGISTRIERT.get(id) || null,
-  querySelectorAll: (auswahl) => {
-    const name = auswahl.replace(/^\./, "");
-    return ALLE.filter((knoten) => knoten.classList.contains(name));
-  },
-  addEventListener: () => {},
-  readyState: "complete",
-};
-
+SEITEN_DOM = r"""
 // Fehler-/Erfolgsbereich und der Feature-Container (wie index.html).
 for (const id of ["fehler", "meldung", "liste-features"]) {
   const bereich = document.createElement("div");
   bereich.id = id;
   if (id === "fehler" || id === "meldung") bereich.hidden = true;
+  bereich._imDokument = true;
 }
-
-const sammle = (el) => [el, ...(el.kinder ?? []).flatMap(sammle)];
-const bei = (id) => document.getElementById(id);
-const sichtbar = (id) => document.getElementById(id)?.hidden === false;
-const links = (id) => sammle(bei(id)).filter((k) => k.marke === "a").map((k) => ({ text: k.textContent, href: k.href }));
-const knotenMitKlasse = (id, klasse) => sammle(bei(id)).filter((k) => k.classList.contains(klasse));
 """
 
 FETCH_STAB = r"""
@@ -892,6 +753,7 @@ globalThis.fetch = async (pfad, optionen = {}) => {
 def _harness(ablauf: str, fetch_skript: str) -> dict:
     skript = (
         MINI_DOM
+        + SEITEN_DOM
         + fetch_skript
         + f"\nimport * as features from {json.dumps(FEATURES_JS.as_uri())};\n"
         + "const ergebnis = await (async () => {\n"
@@ -1335,6 +1197,7 @@ def test_t21_ohne_container_und_ohne_fehlerbereich_ist_robust():
 
 APP_UMGEBUNG = (
     MINI_DOM
+    + SEITEN_DOM
     + r"""
 const basisListe = ["uebersicht", "wellen", "aufgaben", "features", "entscheidungen", "projekt", "detail"];
 const sicht = {};
@@ -1673,6 +1536,9 @@ def test_t17_klick_auf_aufgabe_oeffnet_die_detailansicht():
                 "owner": "ai",
             },
             "markdown": "# A2 Status-Mapping\n\nMapping-Beschreibung.\n",
+            # A35: Der UI-Status kommt aus der Server-Ableitung, nicht mehr aus
+            # einem JS-Spiegel des task_status.
+            "ui_status": "In Arbeit",
         },
     }
     ergebnis = app_lauf(ablauf, antworten)
