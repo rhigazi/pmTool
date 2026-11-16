@@ -6,7 +6,9 @@ durch ``definitions/wissen-vorlage/`` ersetzt. Ohne ``--ja`` wird nur der Plan
 ausgegeben und nichts verändert; mit ``--ja`` entsteht vorher ein Backup
 ``wissen-backup-YYYYMMDD-HHMMSS.tar.gz`` im Projekt-Root. Ein bereits
 vorhandenes Backup-Ziel wird abgelehnt, nie überschrieben; auch ein baumelnder
-Symlink zählt als belegt (``os.path.lexists``).
+Symlink zählt als belegt (``os.path.lexists``). Geöffnet wird das Archiv
+exklusiv (``O_CREAT | O_EXCL``), damit auch ein Wettlauf zwischen Prüfung und
+Öffnen nichts überschreiben kann.
 
 Aufruf:
     python3 tools/neues_projekt.py
@@ -155,11 +157,16 @@ def ist_cache_artefakt(rel):
     return any(teil in CACHE_ORDNER for teil in rel.parts) or rel.suffix in CACHE_ENDUNGEN
 
 
+def _fehlende_pflichtdateien(basis):
+    """Pflichtdateien, die unter ``basis`` als Datei fehlen (leer = vollständig)."""
+    return [rel for rel in PFLICHTDATEIEN if not (basis / rel).is_file()]
+
+
 def pruefe_vorlage(vorlage):
     """Prüft die Vorlage vollständig, bevor irgendetwas gelöscht wird."""
     if not vorlage.is_dir():
         raise VorlageFehler(f"Vorlage fehlt: {VORLAGE.as_posix()}/ — es wurde nichts gelöscht.")
-    fehlend = [rel for rel in PFLICHTDATEIEN if not (vorlage / rel).is_file()]
+    fehlend = _fehlende_pflichtdateien(vorlage)
     if fehlend:
         raise VorlageFehler(
             f"Vorlage unvollständig: {VORLAGE.as_posix()}/ — fehlt {', '.join(fehlend)}. "
@@ -184,12 +191,18 @@ def backup_erstellen(wissen, ziel):
     """Packt ``wissen/`` in ein tar.gz; bei jedem Fehler bleibt der Altstand erhalten.
 
     Ein bereits vorhandenes Ziel wird abgelehnt: ``tarfile`` würde es sonst
-    truncaten und damit eine frühere Sicherung vernichten. Die Prüfung nutzt
+    truncaten und damit eine frühere Sicherung vernichten. Die Vorprüfung nutzt
     ``lexists``, damit auch ein baumelnder Symlink nicht als frei gilt (das
     Schreiben würde sonst durch den Link in ein fremdes Ziel gehen). Diese
-    Barriere steht bewusst zusätzlich zur CLI-Vorprüfung. Rest-TOCTOU (R8):
-    zwischen ``lexists`` und dem Öffnen des Archivs kann das Ziel ausgetauscht
-    werden — ein atomares ``O_EXCL``-Öffnen ist bewusst Post-MVP.
+    Barriere steht bewusst zusätzlich zur CLI-Vorprüfung.
+
+    Rest-TOCTOU (R8) ist geschlossen: Das Archiv wird mit
+    ``O_WRONLY | O_CREAT | O_EXCL`` geöffnet. Erscheint das Ziel zwischen
+    ``lexists`` und dem Öffnen, schlägt das Öffnen mit ``FileExistsError`` fehl
+    und wird als ``BackupFehler`` gemeldet — nichts wird überschrieben, ein
+    untergeschobener Symlink wird nicht verfolgt. Danach schreibt ``tarfile``
+    nur noch in den bereits geöffneten Deskriptor; ein Pfad-Rennen gibt es dort
+    nicht mehr.
     """
     # lexists-Defensive (B1-K3): baumelnder Symlink gilt als belegt,
     # damit tarfile nicht durch den Link in ein fremdes Ziel schreibt.
@@ -199,8 +212,21 @@ def backup_erstellen(wissen, ziel):
         )
     try:
         ziel.parent.mkdir(parents=True, exist_ok=True)
-        with tarfile.open(ziel, "w:gz") as archiv:
-            archiv.add(wissen, arcname=wissen.name, recursive=True)
+        deskriptor = os.open(ziel, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
+    except FileExistsError as fehler:
+        # Wettlauf verloren: das Ziel ist zwischen Prüfung und Öffnen entstanden
+        # (oder ein Symlink) — es bleibt unangetastet.
+        raise BackupFehler(
+            f"Backup-Ziel existiert bereits ({ziel}). Es wurde nichts gelöscht."
+        ) from fehler
+    except OSError as fehler:
+        raise BackupFehler(
+            f"Backup fehlgeschlagen ({fehler}). Es wurde nichts gelöscht."
+        ) from fehler
+    try:
+        with os.fdopen(deskriptor, "wb") as roh:
+            with tarfile.open(fileobj=roh, mode="w:gz") as archiv:
+                archiv.add(wissen, arcname=wissen.name, recursive=True)
     except (OSError, tarfile.TarError) as fehler:
         try:
             ziel.unlink(missing_ok=True)
@@ -251,6 +277,14 @@ def tausche_gegen_vorlage(root, wissen, vorlage):
     alt_erhalten = False
     try:
         kopiere_vorlage(vorlage, neu)
+        # B1-K2: die Erfolgsmeldung behauptet „Pflichtdateien übernommen (8/8)“ —
+        # das wird am aufgebauten Baum geprüft, nicht nur an der Vorlage.
+        fehlend = _fehlende_pflichtdateien(neu)
+        if fehlend:
+            raise NeuesProjektFehler(
+                "Pflichtdateien fehlen im Neuaufbau: "
+                f"{', '.join(fehlend)}. Es wurde nichts gelöscht."
+            )
 
         if wissen.exists():
             alt = Path(tempfile.mkdtemp(dir=root, prefix=".wissen-alt-"))

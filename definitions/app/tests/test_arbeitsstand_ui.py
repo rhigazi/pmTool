@@ -164,6 +164,17 @@ const statusZelle = (zeile) => {
   return zelle ? zelle.textContent : "";
 };
 
+// Zellenwerte über die Kopfzeile zuordnen — kein fester Spaltenindex (A42/T15):
+// eine neue Spalte verschiebt die Zellen, der Kopf wandert mit.
+const spalten = (id, zeile) => {
+  const kopf = kopfzeilen(id);
+  const werte = {};
+  zeile.kinder.forEach((zelle, index) => {
+    if (index < kopf.length) werte[kopf[index]] = zelle.textContent;
+  });
+  return werte;
+};
+
 // Zeilen einer Tabelle mit ihren Zelleninhalten und Arbeitsstand-Knoten.
 const zeilen = (id) =>
   sammle(bei(id))
@@ -171,6 +182,7 @@ const zeilen = (id) =>
     .map((zeile) => ({
       path: zeile.dataset.path,
       zellen: zeile.kinder.map((zelle) => zelle.textContent),
+      spalten: spalten(id, zeile),
       status: statusZelle(zeile),
       arbeitsstaende: sammle(zeile)
         .filter((knoten) => knoten.classList.contains("arbeitsstand"))
@@ -318,11 +330,11 @@ return {
     assert mit["arbeitsstaende"] == [{"marke": "div", "text": ARBEITSSTAND}]
     assert mit["status"].count(ARBEITSSTAND) == 1
     assert "In Arbeit" in mit["status"]
-    # Titel-/owner-Zellen bleiben unverändert.
-    assert mit["zellen"][0] == "A30: Was passiert gerade"
-    # Härtungs-Kandidat (B10, nur Vermerk): owner-Zelle über Index [3]
-    # ist brüchig; langfristig über die Klasse "arbeitsstand"/Spaltenname prüfen.
-    assert mit["zellen"][3] == "ai"
+    # Titel-/owner-Zellen bleiben unverändert — über den Spaltenkopf zugeordnet,
+    # nicht über den Index (A42/T15: eine neue Spalte verschiebt nur die Zellen).
+    assert list(mit["spalten"]) == ergebnis["kopf"]
+    assert mit["spalten"]["Titel"] == "A30: Was passiert gerade"
+    assert mit["spalten"]["owner"] == "ai"
     # Aufgabe ohne Angabe: keine Zusatzzeile.
     assert ohne["arbeitsstaende"] == []
     assert ohne["status"] == "Offen"

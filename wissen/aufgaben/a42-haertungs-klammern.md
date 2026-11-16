@@ -3,12 +3,12 @@ type: Task
 title: "A42: Härtungs-Klammern (B1-K2, T15-Index, O_EXCL-Backup)"
 description: Drei gesammelte Härtungs-Punkte umsetzen (B1-K2 Negativ-Check Pflichtdateien, robuste Rest-Index-Assertion test_arbeitsstand_ui T15, O_EXCL-Öffnen im Backup-Werkzeug R8-Rest-TOCTOU).
 freigabe: true
-task_status: offen
-phase: 2 Planung
+task_status: im Review
+phase: 5 Review
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: ""
+aktuell: "reviewer: A42 Review (Mutanten + Urteil)"
 ---
 
 # Ziel
@@ -46,5 +46,12 @@ Drei aus Reviews gesammelte Härtungs-Klammern werden umgesetzt (Lückenliste `d
 - `definitions/app/tests/test_setup_verteilung.py` (ggf. B1-K2-Test)
 
 # Ergebnisse
+## 2026-11-16 — coder (Welle B): Härtungs-Klammern — 13 neue Tests grün
 
-Noch keine Einträge. Der `documenter` pflegt hier je Übergabe Datum, Rolle, Ergebnis, Befunde und Belege.
+- **B1-K2:** `_fehlende_pflichtdateien(basis)` als einzige Quelle; **neu** prüft `tausche_gegen_vorlage` die Pflichtdateien am **aufgebauten Baum** vor dem Tausch (belegt die Erfolgsmeldung „8/8 übernommen"); Fehlendes → `NeuesProjektFehler` („Es wurde nichts gelöscht."), Altstand byte-gleich, Backup erhalten. Tests +11 (parametrisiert über alle 8 Pflichtdateien + Post-Copy-Abbruch); Mutante `return []` → 9 failed. Bundle-seitiger Negativ-Check bleibt in `verify.sh` (A40, gesperrt für A42).
+- **T15:** `test_arbeitsstand_ui.py` ordnet Zellen **über die Kopfzeile** zu (`spalten(id, zeile)`), keine Index-Assertion mehr; Aussage unverändert. Grenzproben: legitime neue Spalte „Priorität" → neue Assertion grün/alt rot; Zelle ohne Kopf → rot. 25 grün.
+- **R8/O_EXCL:** `backup_erstellen` öffnet das Archiv `os.open(ziel, O_WRONLY|O_CREAT|O_EXCL)` (Tarfile schreibt in den Deskriptor); `FileExistsError` → `BackupFehler`, Ziel unangetastet, Symlink nicht verfolgt. **Vorher-Nachweis (HEAD):** fremdes Backup wurde truncatet, durch untergeschobenen Symlink wurde **nach außen geschrieben** — beides jetzt abgewiesen (2 neue Tests, gegen HEAD rot). Sicherheitsinvariante „kein Löschen ohne erhaltenes Backup" unverändert; Docstrings auf neuen Stand (Rest-Risiko: nur tarfile-Interna).
+- **Drift (A26-Regel):** Quelle↔Spiegel byte-identisch (`sha256sum`), `diff -rq` leer, T7 grün. Läufe: `test_neues_projekt.py` **49** (vorher 38), `test_arbeitsstand_ui.py` 25, Kombi 67–84 grün (t10 unter Parallel-Last abgebrochen — Sammellauf klärt).
+- **Bewusst:** Post-Copy-Prüfung ist eine Verhaltensergänzung (begründet); bei verlorenem Namens-Wettlauf bricht der Reset ab statt auf `-2` auszuweichen (sichere Variante, im Docstring benannt); ein angepasster Bestandstest (Fake schreibt in `kwargs["fileobj"]`), Assertion unverändert.
+- **Offen:** Review läuft.
+

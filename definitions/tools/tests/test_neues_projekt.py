@@ -341,8 +341,9 @@ def test_backup_fehler_verhindert_loeschen(projekt, capsys, monkeypatch):
 
 
 def test_backup_fehler_laesst_kein_halbfertiges_archiv_zurueck(projekt, capsys, monkeypatch):
-    def kaputtes_backup(pfad, *args, **kwargs):
-        Path(pfad).write_bytes(b"halb")
+    def kaputtes_backup(*args, **kwargs):
+        # R8: tarfile schreibt in den bereits exklusiv geöffneten Deskriptor.
+        kwargs["fileobj"].write(b"halb")
         raise OSError("Schreiben fehlgeschlagen")
 
     monkeypatch.setattr(neues_projekt.tarfile, "open", kaputtes_backup)
@@ -423,6 +424,55 @@ def test_backup_erstellen_lehnt_baumelnden_symlink_ab(projekt):
     assert baum(projekt / "wissen") == vorher
 
 
+# --- R8: exklusives Öffnen (O_EXCL) gegen den Rest-TOCTOU -------------------
+
+
+def _lexists_vergessen(monkeypatch, ziel):
+    """Simuliert den Wettlauf: ``lexists`` sieht das Ziel frei, obwohl es belegt ist.
+
+    Nur der exakte Zielpfad wird „übersehen"; alle anderen Pfade (etwa die
+    Ausweichnamen in ``_backup_name``) behalten das echte Verhalten.
+    """
+    echt = os.path.lexists
+    ziel = Path(ziel)
+    monkeypatch.setattr(
+        neues_projekt.os.path,
+        "lexists",
+        lambda pfad: False if Path(pfad) == ziel else echt(pfad),
+    )
+
+
+def test_backup_erstellen_oeffnet_exklusiv_trotz_verlorenem_wettlauf(projekt, monkeypatch):
+    """R8: erscheint das Ziel nach ``lexists``, wird es nicht truncatet."""
+    vorher = baum(projekt / "wissen")
+    ziel = projekt / "wettlauf.tar.gz"
+    ziel.write_bytes(b"fremde sicherung")
+    _lexists_vergessen(monkeypatch, ziel)
+
+    with pytest.raises(neues_projekt.BackupFehler) as fehler:
+        neues_projekt.backup_erstellen(projekt / "wissen", ziel)
+
+    assert ziel.read_bytes() == b"fremde sicherung"
+    assert "existiert" in str(fehler.value)
+    assert baum(projekt / "wissen") == vorher
+
+
+def test_backup_erstellen_oeffnet_exklusiv_gegen_symlink_rennen(
+    projekt, tmp_path_factory, monkeypatch
+):
+    """R8: ein nach ``lexists`` untergeschobener Symlink wird nicht beschrieben."""
+    ziel = projekt / "wettlauf.tar.gz"
+    aussen = tmp_path_factory.mktemp("aussen") / "fremd.tar.gz"
+    ziel.symlink_to(aussen)
+    _lexists_vergessen(monkeypatch, ziel)
+
+    with pytest.raises(neues_projekt.BackupFehler):
+        neues_projekt.backup_erstellen(projekt / "wissen", ziel)
+
+    assert ziel.is_symlink()
+    assert not aussen.exists(), "das Archiv wurde durch den Link nach außen geschrieben"
+
+
 def test_backup_name_zaehlt_vorhandene_backups_hoch(projekt):
     """K3: deterministische Ausweichnamen — Basis und ``-2`` belegt → ``-3``."""
     zeitpunkt = datetime(2026, 1, 1, 12, 0, 0)
@@ -481,6 +531,44 @@ def test_unvollstaendige_vorlage_nennt_fehlende_datei(projekt, capsys):
     assert "features.md" in captured.err
     assert baum(projekt / "wissen") == vorher
     assert backups(projekt) == []
+
+
+@pytest.mark.parametrize("pflichtdatei", neues_projekt.PFLICHTDATEIEN)
+def test_fehlende_pflichtdatei_der_vorlage_wird_gemeldet(projekt, capsys, pflichtdatei):
+    """B1-K2: jede Pflichtdatei der Vorlage wird einzeln als fehlend erkannt."""
+    vorher = baum(projekt / "wissen")
+    (projekt / "definitions" / "wissen-vorlage" / pflichtdatei).unlink()
+
+    exit_code = reset(projekt, "--ja")
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert pflichtdatei in captured.err
+    assert "unvollständig" in captured.err
+    assert baum(projekt / "wissen") == vorher
+    assert backups(projekt) == []
+
+
+def test_fehlende_pflichtdatei_im_neuaufbau_bricht_ab(projekt, capsys, monkeypatch):
+    """B1-K2: fehlt eine Pflichtdatei im aufgebauten Baum, wird nicht getauscht."""
+    vorher = baum(projekt / "wissen")
+    echt = neues_projekt.kopiere_vorlage
+
+    def ohne_features(quelle, ziel):
+        echt(quelle, ziel)
+        (ziel / "features.md").unlink()
+
+    monkeypatch.setattr(neues_projekt, "kopiere_vorlage", ohne_features)
+
+    exit_code = reset(projekt, "--ja")
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "features.md" in captured.err
+    assert "Pflichtdatei" in captured.err
+    assert baum(projekt / "wissen") == vorher
+    # Das vorher erstellte Backup bleibt erhalten: nichts wurde ohne Backup gelöscht.
+    assert len(backups(projekt)) == 1
 
 
 def test_leere_vorlage_bricht_ohne_loeschung_ab(projekt, capsys):
