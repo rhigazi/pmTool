@@ -2,6 +2,14 @@
 
 Alle Projektentscheidungen, neueste zuerst. Format: `## YYYY-MM-DD: Titel` mit **Entscheidung**, **Begründung** und **Auswirkung**.
 
+## 2026-11-16: Subagent-Modell zurück auf `deepseek-v4.1-flash` (revidiert die Beam-Entscheidung)
+
+**Entscheidung:** Auf Anweisung der Projektleitung (2026-11-16, Menschen-Kanal: „Ab jetzt lass die neuen SubAgenten mit Modell deepseek-v4.1-flash laufen") laufen **alle neuen Subagenten-Aufträge** wieder mit `deepseek-v4.1-flash` (Projektstandard). Die bereits laufenden Stränge (A26-Bestätigungs-Review, Delta-Bestätigungs-Lauf) beenden ihren Lauf mit Beam — nur **neue** Aufträge sind betroffen. Die Beam-Entscheidung von heute Morgen ist damit für die Zukunft aufgehoben (für die Historie unverändert stehen).
+
+**Begründung:** Ausdrückliche Weisung der Projektleitung; die Modellwahl folgt wieder dem in `AGENTS.md`/`definitions/AGENTS.md` dokumentierten Projektstandard (Subagenten `deepseek-v4.1-flash`, PM `mimo-v2.6-pro`).
+
+**Auswirkung:** Alle ab sofort gestarteten Subagenten (`planner`/`coder`/`reviewer`/`tester`/`documenter`) tragen `model: deepseek-v4.1-flash`; Protokolle nennen das Modell weiterhin mit. Revidierbar bei abweichender Weisung.
+
 ## 2026-11-16: Welle 3 freigegeben (Menschen-Kanal über die App)
 
 **Entscheidung:** Die Projektleitung hat **Welle 3 freigegeben** („W3 ist freigegeben", 2026-11-16, Menschen-Kanal). Die Freigabe wurde **von der Projektleitung selbst über die App gesetzt** (Änderung an `wellen/w3.md`: `freigabe: true`, gesetzt über `POST /api/freigabe` — Menschen-Kanal, im Arbeitsbaum als uncommittete Änderung vorgefunden und vom PM als Nutzer-Arbeit erkannt und gepusht). Damit ist der Gate-Zustand formal sauber: **A34** (einzige Aufgabe mit `welle: wellen/w3.md`) erfüllt das UND-Gate ausdrücklich (Aufgabe `freigabe: true` **und** Welle `freigabe: true`) — die Pakete A34-P3/P4 laufen nicht mehr nur auf Basis der Arbeitsanweisung. `wellen/w3.md` hat keine eigenen Aufgaben-Verweise im Body; weitere Aufgaben sind nicht betroffen (A35–A38/A22/A21 bleiben gesperrt ohne Weisung).
