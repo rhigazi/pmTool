@@ -35,7 +35,11 @@ Noch keine Einträge — der `planner` ergänzt die Testfälle.
 Noch keine Einträge — die Planung ergänzt die betroffenen Dateien.
 
 # Ergebnisse
-# Ergebnisse
+## 2026-11-16 — reviewer (kombiniert mit A37): FREIGEGEBEN — Rücklauf W1/W2 läuft
+
+- **Urteil:** FREIGEGEBEN — 7/7 A35-Mutanten getötet (M1 `hinweis` weg, M2 `owner_default` getauscht, M3 Mapping vertauscht, M4 Spiegel zurück, M5 JS-Fallback, M6 owner-Vorrang, M14 nur-Task); eine überlebende Mutante (M15 JS-Fallback auf `frontmatter.status`) = **Testlücke W1**. Mapping-Matrix 11/11 deckungsgleich zur Spec.
+- **Befunde:** W1 `test_t5` parametrisieren (auch `status`-Zweig pinnen); W2 `test_owner_explizit_hat_vorrang` spreizen (beide Werte `mensch` → keine Aussage); W3 Doku-Doppelüberschrift (PM-Bug, behoben); K1 Spec/README um `ui_status`/`hinweis`/`owner_default` ergänzen → Doku-Runde. W6 (Commit-Schnitt `e2ef34f` allein rot) = Prozess-Lektion: Testanpassungen mit der Produktänderung committen.
+
 
 ## 2026-11-16 — coder (Welle A): Status-Mapping server-seitig — 37 neue Tests grün
 

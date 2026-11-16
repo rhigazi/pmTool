@@ -37,7 +37,11 @@ Noch keine Einträge — der `planner` ergänzt die Testfälle.
 Noch keine Einträge — die Planung ergänzt die betroffenen Dateien.
 
 # Ergebnisse
-# Ergebnisse
+## 2026-11-16 — reviewer (kombiniert mit A35): FREIGEGEBEN — Rücklauf W4/W5 läuft
+
+- **Urteil:** FREIGEGEBEN — 6/7 A37-Mutanten getötet (focus/ausloesen/toggle/Import/querySelectorAll/globales ausloesen); eine überlebende (M10 `removeAttribute` als No-op) = **Testlücke W4**. Funktions-/Assert-Deltas exakt aufgeklärt (nur Helfer-Asserts weg), Baseline/Endstand 368→368 bestätigt, API additiv.
+- **Befunde:** W4 Zwei-Hash-Navigation testen (`aria-current` muss wandern); W5 veralteter `abgeben`-Helfer + falscher Kommentar in `test_unteraufgabe_ui.py`; W6 Commit-Schnitt (s. A35); W7 Doku-Doppelüberschrift (PM-Bug, behoben).
+
 
 ## 2026-11-16 — coder (Welle A): DOM-Harness konsolidiert — 368→368 identisch
 
