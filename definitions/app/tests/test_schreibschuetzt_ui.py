@@ -59,7 +59,7 @@ function felder() {
   return ergebnis;
 }
 
-/** Alle Schreib-Bedienelemente der Detailansicht. */
+/** Alle Schreib-Bedienelemente der Detailansicht; ``anlegen`` ist der Bereich. */
 function schreibAktionen() {
   return {
     nachtrag: bei("nachtrag-formular") !== null,
@@ -69,7 +69,13 @@ function schreibAktionen() {
     statusKnoepfe: sammle(bei("detail")).filter((knoten) => knoten.dataset.status).length,
     freigabeKnopf: bei("detail-freigabe") !== null,
     wellenFreigabeKnopf: bei("detail-welle-freigabe") !== null,
+    anlegen: bei("unteraufgabe-anlegen") !== null,
   };
+}
+
+/** Endpunkte der abgesetzten Aufrufe (ohne Query, für Guard-Assertions). */
+function endpunkte() {
+  return aufrufe.map((eintrag) => eintrag.endpunkt);
 }
 """
 
@@ -112,7 +118,12 @@ def test_t1_reservierte_datei_ohne_schreibaktionen():
     ergebnis = detail_lauf(
         r"""
 await detail.ladeDetail({ unterpunkt: "index.md" });
-return { ...schreibAktionen(), felder: felder(), inhalt: bei("detail").textContent };
+return {
+  ...schreibAktionen(),
+  aufrufe: endpunkte(),
+  felder: felder(),
+  inhalt: bei("detail").textContent,
+};
 """,
         _reserviert({"type": "Index", "title": "Mini-Bundle"}),
     )
@@ -124,6 +135,9 @@ return { ...schreibAktionen(), felder: felder(), inhalt: bei("detail").textConte
     assert ergebnis["statusKnoepfe"] == 0
     assert ergebnis["freigabeKnopf"] is False
     assert ergebnis["wellenFreigabeKnopf"] is False
+    assert ergebnis["anlegen"] is False
+    # Gesperrt: keine Wellenliste laden (kein Auswahl-Bedarf).
+    assert "/api/wellen" not in ergebnis["aufrufe"]
     # Lesen bleibt vollständig: Inhalt und Kopfdaten stehen weiter da.
     assert "Fixture." in ergebnis["inhalt"]
     assert ergebnis["felder"]["Typ"] == "Index"
@@ -178,6 +192,7 @@ def test_t3_reservierte_aufgabe_zeigt_werte_statt_bedienung():
 await detail.ladeDetail({ unterpunkt: "aufgaben/a1.md" });
 return {
   ...schreibAktionen(),
+  aufrufe: endpunkte(),
   zustand: bei("detail-freigabe-status")?.textContent ?? null,
   felder: felder(),
 };
@@ -194,6 +209,9 @@ return {
     assert ergebnis["wellenAuswahl"] is False
     assert ergebnis["freigabeKnopf"] is False
     assert ergebnis["nachtrag"] is False
+    # Gesperrte Aufgabe: weder Anlegen-Bereich noch Wellenliste (M8/M9).
+    assert ergebnis["anlegen"] is False
+    assert "/api/wellen" not in ergebnis["aufrufe"]
     assert ergebnis["zustand"] == "Nicht freigegeben"
     # Werte bleiben als Text sichtbar (kein stilles Verschwinden).
     assert ergebnis["felder"]["owner"] == "mensch"
@@ -215,7 +233,11 @@ def test_t4_ohne_exaktes_signal_bleibt_die_ui_bedienbar(signal):
     ergebnis = detail_lauf(
         r"""
 await detail.ladeDetail({ unterpunkt: "aufgaben/a1.md" });
-return schreibAktionen();
+return {
+  ...schreibAktionen(),
+  aufrufe: endpunkte(),
+  hinweis: bei("detail-schreibgeschuetzt-hinweis") !== null,
+};
 """,
         datei,
         wellen=[{"path": "wellen/w1.md", "titel": "Welle 1"}],
@@ -226,6 +248,11 @@ return schreibAktionen();
     assert ergebnis["wellenAuswahl"] is True
     assert ergebnis["statusKnoepfe"] == 2
     assert ergebnis["freigabeKnopf"] is True
+    # Ungesperrte Kontrollprobe: Anlegen da, Wellenliste wird geladen (M8/M9).
+    assert ergebnis["anlegen"] is True
+    assert "/api/wellen" in ergebnis["aufrufe"]
+    # K1: Der Sperrhinweis erscheint nur bei gesperrten Dateien.
+    assert ergebnis["hinweis"] is False
 
 
 # --- T5: keine zweite Namensliste im JavaScript ---------------------------

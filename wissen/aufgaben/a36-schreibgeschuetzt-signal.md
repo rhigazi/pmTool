@@ -3,12 +3,12 @@ type: Task
 title: "A36: schreibgeschuetzt-Signal (A12-Schreib-UI-Grenze)"
 description: Die API markiert reservierte Dateien als schreibgeschützt, die UI blendet Schreibaktionen
   aus — der Server-403 bleibt zweite Barriere.
-task_status: im Review
-phase: 5 Review
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: mittel
 assigned_to: coder
 owner: ai
-aktuell: "reviewer: A36 Review (Mutanten + Urteil)"
+aktuell: ""
 freigabe: true
 ---
 
@@ -38,6 +38,14 @@ Noch keine Einträge — der `planner` ergänzt die Testfälle.
 - `definitions/app/tests/test_detail.py` (+2 Trenner-Assertions), `test_arbeitsstand.py` (T12 +`schreibgeschuetzt`)
 
 # Ergebnisse
+## 2026-11-16 — coder (Rücklauf) + PM: W1/W2/K1/K3 behoben → **abgeschlossen**
+
+- **W1:** `schreibAktionen()` prüft jetzt auch `anlegen` (`#unteraufgabe-anlegen`); T1/T3 `anlegen is False`, T4-Kontrollprobe `is True` — Mutante M8 (Anlegen-Guard entfernt) **getötet**.
+- **W2:** `detail_lauf`-Skripte liefern `aufrufe` (normalisiert); T1/T3 assertieren `"/api/wellen" not in aufrufe` (gesperrt), T4 `in` (frei) — Mutante M9 **getötet** (Killer ist T3; T1 sichert zusätzlich den `istAufgabe`-Zweig).
+- **K1:** Negativfall „kein Sperrhinweis bei ungesperrter Datei" (alle 4 Signal-Varianten) — Mutante M12 (Hinweis immer) **getötet** (4 rot).
+- **K3:** Docstring/Kommentare präzisiert (Symlink-Kante in Listen möglich, `scan` filtert namensbasiert) — nur Text.
+- 25 grün (16+9, nur Assertions ergänzt). Vermerk des Coders: die Review-Zeilennummern waren durch A38 verschoben (Guards jetzt 960–966/1044–1046), inhaltlich geprüft. **A36 abgeschlossen** (PM, 2026-11-16). K4/K5 (UX-Kante Welle-Feld, Kosmetik) → Härtungs-Klammer.
+
 ## 2026-11-16 — reviewer: NACHBESSERUNG (W1/W2/W3 + K1–K5) — Rücklauf läuft
 
 - **Urteil:** NACHBESSERUNG — Implementierung/Server-Signal korrekt und symlink-sicher (M1/M2/M3 getötet); 10/13 Mutanten tot. **W1** Anlegen-UI-Ausblendung ungepinnt (M8 überlebt), **W2** `/api/wellen`-Guard: `aufrufe` gesammelt, nie ausgewertet (M9 überlebt), **W3** Doku (Spec-Read-Modell, A37-Rest, Betroffene-Dateien — inzwischen vom PM nachgezogen). **K1** Hinweis-Negativfall fehlt (M12), **K2** AK-/Testfall-Blöcke leer (Prozess), **K3** „kein Listen-Feld" zu absolut (Symlink-Kante in Listen möglich), **K4** UX-Kante Welle-Feld zeigt rohen Pfad, **K5** Kosmetik. Rücklauf W1/W2/K1/K3 läuft; K4/K5 → Klammer.

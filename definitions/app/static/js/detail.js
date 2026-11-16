@@ -72,6 +72,7 @@ const AUFGABEN_ORDNER = "aufgaben/";
 const WELLEN_ORDNER = "wellen/";
 
 // A36: Schreib-UI-Grenze — nur der Server entscheidet über `schreibgeschuetzt`.
+// Listen haben keine Schreibaktionen; Symlink-Kanten sind dort unkritisch.
 const SCHREIBGESCHUETZT_HINWEIS_ID = "detail-schreibgeschuetzt-hinweis";
 const SCHREIBGESCHUETZT_HINWEIS =
   "Schreibgeschützt — diese Datei pflegen Projektmanager und documenter (KI).";

@@ -79,9 +79,12 @@ def test_t4_symlink_auf_reservierte_datei_ist_schreibgeschuetzt(client, bundle):
 
 # --- T5: Listen führen keine reservierten Dateien -------------------------
 
-# Begründung: ``okf_bundle.scan`` filtert reservierte Dateien bereits aus,
-# deshalb erscheint in Listen kein Eintrag, der ``schreibgeschuetzt: true``
-# tragen müsste. Der Test hält diese Entscheidung fest (kein Listenfeld).
+# Begründung: ``okf_bundle.scan`` filtert reservierte Dateien namensbasiert aus;
+# deshalb trägt kein Listeneintrag ``schreibgeschuetzt: true``. Das ist keine
+# Aussage über die Existenz: Ein Symlink wie ``aufgaben/getarnt.md`` → ``log.md``
+# kann sehr wohl als Kante in einer Liste erscheinen. Listen haben aber keine
+# Schreibaktionen; dort entfällt die Schreib-UI ohnehin. Der Test hält diese
+# Entscheidung fest (kein Listenfeld).
 @pytest.mark.parametrize("endpunkt", ["/api/overview", "/api/aufgaben", "/api/wellen"])
 def test_t5_listen_ohne_reservierte_und_ohne_schreibschutz_markierung(client, endpunkt):
     daten = client.get(endpunkt).get_json()

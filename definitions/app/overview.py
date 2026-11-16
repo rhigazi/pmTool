@@ -67,7 +67,10 @@ def details(pfad: str) -> dict:
     die Detailansicht spiegelt die Tabelle nicht mehr. ``owner_default`` ist die
     wirksame Anzeige-Zuständigkeit (explizites ``owner`` vor Status-Default).
     ``schreibgeschuetzt`` (A36) markiert reservierte KI-Dateien; die Liste der
-    reservierten Namen lebt ausschließlich in :mod:`okf_bundle`. Aufgaben
+    reservierten Namen lebt ausschließlich in :mod:`okf_bundle`. Listen führen
+    kein Schreibschutz-Feld, weil sie keine Schreibaktionen haben; ein Symlink
+    auf eine reservierte Datei kann dort als Kante erscheinen (``scan`` filtert
+    namensbasiert), die Schreib-UI entfällt in Listen ohnehin. Aufgaben
     (``type: Task``) erhalten zusätzlich die abgeleiteten Arbeitsstatus-Felder;
     ``frontmatter`` bleibt roh.
 
