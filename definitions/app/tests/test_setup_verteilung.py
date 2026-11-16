@@ -293,14 +293,42 @@ def test_t13_wissensgeruest_vorhanden_ohne_hinweis(verify_lauf):
     assert "setup.sh --wissen" not in ergebnis.stdout
 
 
-def test_t14_einzelne_fehlende_wissensdatei_nennt_hinweis(ziel):
+def test_t14_teilgeruest_nennt_fehlende_dateien_exakt(ziel):
     (ziel / "wissen/projekt/phasen.md").unlink()
 
     ergebnis = _verify(ziel)
 
     assert ergebnis.returncode == 1, ergebnis.stdout + ergebnis.stderr
     assert (
-        "OKF-Wissensgerüst fehlt (1 von 8 Pflichtdateien): wissen/projekt/phasen.md"
-        in ergebnis.stdout
-    )
-    assert "setup.sh --wissen" in ergebnis.stdout
+        "OKF-Wissensgerüst unvollständig (1 von 8 Pflichtdateien fehlen): "
+        "wissen/projekt/phasen.md"
+    ) in ergebnis.stdout
+    # Teilgerüst: setup.sh --wissen ist hier keine Lösung (A40-W1).
+    assert "Teilgerüst" in ergebnis.stdout
+    assert "Lösung: setup.sh --wissen" not in ergebnis.stdout
+
+
+@pytest.mark.parametrize(
+    "fehlend",
+    [
+        ["wissen/projekt/phasen.md", "wissen/projekt/konzept.md"],
+        [
+            "wissen/projekt/phasen.md",
+            "wissen/projekt/konzept.md",
+            "wissen/projekt/technische-spec.md",
+        ],
+        ["wissen/index.md", "wissen/log.md", "wissen/aufgaben/index.md"],
+    ],
+)
+def test_t14b_mehrere_fehlende_dateien_vollstaendig_gelistet(ziel, fehlend):
+    for datei in fehlend:
+        (ziel / datei).unlink()
+
+    ergebnis = _verify(ziel)
+
+    assert ergebnis.returncode == 1, ergebnis.stdout + ergebnis.stderr
+    # Exakte Liste: keine fehlende Datei darf in der Meldung fehlen.
+    assert (
+        f"OKF-Wissensgerüst unvollständig ({len(fehlend)} von 8 Pflichtdateien fehlen): "
+        + ", ".join(fehlend)
+    ) in ergebnis.stdout

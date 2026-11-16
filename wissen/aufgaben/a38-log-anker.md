@@ -3,12 +3,12 @@ type: Task
 title: "A38: Log-Anker (A14-9)"
 description: Jeder Log-Eintrag bekommt einen eigenen Anker — Verweise öffnen den konkreten Eintrag,
   nicht immer den Anfang der Seite.
-task_status: im Review
-phase: 5 Review
+task_status: abgeschlossen
+phase: 8 Abgeschlossen
 priority: niedrig
 assigned_to: coder
 owner: ai
-aktuell: "reviewer: A38 Review (Mutanten + Urteil)"
+aktuell: ""
 freigabe: true
 ---
 
@@ -45,6 +45,12 @@ Log-Einträge (`wissen/log.md`, `wissen/entscheidungen/log.md`) verlinken alle a
 - `definitions/app/static/js/app.js` — unverändert (Router-Vertrag)
 
 # Ergebnisse
+## 2026-11-16 — coder (Rücklauf) + PM: W1/K1 behoben → **abgeschlossen**
+
+- **W1:** ASCII-Anker-Test gehärtet (`re.fullmatch(r"[a-z0-9-]+", …)` + 4 neue Payloads: `Café crème`, `ø/İ/ẞ`, gemischte Umlaute, Türkisch; 4 → 8 Fälle). Probe: Mutante `[^a-z0-9ø]` **rot** (alte `islower()`-Prüfung hätte `falsch-ø-und-i-und-ss` akzeptiert). **Analyse:** die Review-Mutante `[^a-z0-9é]` ist strukturell **äquivalent** (NFD-Normalisierung zerlegt `é` vor der Whitelist in `e`+Combining) — ein Kill nur über Produktivcode möglich, dort aber unnötig; die reale Fehlerklasse (nicht zerlegbare Nicht-ASCII-Zeichen) ist tot.
+- **K1:** `trenneAnker` gepinnt (`test_trenne_anker_trennt_am_ersten_rautezeichen`: erstes `#` gewinnt, Trim/Leerfälle) — `#` im Dateinamen als nicht unterstützt dokumentiert.
+- `test_log_anker.py` 24 → **32 passed**. **A38 abgeschlossen** (PM, 2026-11-16). Rest-Klammern: K2-Rest (Bereich in `projekt.js` übergeben), K3 (CSS `.anker-ziel`), K6 (UI-Liste für Log-Links).
+
 ## 2026-11-16 — coder (K-Sammlung): K2 behoben (Scoping), Rest notiert
 
 - **K2:** `springeZuAnker(anker, bereich)` sucht nur noch Nachfahren des Detail-Containers (Attribut-Selektor für sichere `[a-z0-9-]`-IDs + `parentElement`-Kette im Mini-DOM-Rückfall); Kollisionstests für die Slugs `fehler`/`detail` (rot-Probe: ohne Bereich beide rot). 3 neue Tests (58 → 61). Bewusst **Scoping statt Präfix** (Präfixe hätten `projekt.js`-Links + `test_log_anker`-Verträge gebrochen).

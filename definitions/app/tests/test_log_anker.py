@@ -7,6 +7,7 @@ Mini-DOM-Harness (``dom_helfer.py``); Seiten- und Fetch-Gerüst bleiben hier.
 """
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -93,17 +94,26 @@ def test_anker_normalisiert_umlaute_und_sonderzeichen():
 
 
 @ohne_node
-def test_anker_nur_ascii_kleinbuchstaben_ziffern_bindestrich():
-    for text in [
+@pytest.mark.parametrize(
+    "text",
+    [
         '2026-11-14: <img src=x onerror=alert(1)>',
         'Titel mit "Anführungszeichen" und / Slash',
         "Emoji 🚀 und Ümläüte",
         "\t\n",
-    ]:
-        anker = js("detail.erstelleAnker(daten)", text)
-        assert anker
-        assert all(zeichen.islower() or zeichen.isdigit() or zeichen == "-" for zeichen in anker)
-        assert anker.strip("-") == anker
+        # Nicht-ASCII-Kleinbuchstaben dürfen nicht durchrutschen (W1: `islower()`
+        # akzeptiert z. B. `ø`; ein Sanitizer, der es durchlässt, bliebe unentdeckt).
+        "Café crème",
+        "Falsch: ø und İ und ẞ",
+        "Gemischte Umlaute: äöü ÄÖÜ ß",
+        "Türkisch: İstanbul, ı und ıi",
+    ],
+)
+def test_anker_nur_ascii_kleinbuchstaben_ziffern_bindestrich(text):
+    anker = js("detail.erstelleAnker(daten)", text)
+    assert anker
+    assert re.fullmatch(r"[a-z0-9-]+", anker), anker
+    assert anker.strip("-") == anker
 
 
 @ohne_node
@@ -114,6 +124,23 @@ def test_anker_fallback_und_laengenbegrenzung():
     lang = js("detail.erstelleAnker(daten)", "wort " * 60)
     assert len(lang) <= 80
     assert not lang.endswith("-")
+
+
+@ohne_node
+def test_trenne_anker_trennt_am_ersten_rautezeichen():
+    # Belegt das dokumentierte Verhalten: `#` im Dateinamen ist nicht
+    # vorgesehen — getrennt wird am *ersten* `#`, der Rest gehört zum Anker
+    # (A38-K1: Verhalten gepinnt, nicht geändert).
+    ergebnis = js(
+        "['ordner/datei#mit#raute.md#anker', ' log.md#2026-11-15 ',"
+        " 'log.md', '  #nur-anker '].map((text) => detail.trenneAnker(text))"
+    )
+    assert ergebnis == [
+        {"pfad": "ordner/datei", "anker": "mit#raute.md#anker"},
+        {"pfad": "log.md", "anker": "2026-11-15"},
+        {"pfad": "log.md", "anker": ""},
+        {"pfad": "", "anker": "nur-anker"},
+    ]
 
 
 @ohne_node

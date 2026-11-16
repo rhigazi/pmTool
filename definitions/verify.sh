@@ -41,9 +41,17 @@ for f in $WISSEN_DATEIEN; do
     WISSEN_FEHLT_LISTE="$WISSEN_FEHLT_LISTE${WISSEN_FEHLT_LISTE:+, }$f"
   fi
 done
-if [ "$WISSEN_FEHLT" -gt 0 ]; then
+if [ "$WISSEN_FEHLT" -eq "$WISSEN_GESAMT" ]; then
+  # Gar kein Gerüst: setup.sh --wissen legt alles neu an, nichts geht verloren.
   bad "OKF-Wissensgerüst fehlt ($WISSEN_FEHLT von $WISSEN_GESAMT Pflichtdateien): $WISSEN_FEHLT_LISTE"
   echo "    → Lösung: setup.sh --wissen ausführen — legt das Gerüst unter $TARGET/wissen/ an (vorhandene Dateien bleiben unangetastet)."
+elif [ "$WISSEN_FEHLT" -gt 0 ]; then
+  # Teilgerüst: setup.sh --wissen hilft hier nicht (Abschnitt 5 wird bei
+  # vorhandenem wissen/index.md übersprungen; fehlt index.md, kopiert `cp -r`
+  # die Vorlage über die vorhandenen Wissensdateien).
+  bad "OKF-Wissensgerüst unvollständig ($WISSEN_FEHLT von $WISSEN_GESAMT Pflichtdateien fehlen): $WISSEN_FEHLT_LISTE"
+  echo "    → Teilgerüst: vorhandene Wissensdateien bleiben erhalten — ergänze die fehlenden Dateien einzeln aus definitions/wissen-vorlage/."
+  echo "      setup.sh --wissen allein hilft hier nicht: bei vorhandenem wissen/index.md wird Abschnitt 5 übersprungen (fehlende Datei bleibt fehlend); fehlt index.md, überschreibt es die vorhandenen Wissensdateien."
 fi
 
 echo "2) Subagenten"
