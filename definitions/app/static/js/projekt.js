@@ -1,5 +1,11 @@
 import { getJson, istDateiAntwort, zeigeFehler } from "./api.js";
-import { rendereMarkdown } from "./detail.js";
+import {
+  erstelleAnkerVergabe,
+  parseMarkdown,
+  rendereMarkdown,
+  springeZuAnker,
+  trenneAnker,
+} from "./detail.js";
 
 const CONTAINER_ENTSCHEIDUNGEN_ID = "liste-entscheidungen";
 const CONTAINER_PROJEKT_ID = "liste-projekt";
@@ -16,22 +22,29 @@ const FORMAT_FEHLER = "Datei hat ein unerwartetes Format.";
 const ZURUECK = "← Zurück zum Projekt";
 
 // Einträge des Entscheidungslogs: `## YYYY-MM-DD: Titel`; Trennzeichen tolerant.
-const EINTRAG = /^##\s+(\d{4}-\d{2}-\d{2})\s*(?:[:\-–—]\s*)?(.+)$/;
+// Der Renderer liefert die Überschrift ohne `##`; der Anker entsteht daraus.
+const EINTRAG = /^(\d{4}-\d{2}-\d{2})\s*(?:[:\-–—]\s*)?(.+)$/;
 
 /**
- * Parst die Einträge des Entscheidungslogs in `[{datum, titel}]`; die
+ * Parst die Einträge des Entscheidungslogs in `[{datum, titel, anker}]`; die
  * Reihenfolge entspricht der Datei. Unpassende Zeilen bleiben unberücksichtigt.
+ * Die Anker-Vergabe läuft über alle Überschriften — genau wie im Renderer,
+ * damit die Verweise auf die tatsächlichen IDs zeigen (A38).
  */
 export function parseEntscheidungen(markdown) {
-  if (typeof markdown !== "string" || !markdown.trim()) return [];
-
+  const ankerFuer = erstelleAnkerVergabe();
   const eintraege = [];
-  for (const zeile of markdown.split(/\r?\n/)) {
-    const treffer = EINTRAG.exec(zeile.trim());
+
+  for (const block of parseMarkdown(markdown)) {
+    if (block.art !== "ueberschrift") continue;
+    const anker = ankerFuer(block.text);
+    if (block.ebene !== 2) continue;
+
+    const treffer = EINTRAG.exec(block.text);
     if (!treffer) continue;
     const titel = treffer[2].trim();
     if (!titel) continue;
-    eintraege.push({ datum: treffer[1], titel });
+    eintraege.push({ datum: treffer[1], titel, anker });
   }
   return eintraege;
 }
@@ -90,7 +103,7 @@ function erstelleEntscheidungsListe(eintraege) {
   for (const eintrag of eintraege) {
     const punkt = document.createElement("li");
     const link = document.createElement("a");
-    link.href = `${DETAIL_VORSCHLAG}${encodeURIComponent(ENTSCHEIDUNGEN_PFAD)}`;
+    link.href = `${DETAIL_VORSCHLAG}${encodeURIComponent(ENTSCHEIDUNGEN_PFAD)}#${eintrag.anker}`;
     link.textContent = `${eintrag.datum}: ${eintrag.titel}`;
     punkt.append(link);
     liste.append(punkt);
@@ -167,7 +180,8 @@ export async function ladeProjektAnsicht({ unterpunkt } = {}) {
     return;
   }
 
-  const name = typeof unterpunkt === "string" ? unterpunkt.trim() : "";
+  // A38: `unterpunkt#anker` (z. B. `log#2026-11-16`) springt zum Eintrag.
+  const { pfad: name, anker } = trenneAnker(unterpunkt);
   if (!name) {
     ziel.replaceChildren(erstelleProjektListe());
     return;
@@ -184,4 +198,5 @@ export async function ladeProjektAnsicht({ unterpunkt } = {}) {
   if (daten === null) return;
 
   ziel.replaceChildren(erstelleProjektDetail(punkt, daten.markdown));
+  springeZuAnker(anker);
 }

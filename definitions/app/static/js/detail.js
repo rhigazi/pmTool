@@ -87,6 +87,11 @@ const ZITAT = /^>\s?(.*)$/;
 const UNGEORDNET = /^[-*+]\s+(.*)$/;
 const GEORDNET = /^\d+[.)]\s+(.*)$/;
 
+// A38: Anker je Überschrift; nur `[a-z0-9-]`, damit IDs und Links sicher sind.
+const ANKER_MAX = 80;
+const ANKER_FALLBACK = "abschnitt";
+const ANKER_KLASSE = "anker-ziel";
+
 function feld(frontmatter, name) {
   if (!frontmatter || typeof frontmatter !== "object") return null;
 
@@ -198,21 +203,87 @@ function leseListe(zeilen, start) {
   return { block: { art: "liste", geordnet, eintraege }, ende: index };
 }
 
+/**
+ * Stabiler Anker aus einem Überschriftentext (A38): Umlaute werden
+ * umschrieben, alles andere zu `-` zusammengezogen. Das Ergebnis besteht nur
+ * aus `[a-z0-9-]` — dadurch ist es als ``id`` und im Link sicher.
+ */
+export function erstelleAnker(text) {
+  const roh = typeof text === "string" ? text : "";
+  const ersetzt = roh
+    .toLowerCase()
+    .replace(/ä/g, "ae")
+    .replace(/ö/g, "oe")
+    .replace(/ü/g, "ue")
+    .replace(/ß/g, "ss")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  // Kürzen ohne hängenden Bindestrich; leerer Text bleibt verlinkbar.
+  const gekuerzt = ersetzt.slice(0, ANKER_MAX).replace(/-+$/g, "");
+  return gekuerzt || ANKER_FALLBACK;
+}
+
+/**
+ * Vergabe für ein Dokument: gleiche Titel bekommen `-2`, `-3`, … — damit
+ * Renderer und Verweise dieselben Anker liefern (A38).
+ */
+export function erstelleAnkerVergabe() {
+  const zaehler = new Map();
+  return (text) => {
+    const basis = erstelleAnker(text);
+    const nummer = (zaehler.get(basis) ?? 0) + 1;
+    zaehler.set(basis, nummer);
+    return nummer === 1 ? basis : `${basis}-${nummer}`;
+  };
+}
+
 /** Baut aus Markdown ein DOM-Fragment; alle Texte laufen über `textContent`. */
 export function rendereMarkdown(markdown) {
   const fragment = document.createDocumentFragment();
+  const anker = erstelleAnkerVergabe();
   for (const block of parseMarkdown(markdown)) {
-    fragment.append(erstelleBlock(block));
+    const id = block.art === "ueberschrift" ? anker(block.text) : null;
+    fragment.append(erstelleBlock(block, id));
   }
   return fragment;
 }
 
-function erstelleBlock(block) {
+/** Springt zu einem Anker und hebt das Ziel leicht hervor (A38). */
+export function springeZuAnker(anker) {
+  const ziel = typeof anker === "string" ? anker.trim() : "";
+  if (!ziel) return null;
+
+  const element = document.getElementById(ziel);
+  if (!element) return null;
+
+  // Klasse plus Fokus: die Klasse markiert das Ziel, der Fokusring macht es
+  // sichtbar (kein style.css-Eingriff in A38).
+  element.classList.add(ANKER_KLASSE);
+  element.setAttribute("tabindex", "-1");
+  if (typeof element.scrollIntoView === "function") {
+    element.scrollIntoView({ block: "start" });
+  }
+  if (typeof element.focus === "function") element.focus();
+  return element;
+}
+
+/** Trennt `pfad#anker`; ohne `#` bleibt der Anker leer. */
+export function trenneAnker(text) {
+  const roh = typeof text === "string" ? text.trim() : "";
+  const index = roh.indexOf("#");
+  if (index === -1) return { pfad: roh, anker: "" };
+  return { pfad: roh.slice(0, index).trim(), anker: roh.slice(index + 1).trim() };
+}
+
+function erstelleBlock(block, anker = null) {
   switch (block.art) {
     case "ueberschrift": {
       const ebene = Math.min(Math.max(block.ebene, 1), 6);
       const element = document.createElement(`h${ebene}`);
       element.textContent = block.text;
+      if (anker) element.id = anker;
       return element;
     }
     case "liste": {
@@ -947,7 +1018,9 @@ export async function ladeDetail({ unterpunkt } = {}) {
   const ziel = document.getElementById(CONTAINER_ID);
   if (!ziel) return;
 
-  const pfad = typeof unterpunkt === "string" ? unterpunkt.trim() : "";
+  // A38: Der Router reicht `pfad#anker` als Unterpunkt durch (Vertrag
+  // unverändert); die Detailansicht trennt beides und scrollt danach.
+  const { pfad, anker } = trenneAnker(unterpunkt);
   if (!pfad) {
     ziel.replaceChildren(erstelleHinweis(LEER_KEINE_AUSWAHL));
     return;
@@ -981,4 +1054,5 @@ export async function ladeDetail({ unterpunkt } = {}) {
   );
 
   zeichne(ziel, pfad, daten, { wellen, aufgaben });
+  springeZuAnker(anker);
 }

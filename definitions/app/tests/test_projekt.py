@@ -59,9 +59,18 @@ LOG_MD = (
     "**Entscheidung:** Fünf Punkte.\n"
 )
 
+# A38: Jeder Eintrag trägt seinen Anker (ID im gerenderten Markdown).
 LOG_ERWARTET = [
-    {"datum": "2026-11-14", "titel": "Moli-Frage — Standardentscheidung Harness"},
-    {"datum": "2026-11-13", "titel": "Navigation mit fünf Hauptpunkten"},
+    {
+        "datum": "2026-11-14",
+        "titel": "Moli-Frage — Standardentscheidung Harness",
+        "anker": "2026-11-14-moli-frage-standardentscheidung-harness",
+    },
+    {
+        "datum": "2026-11-13",
+        "titel": "Navigation mit fünf Hauptpunkten",
+        "anker": "2026-11-13-navigation-mit-fuenf-hauptpunkten",
+    },
 ]
 
 # A14-Befund 3: HTML im Titel muss Literal bleiben (kein Knoten, keine Ausführung).
@@ -194,8 +203,24 @@ def test_parse_entscheidungen_datum_und_titel():
 @pytest.mark.parametrize("trennzeichen", ["", ": ", ":", " - ", "-", " – ", "–", " — ", "—"])
 def test_parse_entscheidungen_trennzeichen_tolerant(trennzeichen):
     markdown = f"## 2026-11-14{trennzeichen}Titel der Entscheidung"
+    # Ohne Trennzeichen klebt der Titel im Anker an der Jahreszahl (A38).
+    erwarteter_anker = {
+        "": "2026-11-14titel-der-entscheidung",
+        ": ": "2026-11-14-titel-der-entscheidung",
+        ":": "2026-11-14-titel-der-entscheidung",
+        " - ": "2026-11-14-titel-der-entscheidung",
+        "-": "2026-11-14-titel-der-entscheidung",
+        " – ": "2026-11-14-titel-der-entscheidung",
+        "–": "2026-11-14-titel-der-entscheidung",
+        " — ": "2026-11-14-titel-der-entscheidung",
+        "—": "2026-11-14-titel-der-entscheidung",
+    }
     assert js("projekt.parseEntscheidungen(daten)", markdown) == [
-        {"datum": "2026-11-14", "titel": "Titel der Entscheidung"}
+        {
+            "datum": "2026-11-14",
+            "titel": "Titel der Entscheidung",
+            "anker": erwarteter_anker[trennzeichen],
+        }
     ]
 
 
@@ -203,7 +228,11 @@ def test_parse_entscheidungen_trennzeichen_tolerant(trennzeichen):
 def test_parse_entscheidungen_titel_mit_sonderzeichen():
     markdown = "## 2026-11-14: Titel — mit Bindestrich: und Doppelpunkt"
     assert js("projekt.parseEntscheidungen(daten)", markdown) == [
-        {"datum": "2026-11-14", "titel": "Titel — mit Bindestrich: und Doppelpunkt"}
+        {
+            "datum": "2026-11-14",
+            "titel": "Titel — mit Bindestrich: und Doppelpunkt",
+            "anker": "2026-11-14-titel-mit-bindestrich-und-doppelpunkt",
+        }
     ]
 
 
@@ -223,7 +252,11 @@ def test_parse_entscheidungen_ignoriert_unpassende_zeilen():
         "## 2026-01-05: Gültig\n"
     )
     assert js("projekt.parseEntscheidungen(daten)", markdown) == [
-        {"datum": "2026-01-05", "titel": "Gültig"}
+        {
+            "datum": "2026-01-05",
+            "titel": "Gültig",
+            "anker": "2026-01-05-gueltig",
+        }
     ]
 
 
@@ -234,7 +267,7 @@ def test_parse_entscheidungen_leer_und_crlf():
     assert js("projekt.parseEntscheidungen(daten)", None) == []
     assert js("projekt.parseEntscheidungen(daten)", 42) == []
     assert js("projekt.parseEntscheidungen(daten)", "# Titel\r\n\r\n## 2026-11-14: Eins\r\n") == [
-        {"datum": "2026-11-14", "titel": "Eins"}
+        {"datum": "2026-11-14", "titel": "Eins", "anker": "2026-11-14-eins"}
     ]
 
 
@@ -494,7 +527,10 @@ def test_t1_entscheidungen_zeigen_datum_und_titel():
         antworten={ENTSCHEIDUNGEN_PFAD: {"status": 200, "koerper": {"frontmatter": {}, "markdown": LOG_MD}}},
     )
     assert ergebnis["eintraege"] == [
-        {"text": f"{eintrag['datum']}: {eintrag['titel']}", "href": f"{DETAIL_VORSCHLAG}entscheidungen%2Flog.md"}
+        {
+            "text": f"{eintrag['datum']}: {eintrag['titel']}",
+            "href": f"{DETAIL_VORSCHLAG}entscheidungen%2Flog.md#{eintrag['anker']}",
+        }
         for eintrag in LOG_ERWARTET
     ]
     assert ergebnis["abgerufen"] == [f"/api/file {ENTSCHEIDUNGEN_PFAD}"]
@@ -508,10 +544,12 @@ def test_t2_eintrag_oeffnet_detail_der_log_datei():
         antworten={ENTSCHEIDUNGEN_PFAD: {"status": 200, "koerper": {"frontmatter": {}, "markdown": LOG_MD}}},
     )
     assert len(ergebnis["eintraege"]) == len(LOG_ERWARTET)
-    for eintrag in ergebnis["eintraege"]:
+    for erwartet, eintrag in zip(LOG_ERWARTET, ergebnis["eintraege"]):
         assert eintrag["href"].startswith(DETAIL_VORSCHLAG)
-        ziel = unquote(eintrag["href"][len(DETAIL_VORSCHLAG):])
-        assert ziel == ENTSCHEIDUNGEN_PFAD
+        ziel, _, anker = eintrag["href"][len(DETAIL_VORSCHLAG):].partition("#")
+        assert unquote(ziel) == ENTSCHEIDUNGEN_PFAD
+        # A38: jeder Eintrag zielt auf seinen eigenen Anker, nicht auf den Anfang.
+        assert anker == erwartet["anker"]
 
     # A14-Befund 4: der Klick lädt die Datei wirklich über die A12-Ansicht —
     # nicht nur ein gesetztes `href`. Geprüft wird der dekodierte Zielpfad.
@@ -519,7 +557,9 @@ def test_t2_eintrag_oeffnet_detail_der_log_datei():
         szenario_klick("#/entscheidungen", LOG_ERWARTET[0]["titel"]),
         antworten={ENTSCHEIDUNGEN_PFAD: {"status": 200, "koerper": {"frontmatter": {}, "markdown": LOG_MD}}},
     )
-    assert unquote(klick["href"][len(DETAIL_VORSCHLAG):]) == ENTSCHEIDUNGEN_PFAD
+    ziel, _, anker = klick["href"][len(DETAIL_VORSCHLAG):].partition("#")
+    assert unquote(ziel) == ENTSCHEIDUNGEN_PFAD
+    assert anker == LOG_ERWARTET[0]["anker"]
     assert klick["abgerufen"] == [
         f"/api/file {ENTSCHEIDUNGEN_PFAD}",
         f"/api/file {ENTSCHEIDUNGEN_PFAD}",
@@ -727,8 +767,14 @@ def luecken_server(luecken_bundle):
 def test_http_t1_entscheidungen_aus_test_bundle(app_server):
     ergebnis = ui_lauf(app_server, SZENARIO_T1)
     assert ergebnis["eintraege"] == [
-        {"text": "2026-11-14: Erste Entscheidung", "href": f"{DETAIL_VORSCHLAG}entscheidungen%2Flog.md"},
-        {"text": "2026-11-13: Zweite Entscheidung", "href": f"{DETAIL_VORSCHLAG}entscheidungen%2Flog.md"},
+        {
+            "text": "2026-11-14: Erste Entscheidung",
+            "href": f"{DETAIL_VORSCHLAG}entscheidungen%2Flog.md#2026-11-14-erste-entscheidung",
+        },
+        {
+            "text": "2026-11-13: Zweite Entscheidung",
+            "href": f"{DETAIL_VORSCHLAG}entscheidungen%2Flog.md#2026-11-13-zweite-entscheidung",
+        },
     ]
     assert ergebnis["abgerufen"] == [f"/api/file {ENTSCHEIDUNGEN_PFAD}"]
 
@@ -736,8 +782,12 @@ def test_http_t1_entscheidungen_aus_test_bundle(app_server):
 @ohne_node
 def test_http_t2_eintrag_link_zur_log_datei(app_server):
     ergebnis = ui_lauf(app_server, SZENARIO_T1)
+    anker = []
     for eintrag in ergebnis["eintraege"]:
-        assert unquote(eintrag["href"][len(DETAIL_VORSCHLAG):]) == ENTSCHEIDUNGEN_PFAD
+        ziel, _, anker_teil = eintrag["href"][len(DETAIL_VORSCHLAG):].partition("#")
+        assert unquote(ziel) == ENTSCHEIDUNGEN_PFAD
+        anker.append(anker_teil)
+    assert anker == ["2026-11-14-erste-entscheidung", "2026-11-13-zweite-entscheidung"]
 
 
 @ohne_node
